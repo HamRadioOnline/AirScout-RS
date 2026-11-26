@@ -12,6 +12,7 @@ pub mod cleanup;
 pub mod coverage;
 pub mod crossing_csv;
 pub mod crossing_history;
+pub mod download_area;
 pub mod exports;
 mod feed_service;
 pub mod history;

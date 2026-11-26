@@ -28,6 +28,7 @@ use crate::services::{
 };
 use crate::sound::{AlarmBeeps, Beeper, NullBeeper};
 use crate::speclab::{SpecLabService, SpectrumState};
+use crate::ui::dialogs::download_area::DownloadAreaDlg;
 use crate::ui::dialogs::horizon::{HorizonDlg, HorizonState};
 use crate::ui::dialogs::obstructions::ObstructionsDlg;
 use crate::ui::dialogs::set_time::SetTimeDlg;
@@ -244,6 +245,8 @@ pub struct AppState {
     pub obstructions_dlg: Option<ObstructionsDlg>,
     /// The open `HorizonDlg`, if any.
     pub horizon_dlg: Option<HorizonDlg>,
+    /// The open "Download data for the area" dialog, if any.
+    pub download_area_dlg: Option<DownloadAreaDlg>,
     /// The data directory; `None` exports nowhere (tests).
     pub data_dir: Option<PathBuf>,
     horizon_seq: u64,
@@ -349,6 +352,7 @@ impl AppState {
             options_dlg: None,
             obstructions_dlg: None,
             horizon_dlg: None,
+            download_area_dlg: None,
             data_dir: None,
             horizon_seq: 0,
             tile_dir: None,

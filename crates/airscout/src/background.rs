@@ -198,7 +198,9 @@ pub(crate) fn sleep_cancellable(total: Duration, cancel: &AtomicBool) -> bool {
     cancel.load(Ordering::Relaxed)
 }
 
-struct RunningGuard(Arc<AtomicUsize>);
+/// Decrements the running-worker counter when dropped, so a worker that exits any way (normal,
+/// cancel, panic) is no longer counted (#155).
+pub(crate) struct RunningGuard(pub(crate) Arc<AtomicUsize>);
 
 impl Drop for RunningGuard {
     fn drop(&mut self) {

@@ -5,6 +5,7 @@ pub mod crossing_history;
 pub mod db_maintenance;
 pub mod delete_station;
 pub mod disclaimer;
+pub mod download_area;
 pub mod feed_settings;
 pub mod history_url;
 pub mod horizon;
@@ -62,6 +63,7 @@ pub fn show(ctx: &egui::Context, state: &mut AppState) {
         }
     }
     db_maintenance::show(ctx, state);
+    download_area::show(ctx, state);
     if let Some(mut dlg) = state.obstructions_dlg.take() {
         match dlg.show(ctx) {
             watchlist::DlgResult::Open => state.obstructions_dlg = Some(dlg),

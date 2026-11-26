@@ -80,6 +80,13 @@ fn bottom_tabs(ui: &mut egui::Ui, state: &mut AppState) {
 /// `pa_CommonInfo`: UTC time and band.
 fn top_bar(ui: &mut egui::Ui, state: &mut AppState) {
     ui.horizontal(|ui| {
+        ui.menu_button("File", |ui| {
+            if ui.button("Download data for the area…").clicked() {
+                state.open_download_area();
+                ui.close();
+            }
+        });
+        ui.separator();
         // tb_UTC (MapDlg.cs:3400): LightSalmon online, Plum offline; a double click sets the time
         let fill = if state.settings.time.online {
             LIGHT_SALMON

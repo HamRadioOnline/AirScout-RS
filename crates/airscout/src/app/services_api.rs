@@ -14,7 +14,7 @@ use crate::wintest_nearest::NearestSettings;
 use crate::wintest_service::{WinTestConfig, WinTestCtx, WinTestService};
 use as_web::server::WebConfig;
 use std::net::SocketAddr;
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::RwLock;
 
 /// The real services: path thread plus feed worker, events into one channel.
@@ -258,7 +258,20 @@ impl Services for RealServices {
         // a flag only the list holds belongs to a finished job (its thread dropped the other)
         self.maintenance.retain(|(_, c)| Arc::strong_count(c) > 1);
         self.maintenance.push((id, cancel.clone()));
+        // The area download writes the tile store and elevation database like the background
+        // updaters and calculators do: it counts as a background job while it runs, so a
+        // destructive maintenance is refused until it ends (#155).
+        let guard = match &job {
+            crate::maintenance::MaintenanceJob::DownloadArea { .. } => {
+                self.background_running.fetch_add(1, Ordering::SeqCst);
+                Some(crate::background::RunningGuard(
+                    self.background_running.clone(),
+                ))
+            }
+            _ => None,
+        };
         JobRunner::spawn("maintenance", id, cancel, self.tx.clone(), move |ctx| {
+            let _guard = guard;
             crate::maintenance::run(ctx, &paths, job)
         });
     }

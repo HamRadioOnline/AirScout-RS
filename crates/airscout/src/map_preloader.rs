@@ -92,6 +92,19 @@ fn provider_host(mirror_url: &str) -> Option<String> {
         .then_some(host)
 }
 
+/// Whether a bulk download of the map tiles of `provider` may use its mirror: the provider is
+/// the one the mirror holds ([`MIRROR_PROVIDER`]) and `mirror_url` is not a map provider's own
+/// server. The error is the notice to show ([`no_mirror_text`] / [`provider_mirror_text`]).
+pub fn map_mirror_ok(provider: &str, mirror_url: &str) -> Result<(), String> {
+    if provider != MIRROR_PROVIDER {
+        Err(no_mirror_text(provider))
+    } else if let Some(host) = provider_host(mirror_url) {
+        Err(provider_mirror_text(&host))
+    } else {
+        Ok(())
+    }
+}
+
 /// The preloader's HTTP client: the honest user agent of `services::client()` (not C#'s
 /// "AirScout", `MapPreloader.cs:125`), 30 s per tile, redirects only on the same host.
 pub fn preloader_client() -> Result<reqwest::blocking::Client, String> {
@@ -227,7 +240,10 @@ pub fn preload_run(
                     return Some(o);
                 }
             },
-            None => o.failed += 1,
+            None => {
+                o.failed += 1;
+                progress(format!("MapPreloader: failed {path}"));
+            }
         }
         if sleep_cancellable(delay, cancel) {
             return None;

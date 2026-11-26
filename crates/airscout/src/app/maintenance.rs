@@ -7,10 +7,13 @@
 
 use super::*;
 use crate::coverage::GridRequest;
+use crate::history_download::{DiskSpace, Fs4Disk};
 use crate::jobs::JobEvent;
 use crate::maintenance::{DbId, MaintenanceJob};
+use crate::map_preloader::map_mirror_ok;
 use crate::ui::dialogs::db_maintenance::DbMaintDlg;
 use crate::ui::dialogs::delete_station::DeleteStationDlg;
+use crate::ui::dialogs::download_area::DownloadAreaDlg;
 use crate::ui::options::{MaintAction, ViewRequest};
 
 /// First id of the maintenance jobs; analysis job ids stay far below.
@@ -155,6 +158,65 @@ impl AppState {
         }
     }
 
+    /// "Download data for the area" of the menu.
+    pub fn open_download_area(&mut self) {
+        if self.download_area_dlg.is_none() {
+            self.download_area_dlg = Some(DownloadAreaDlg::new(&self.settings));
+        }
+    }
+
+    /// Free space of the volume that holds the data directory, for the download dialog.
+    pub fn free_disk_bytes(&self) -> Option<u64> {
+        Fs4Disk.available(self.data_dir.as_deref()?).ok()
+    }
+
+    /// Start the area download: the map part from the provider's mirror (checked again; no
+    /// mirror makes the map part unavailable, never a bulk fetch of a provider's own server),
+    /// the elevation part for the enabled models. Refused while playing, while a job runs, and
+    /// while background workers still run (#155): the download counts as one while it runs.
+    pub fn start_download_area(
+        &mut self,
+        maps: bool,
+        zoom: u8,
+        elevation: bool,
+    ) -> Result<(), String> {
+        if let Some(why) = self.maintenance_blocked(false) {
+            return Err(why.into());
+        }
+        if self.services.background_jobs() > 0 {
+            return Err("wait for the background workers to stop".into());
+        }
+        let s = &self.settings;
+        let maps = if maps {
+            map_mirror_ok(&s.gui.map_provider, &s.background.map_mirror_url)
+                .ok()
+                .map(|_| (s.background.map_mirror_url.clone(), zoom))
+        } else {
+            None
+        };
+        let elevation = elevation.then(|| s.gui.elevation_base_url.clone());
+        if maps.is_none() && elevation.is_none() {
+            return Err("select Maps or Elevation".into());
+        }
+        let a = &s.area;
+        let area = GRect::new(a.min_lat, a.min_lon, a.max_lat, a.max_lon);
+        let job = MaintenanceJob::DownloadArea {
+            maps,
+            elevation,
+            models: s.elevation_enabled,
+            area,
+        };
+        self.start_maintenance(job);
+        Ok(())
+    }
+
+    /// Cancel the running area download `id`, if any (a finished or unknown id is ignored).
+    pub fn cancel_download_area(&mut self, id: Option<u64>) {
+        if let Some(id) = id {
+            self.services.cancel_maintenance(id);
+        }
+    }
+
     /// A request of the coverage view or the station map; a newer job of a kind supersedes the
     /// older one, and a cancel is a job-id match, so a job that finished is left alone.
     pub fn on_view_request(&mut self, request: ViewRequest) {
@@ -247,6 +309,27 @@ impl AppState {
             return self.on_view_event(id, event);
         }
         if self.maint.running != Some(id) {
+            return;
+        }
+        // The "Download data for the area" dialog follows its own job's progress.
+        let is_download = self
+            .download_area_dlg
+            .as_ref()
+            .is_some_and(|d| d.running == Some(id));
+        if is_download
+            && matches!(
+                event,
+                JobEvent::Progress(_) | JobEvent::Done(_) | JobEvent::Failed(_)
+            )
+        {
+            let d = self.download_area_dlg.as_mut().unwrap();
+            if let Some(text) = d.on_event(event) {
+                self.status = text;
+            }
+            if d.running.is_none() {
+                self.maint.running = None;
+                self.maint.destructive = false;
+            }
             return;
         }
         match event {

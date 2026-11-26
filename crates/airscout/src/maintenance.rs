@@ -14,6 +14,7 @@ use as_aircraft::positions::PositionDb;
 use as_elevation::ElevationModel;
 use as_geo::band::Band;
 use as_geo::latlon::GRect;
+use as_settings::ElevationEnabled;
 use as_signals::SignalDb;
 use std::path::{Path, PathBuf};
 
@@ -143,6 +144,19 @@ pub enum MaintenanceJob {
     },
     /// The elevation of the grid cells over `rect` for `model` (`MapStationDlg.cs:288-336`).
     ElevationGrid { rect: GRect, model: ElevationModel },
+    /// Preload the map tiles (from the provider's mirror) and the elevation squares of the
+    /// area for offline use (`download_area`; owner request). The app starts it only from the
+    /// "Download data for the area" dialog's Start button.
+    DownloadArea {
+        /// The map part: the mirror URL and max zoom, when the Maps box is checked and the
+        /// provider has a mirror.
+        maps: Option<(String, u8)>,
+        /// The elevation part: the base URL, when the Elevation box is checked.
+        elevation: Option<String>,
+        /// The enabled elevation models.
+        models: ElevationEnabled,
+        area: GRect,
+    },
 }
 
 impl MaintenanceJob {
@@ -263,6 +277,12 @@ pub fn run(ctx: &JobCtx, paths: &Paths, job: MaintenanceJob) {
         MaintenanceJob::ElevationGrid { rect, model } => {
             coverage::run_grid(ctx, paths, rect, model)
         }
+        MaintenanceJob::DownloadArea {
+            maps,
+            elevation,
+            models,
+            area,
+        } => crate::download_area::run(ctx, paths, maps, elevation, models, area),
     };
     if let Err(e) = r {
         ctx.send(JobEvent::Failed(e));

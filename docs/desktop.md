@@ -37,6 +37,11 @@ cargo run -p airscout --release
 - The elevation downloader can run at startup, periodically or when you
   press Play. Turn off "Download missing elevation data" in Options → Elevation
   to keep elevation lookups local.
+- "File → Download data for the area…" preloads everything AirScout needs for
+  the configured area so a contest can run fully offline. It shows the tile and
+  square counts and the estimated size against the free disk space before it
+  starts, downloads map tiles only from the airscout.eu mirror (never a map
+  provider's own server), and skips tiles and squares already stored.
 
 ## CAT
 
