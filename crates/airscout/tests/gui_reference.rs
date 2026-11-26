@@ -70,14 +70,14 @@ fn joins_concatenated_strings_and_escapes() {
     let w = parse_src(
         r#"
         this.l = new System.Windows.Forms.Label();
-        this.l.Text = "A 1 arcsec\r\nCoverage: 58°S" +
-            " ... 60°N";
+        this.l.Text = "line 1\r\nline 2" +
+            " ... line 3";
         this.Controls.Add(this.l);
         "#,
     );
     assert_eq!(
         control(&w, "l").text.as_deref(),
-        Some("A 1 arcsec\r\nCoverage: 58°S ... 60°N")
+        Some("line 1\r\nline 2 ... line 3")
     );
 
     // Escaped quote and backslash.
@@ -316,14 +316,22 @@ fn drops_text_of_user_input_controls() {
     let src = r#"
         this.l = new System.Windows.Forms.Label();
         this.l.Text = "A label";
-        this.tb = new ScoutBase.Core.DoubleTextBox();
-        this.tb.Text = "10.68327000";
+        this.tb = new System.Windows.Forms.TextBox();
+        this.tb.Text = "12.345";
+        this.mtb = new System.Windows.Forms.MaskedTextBox();
+        this.mtb.Text = "12.345";
+        this.dtb = new ScoutBase.Core.DoubleTextBox();
+        this.dtb.Text = "12.345";
         this.Controls.Add(this.l);
         this.Controls.Add(this.tb);
+        this.Controls.Add(this.mtb);
+        this.Controls.Add(this.dtb);
     "#;
     let w = parse_src(src);
     assert_eq!(control(&w, "l").text.as_deref(), Some("A label"));
     assert_eq!(control(&w, "tb").text, None);
+    assert_eq!(control(&w, "mtb").text, None);
+    assert_eq!(control(&w, "dtb").text, None);
     assert!(w.unparsed.is_empty());
 }
 
