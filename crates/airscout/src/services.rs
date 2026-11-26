@@ -142,9 +142,14 @@ pub enum ServiceEvent {
     PathsDone {
         id: u64,
     },
-    /// Event of the feed started with id `feed_id` (see `Services::start_feed`); the app drops
-    /// events of feeds it has replaced.
-    Feed(u64, FeedEvent),
+    /// Event of one feed worker started with generation `id` (see `Services::start_feed`); the
+    /// app drops events of superseded generations. `name` is the feed's registry name, so the
+    /// app can attribute the event to its slot. Credential-free by the as-feeds contract.
+    Feed {
+        id: u64,
+        name: String,
+        event: FeedEvent,
+    },
     /// One Spectrum Lab sample: the time stamp of the FFT and its maximum level [dB].
     Spectrum {
         at: DateTime<Utc>,

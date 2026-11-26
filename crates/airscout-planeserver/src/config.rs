@@ -109,7 +109,7 @@ pub fn default_path() -> PathBuf {
 /// A feed that needs the disclaimer before it may start: not enabled by default, or one that
 /// carries a disclaimer text.
 pub fn feed_needs_disclaimer(f: &dyn as_feeds::PlaneFeed) -> bool {
-    !f.enabled_by_default() || f.disclaimer().is_some()
+    f.needs_disclaimer()
 }
 
 /// Reset a non-finite value to `default`, with a warning.

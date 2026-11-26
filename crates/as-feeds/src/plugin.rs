@@ -119,6 +119,11 @@ pub trait PlaneFeed: Send {
     fn disclaimer(&self) -> Option<&'static str>;
     /// False for feeds that need credentials or use non-public endpoints.
     fn enabled_by_default(&self) -> bool;
+    /// Whether the feed needs the user to accept its disclaimer before it may run: not
+    /// enabled by default, or one that carries a disclaimer text.
+    fn needs_disclaimer(&self) -> bool {
+        !self.enabled_by_default() || self.disclaimer().is_some()
+    }
     /// Current settings as a TOML table (written back to `Settings::feed_settings`).
     fn settings(&self) -> toml::Table;
     /// Keys of [`Self::settings`] that hold credentials. The UI masks them; they never go into

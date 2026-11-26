@@ -1,4 +1,5 @@
-//! The plane feed worker wrapper.
+//! The plane feed worker wrapper: one [`FeedWorker`] per distinct non-empty feed slot, all
+//! writing into the same [`PlaneInfoCache`] (the planeserver approach, `service.rs`).
 
 use crate::services::{AppError, Paths, ServiceEvent};
 use as_aircraft::db::AircraftDb;
@@ -6,23 +7,56 @@ use as_aircraft::positions::PositionDb;
 use as_aircraft::PlaneInfoCache;
 use as_feeds::pipeline::PipelineConfig;
 use as_feeds::registry::feed_by_name;
-use as_feeds::worker::{FeedHandle, FeedWorker, WorkerConfig};
-use as_feeds::FeedArgs;
+use as_feeds::worker::{FeedEvent, FeedHandle, FeedWorker, WorkerConfig};
+use as_feeds::{FeedArgs, PlaneFeed};
 use as_settings::Settings;
 use std::net::SocketAddr;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 
-/// The plane feed worker plus a thread forwarding its events.
-pub struct FeedService {
+/// One running feed: its worker and the thread forwarding its events, tagged with the feed
+/// name so the app can show each feed's state.
+struct Running {
     handle: FeedHandle,
     _forwarder: Option<JoinHandle<()>>,
 }
 
+/// The plane feed workers (one per distinct feed slot) plus their forwarding threads.
+pub struct FeedService {
+    feeds: Vec<Running>,
+}
+
+/// Build one feed of the settings, or the status text of why it does not start.
+fn make_feed(name: &str, settings: &Settings) -> Result<Box<dyn PlaneFeed>, String> {
+    let mut feed = feed_by_name(name).ok_or_else(|| format!("unknown feed ({name})"))?;
+    if feed.needs_disclaimer() && !settings.feeds_disclaimer_accepted.iter().any(|a| a == name) {
+        return Err(format!("disclaimer not accepted ({name})"));
+    }
+    if let Some(v) = settings.feed_settings.get(name) {
+        let t = v
+            .as_table()
+            .ok_or_else(|| format!("feed settings of {name} are not a table"))?;
+        // `FeedError` texts name the key, never a value.
+        feed.load_settings(t).map_err(|e| e.to_string())?;
+    }
+    if name == "AirScoutServer"
+        && settings
+            .feed_settings
+            .get(name)
+            .and_then(|settings| settings.get("url"))
+            .and_then(toml::Value::as_str)
+            .is_none_or(str::is_empty)
+    {
+        return Err("AirScoutServer feed URL is unconfigured".into());
+    }
+    Ok(feed)
+}
+
 impl FeedService {
-    /// Start the feed named in `settings.feed`. `FeedArgs.my_lat/my_lon` are the centre of
-    /// `settings.area`, never the station position: they are sent to some feeds' servers.
+    /// Start every distinct feed named in `settings` (`feed`, `feed2`, `feed3`).
+    /// `FeedArgs.my_lat/my_lon` are the centre of `settings.area`, never the station position:
+    /// they are sent to some feeds' servers.
     pub fn start(
         paths: &Paths,
         settings: &Settings,
@@ -43,16 +77,6 @@ impl FeedService {
         feed_id: u64,
         airscout_listener: Option<SocketAddr>,
     ) -> Result<Self, AppError> {
-        let mut feed = feed_by_name(&settings.feed)
-            .ok_or_else(|| AppError::Other(format!("unknown feed: {}", settings.feed)))?;
-        if let Some(t) = settings
-            .feed_settings
-            .get(feed.name())
-            .and_then(|v| v.as_table())
-        {
-            feed.load_settings(t)
-                .map_err(|e| AppError::Other(format!("feed settings: {e}")))?;
-        }
         let a = &settings.area;
         let dir = &paths.data_dir;
         let args = FeedArgs {
@@ -73,10 +97,6 @@ impl FeedService {
             airscout_listener,
             ..FeedArgs::default()
         };
-        if feed.name() == "AirScoutServer" {
-            feed.start(&args)
-                .map_err(|error| AppError::Other(error.to_string()))?;
-        }
         let cfg = WorkerConfig {
             // 0 would make the worker loop without pause
             interval_s: settings.planes_interval_s.max(1),
@@ -86,34 +106,81 @@ impl FeedService {
                 log_errors: false,
             },
         };
+        // One aircraft and position database shared by every worker, as the single feed does.
         let db = Arc::new(AircraftDb::open(dir)?);
         let positions = if settings.planes_keep_history {
             Some(Arc::new(PositionDb::open(dir)?))
         } else {
             None
         };
-        let (ftx, frx) = std::sync::mpsc::channel();
-        let handle = FeedWorker::spawn(feed, args, cfg, cache, db, positions, ftx);
-        let forwarder = std::thread::Builder::new()
-            .name("feed-forward".into())
-            .spawn(move || {
-                // ends when the worker has finished and dropped its sender
-                for e in frx {
-                    if tx.send(ServiceEvent::Feed(feed_id, e)).is_err() {
-                        break;
-                    }
+
+        let mut feeds = Vec::new();
+        for name in settings.distinct_feeds() {
+            let mut feed = match make_feed(name, settings) {
+                Ok(feed) => feed,
+                Err(text) => {
+                    let _ = tx.send(ServiceEvent::Feed {
+                        id: feed_id,
+                        name: name.to_string(),
+                        event: FeedEvent::Error(text),
+                    });
+                    continue;
                 }
-            })
-            .ok();
-        Ok(Self {
-            handle,
-            _forwarder: forwarder,
-        })
+            };
+            // AirScoutServer validates its URL up front (also the own-listener guard).
+            if feed.name() == "AirScoutServer" {
+                if let Err(error) = feed.start(&args) {
+                    let _ = tx.send(ServiceEvent::Feed {
+                        id: feed_id,
+                        name: name.to_string(),
+                        event: FeedEvent::Error(error.to_string()),
+                    });
+                    continue;
+                }
+            }
+            let (ftx, frx) = std::sync::mpsc::channel();
+            let handle = FeedWorker::spawn(
+                feed,
+                args.clone(),
+                cfg.clone(),
+                cache.clone(),
+                db.clone(),
+                positions.clone(),
+                ftx,
+            );
+            let name = name.to_string();
+            let tx = tx.clone();
+            let forwarder = std::thread::Builder::new()
+                .name("feed-forward".into())
+                .spawn(move || {
+                    // ends when the worker has finished and dropped its sender
+                    for e in frx {
+                        if tx
+                            .send(ServiceEvent::Feed {
+                                id: feed_id,
+                                name: name.clone(),
+                                event: e,
+                            })
+                            .is_err()
+                        {
+                            break;
+                        }
+                    }
+                })
+                .ok();
+            feeds.push(Running {
+                handle,
+                _forwarder: forwarder,
+            });
+        }
+        Ok(Self { feeds })
     }
 
-    /// Ask the worker to stop. Returns at once; `Feed(Stopped)` follows within about a second
+    /// Ask every worker to stop. Returns at once; `Feed(Stopped)` follows within about a second
     /// (after a request in flight).
     pub fn stop(self) {
-        self.handle.stop();
+        for f in self.feeds {
+            f.handle.stop();
+        }
     }
 }

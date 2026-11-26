@@ -59,6 +59,38 @@ pub enum RunMode {
     Playing,
 }
 
+/// The phase of one active plane feed, shown in the status line.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FeedPhase {
+    Starting,
+    Running,
+    Stopped,
+    Error,
+}
+
+/// The status of one active plane feed slot.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FeedState {
+    pub phase: FeedPhase,
+    /// The number of planes of the last report, once one arrived.
+    pub planes: Option<usize>,
+}
+
+impl FeedState {
+    /// The status-line text of this feed, credential-free.
+    fn line(&self, name: &str) -> String {
+        match self.phase {
+            FeedPhase::Running => match self.planes {
+                Some(n) => format!("{name}: {n} planes"),
+                None => format!("{name}: running"),
+            },
+            FeedPhase::Starting => format!("{name}: starting"),
+            FeedPhase::Stopped => format!("{name}: stopped"),
+            FeedPhase::Error => format!("{name}: error"),
+        }
+    }
+}
+
 /// Tab of the right control panel (`tc_Control`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ControlTab {
@@ -187,8 +219,10 @@ pub struct AppState {
     pub analysis_ui: crate::ui::analysis::AnalysisUi,
     pub my_loc_text: String,
     pub dx_loc_text: String,
-    /// Text of the feed LED in the status bar.
+    /// Text of the feed LED in the status bar (one entry per active feed, ` | `-joined).
     pub feed_status: String,
+    /// The state of each active feed slot, keyed by feed name; the status line renders it.
+    feeds: BTreeMap<String, FeedState>,
     /// State and tooltip of each status LED, in status bar order.
     pub leds: Vec<(Led, LedState, String)>,
     /// Background jobs that finished a run since the last (re)start of the workers.
@@ -294,6 +328,7 @@ impl AppState {
             my_loc_text,
             dx_loc_text,
             feed_status: "off".into(),
+            feeds: BTreeMap::new(),
             leds: LEDS
                 .iter()
                 .map(|l| {
@@ -471,7 +506,7 @@ impl AppState {
             self.feed_status = "error".into();
             return Err(e);
         }
-        self.feed_status = "starting".into();
+        self.reset_feed_status();
         self.start_speclab();
         self.last_tick = None;
         self.track_reset();
@@ -515,6 +550,41 @@ impl AppState {
         self.alarm_beeps.clear();
         self.mode = RunMode::Paused;
         self.track_stop();
+        self.feeds.clear();
+        self.feed_status = "off".into();
+    }
+
+    /// One `starting` entry per distinct feed slot, after a successful `start_feed`.
+    fn reset_feed_status(&mut self) {
+        self.feeds = self
+            .settings
+            .distinct_feeds()
+            .into_iter()
+            .map(|n| {
+                (
+                    n.to_string(),
+                    FeedState {
+                        phase: FeedPhase::Starting,
+                        planes: None,
+                    },
+                )
+            })
+            .collect();
+        self.refresh_feed_status();
+    }
+
+    /// Render `feed_status` from the per-feed states.
+    fn refresh_feed_status(&mut self) {
+        if self.feeds.is_empty() {
+            self.feed_status = "off".into();
+        } else {
+            self.feed_status = self
+                .feeds
+                .iter()
+                .map(|(n, f)| f.line(n))
+                .collect::<Vec<_>>()
+                .join(" | ");
+        }
     }
 
     pub fn is_playing(&self) -> bool {
@@ -675,22 +745,31 @@ impl AppState {
                 }
             }
             ServiceEvent::Cat { generation, event } => self.on_cat_event(generation, event),
-            ServiceEvent::Feed(id, _) if id != self.feed_gen => {}
-            ServiceEvent::Feed(_, f) => match f {
-                FeedEvent::Started => self.feed_status = "running".into(),
-                FeedEvent::Planes(p) => self.feed_status = format!("running, {} planes", p.len()),
-                FeedEvent::RejectedRecords(count) => {
-                    self.status = format!("feed: skipped {count} invalid records");
+            ServiceEvent::Feed { id, .. } if id != self.feed_gen => {}
+            ServiceEvent::Feed { name, event, .. } => {
+                if let Some(f) = self.feeds.get_mut(&name) {
+                    match event {
+                        FeedEvent::Started => f.phase = FeedPhase::Running,
+                        FeedEvent::Planes(p) => {
+                            f.phase = FeedPhase::Running;
+                            f.planes = Some(p.len());
+                        }
+                        FeedEvent::RejectedRecords(count) => {
+                            self.status = format!("feed {name}: skipped {count} invalid records");
+                        }
+                        FeedEvent::DroppedRecords(count) => {
+                            self.status =
+                                format!("feed {name}: dropped {count} pending observations");
+                        }
+                        FeedEvent::Error(s) => {
+                            f.phase = FeedPhase::Error;
+                            self.status = format!("feed {name}: {s}");
+                        }
+                        FeedEvent::Stopped => f.phase = FeedPhase::Stopped,
+                    }
+                    self.refresh_feed_status();
                 }
-                FeedEvent::DroppedRecords(count) => {
-                    self.status = format!("feed: dropped {count} pending observations");
-                }
-                FeedEvent::Error(s) => {
-                    self.feed_status = "error".into();
-                    self.status = format!("feed: {s}");
-                }
-                FeedEvent::Stopped => self.feed_status = "off".into(),
-            },
+            }
         }
     }
 

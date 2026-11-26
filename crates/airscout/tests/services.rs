@@ -193,11 +193,14 @@ fn feed_error_reaches_status_and_keeps_cache() {
     let svc = FeedService::start(&paths, &s, cache.clone(), tx, 1).unwrap();
     loop {
         match rx.recv_timeout(WAIT).expect("event") {
-            ServiceEvent::Feed(_, FeedEvent::Error(e)) => {
+            ServiceEvent::Feed {
+                event: FeedEvent::Error(e),
+                ..
+            } => {
                 assert!(e.contains("500"), "{e}");
                 break;
             }
-            ServiceEvent::Feed(..) => {}
+            ServiceEvent::Feed { .. } => {}
             other => panic!("unexpected {other:?}"),
         }
     }
@@ -206,13 +209,95 @@ fn feed_error_reaches_status_and_keeps_cache() {
 }
 
 #[test]
-fn unknown_feed_is_an_error() {
+fn two_feeds_run_in_parallel_and_share_the_cache() {
+    let mut readsb = mockito::Server::new();
+    let _m1 = readsb
+        .mock("GET", "/aircraft.json")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(
+            r#"{"now":1700000000.0,"aircraft":[{"hex":"3c0001","flight":"TEST1","lat":50.5,"lon":11.0,"alt_baro":37000,"gs":450.0,"track":245.0,"seen_pos":0.4}]}"#,
+        )
+        .expect_at_least(1)
+        .create();
+    let mut dump = mockito::Server::new();
+    let _m2 = dump
+        .mock("GET", "/data/aircraft.json")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(
+            r#"{"now":1700000000.0,"aircraft":[{"hex":"4b0002","flight":"TEST2","lat":50.6,"lon":11.1,"altitude":37000,"speed":450.0,"track":245.0,"seen_pos":0.4}]}"#,
+        )
+        .expect_at_least(1)
+        .create();
+    let dir = tempfile::tempdir().unwrap();
+    let paths = open_data(dir.path()).unwrap();
+    let cache = Arc::new(PlaneInfoCache::new());
+    let mut s = settings();
+    s.feed = "Readsb".into();
+    s.feed2 = "Dump1090".into();
+    s.planes_interval_s = 1;
+    let mut r = toml::Table::new();
+    r.insert(
+        "url".into(),
+        format!("{}/aircraft.json", readsb.url()).into(),
+    );
+    s.feed_settings.insert("Readsb".into(), r.into());
+    let mut d = toml::Table::new();
+    d.insert(
+        "url".into(),
+        format!("{}/data/aircraft.json", dump.url()).into(),
+    );
+    s.feed_settings.insert("Dump1090".into(), d.into());
+    let (tx, rx) = channel();
+    let svc = FeedService::start(&paths, &s, cache.clone(), tx, 1).unwrap();
+    let mut seen = std::collections::HashSet::new();
+    loop {
+        match rx.recv_timeout(WAIT).expect("event") {
+            ServiceEvent::Feed {
+                name,
+                event: FeedEvent::Planes(_),
+                ..
+            } => {
+                seen.insert(name);
+                if seen.contains("Readsb") && seen.contains("Dump1090") {
+                    break;
+                }
+            }
+            ServiceEvent::Feed {
+                name,
+                event: FeedEvent::Error(e),
+                ..
+            } => panic!("{name}: {e}"),
+            ServiceEvent::Feed { .. } => {}
+            other => panic!("unexpected {other:?}"),
+        }
+    }
+    assert!(cache.latest("3C0001").is_some(), "Readsb plane missing");
+    assert!(cache.latest("4B0002").is_some(), "Dump1090 plane missing");
+    svc.stop();
+}
+
+#[test]
+fn unknown_feed_reports_an_error_event() {
     let dir = tempfile::tempdir().unwrap();
     let paths = open_data(dir.path()).unwrap();
     let mut s = settings();
     s.feed = "NoSuchFeed".into();
-    let (tx, _rx) = channel();
-    assert!(FeedService::start(&paths, &s, Arc::new(PlaneInfoCache::new()), tx, 1).is_err());
+    let (tx, rx) = channel();
+    let svc = FeedService::start(&paths, &s, Arc::new(PlaneInfoCache::new()), tx, 1).unwrap();
+    match rx.recv_timeout(WAIT).expect("event") {
+        ServiceEvent::Feed {
+            name,
+            event: FeedEvent::Error(e),
+            ..
+        } => {
+            assert_eq!(name, "NoSuchFeed");
+            assert!(e.contains("unknown feed"), "{e}");
+        }
+        other => panic!("unexpected {other:?}"),
+    }
+    svc.stop();
 }
 
 #[test]
@@ -353,9 +438,15 @@ fn finding_329_desktop_start_rejects_its_active_aircraft_listener() {
     };
     settings.server.activate = true;
     settings.web.port = 9872;
-    let (tx, _) = std::sync::mpsc::channel();
-    let error = FeedService::start(&paths, &settings, Arc::new(PlaneInfoCache::new()), tx, 1)
-        .err()
-        .unwrap();
-    assert!(error.to_string().contains("this process"));
+    let (tx, rx) = std::sync::mpsc::channel();
+    let svc =
+        FeedService::start(&paths, &settings, Arc::new(PlaneInfoCache::new()), tx, 1).unwrap();
+    match rx.recv_timeout(WAIT).expect("event") {
+        ServiceEvent::Feed {
+            event: FeedEvent::Error(e),
+            ..
+        } => assert!(e.contains("this process"), "{e}"),
+        other => panic!("unexpected {other:?}"),
+    }
+    svc.stop();
 }

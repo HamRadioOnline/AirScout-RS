@@ -426,21 +426,41 @@ fn late_stopped_of_old_feed_is_ignored() {
     let mut st = state(&rec);
     st.play().unwrap();
     let old = rec.0.borrow().feed_ids[0];
-    st.on_event(ServiceEvent::Feed(old, FeedEvent::Started));
+    st.on_event(ServiceEvent::Feed {
+        id: old,
+        name: "OpenSky".into(),
+        event: FeedEvent::Started,
+    });
     st.pause();
     st.play().unwrap();
     let new = rec.0.borrow().feed_ids[1];
     assert_ne!(old, new);
-    st.on_event(ServiceEvent::Feed(new, FeedEvent::Started));
-    assert_eq!(st.feed_status, "running");
+    st.on_event(ServiceEvent::Feed {
+        id: new,
+        name: "OpenSky".into(),
+        event: FeedEvent::Started,
+    });
+    assert_eq!(st.feed_status, "OpenSky: running");
     // the first worker reports its stop late
-    st.on_event(ServiceEvent::Feed(old, FeedEvent::Stopped));
-    st.on_event(ServiceEvent::Feed(old, FeedEvent::Error("old".into())));
-    assert_eq!(st.feed_status, "running");
+    st.on_event(ServiceEvent::Feed {
+        id: old,
+        name: "OpenSky".into(),
+        event: FeedEvent::Stopped,
+    });
+    st.on_event(ServiceEvent::Feed {
+        id: old,
+        name: "OpenSky".into(),
+        event: FeedEvent::Error("old".into()),
+    });
+    assert_eq!(st.feed_status, "OpenSky: running");
     assert!(!st.status.contains("old"));
     // the current feed's stop still counts
     st.pause();
-    st.on_event(ServiceEvent::Feed(new, FeedEvent::Stopped));
+    st.on_event(ServiceEvent::Feed {
+        id: new,
+        name: "OpenSky".into(),
+        event: FeedEvent::Stopped,
+    });
     assert_eq!(st.feed_status, "off");
 }
 
