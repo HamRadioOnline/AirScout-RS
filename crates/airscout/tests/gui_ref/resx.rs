@@ -8,9 +8,20 @@
 pub fn lookup(resx_xml: &str, key: &str) -> Option<String> {
     let needle = format!("<data name=\"{}\"", key);
     let pos = resx_xml.find(&needle)?;
-    let value_start = pos + resx_xml[pos..].find("<value>")? + "<value>".len();
-    let value_end = value_start + resx_xml[value_start..].find("</value>")?;
-    Some(decode_entities(&resx_xml[value_start..value_end]))
+    // Bound the value search to this `<data>` element only, so a key without a
+    // `<value>` never leaks the next key's value.
+    let data_end = pos + resx_xml[pos..].find("</data>")?;
+    let data = &resx_xml[pos..data_end];
+    let value = data.find("<value")?;
+    let after_value = data[value + "<value".len()..].trim_start();
+    // Self-closing `<value />` / `<value/>` means the empty string.
+    if let Some(rest) = after_value.strip_prefix("/>") {
+        debug_assert!(rest.trim().is_empty());
+        return Some(String::new());
+    }
+    let inner = after_value.strip_prefix('>')?;
+    let value_end = inner.find("</value>")?;
+    Some(decode_entities(&inner[..value_end]))
 }
 
 /// Decode the standard XML entities plus decimal and hex character references.

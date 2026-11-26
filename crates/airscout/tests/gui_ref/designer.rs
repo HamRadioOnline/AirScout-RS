@@ -54,7 +54,7 @@ impl<'a> Parser<'a> {
             return; // `System.ComponentModel…`, `((…)).BeginInit()`, …
         }
         let rest = &stmt["this.".len()..];
-        if let Some(eq) = rest.find('=') {
+        if let Some(eq) = find_assignment_eq(rest) {
             let is_plus = eq > 0 && rest.as_bytes()[eq - 1] == b'+';
             let left = rest[..if is_plus { eq - 1 } else { eq }].trim();
             let right = rest[eq + 1..].trim();
@@ -84,7 +84,9 @@ impl<'a> Parser<'a> {
                 }
                 _ => {
                     if let Some(kind) = kind_from_new(right) {
-                        self.control_mut(name).kind = kind;
+                        if !is_non_control_kind(&kind) {
+                            self.control_mut(name).kind = kind;
+                        }
                     }
                 }
             },
@@ -101,10 +103,15 @@ impl<'a> Parser<'a> {
 
     fn handle_control_prop(&mut self, stmt: &str, name: &str, prop: &str, value: &str) {
         match prop {
-            "Text" => match self.parse_string_expr(value) {
-                Some(s) => self.control_mut(name).text = Some(s),
-                None => self.unparsed(stmt),
-            },
+            "Text" => {
+                if is_settings_binding(value) {
+                    return; // runtime-bound at startup — no static text
+                }
+                match self.parse_string_expr(value) {
+                    Some(s) => self.control_mut(name).text = Some(s),
+                    None => self.unparsed(stmt),
+                }
+            }
             "Location" => match parse_point(value) {
                 Some(v) => self.control_mut(name).location = Some(v),
                 None => self.unparsed(stmt),
@@ -125,10 +132,15 @@ impl<'a> Parser<'a> {
                 Some(v) => self.control_mut(name).visible = v,
                 None => self.unparsed(stmt),
             },
-            "Enabled" => match parse_bool(value) {
-                Some(v) => self.control_mut(name).enabled = v,
-                None => self.unparsed(stmt),
-            },
+            "Enabled" => {
+                if is_settings_binding(value) {
+                    return; // runtime-bound at startup — keeps default `true`
+                }
+                match parse_bool(value) {
+                    Some(v) => self.control_mut(name).enabled = v,
+                    None => self.unparsed(stmt),
+                }
+            }
             "TabIndex" => match parse_i32(value) {
                 Some(v) => self.control_mut(name).tab_index = Some(v),
                 None => self.unparsed(stmt),
@@ -165,6 +177,8 @@ impl<'a> Parser<'a> {
             self.handle_addrange_at(stmt, rest, pos, ".Items.AddRange(", false);
         } else if let Some(pos) = rest.find(".Columns.AddRange(") {
             self.handle_addrange_at(stmt, rest, pos, ".Columns.AddRange(", true);
+        } else if find_outside_strings(rest, ".AddRange(").is_some() {
+            self.unparsed(stmt);
         }
         // `SuspendLayout` / `ResumeLayout` / `PerformLayout` / `DataBindings.Add` — ignored
     }
@@ -215,7 +229,7 @@ impl<'a> Parser<'a> {
     }
 
     fn handle_addrange(&mut self, stmt: &str, parent: &str, content: &str, is_columns: bool) {
-        match parse_addrange(content, is_columns) {
+        match parse_addrange(content, is_columns, self.resx) {
             Some(AddRange::Items(items)) => self.control_mut(parent).items = items,
             Some(AddRange::Children(names)) => {
                 let start = self.counters.get(parent).copied().unwrap_or(0);
@@ -394,6 +408,58 @@ fn skip_verbatim_string(bytes: &[u8], start: usize) -> usize {
     bytes.len()
 }
 
+/// Find the first byte index of `needle` in `s`, ignoring occurrences inside
+/// normal and verbatim string literals.
+fn find_outside_strings(s: &str, needle: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    let needle = needle.as_bytes();
+    let mut i = 0usize;
+    while i + needle.len() <= bytes.len() {
+        match bytes[i] {
+            b'"' => {
+                i = skip_normal_string(bytes, i);
+                continue;
+            }
+            b'@' if i + 1 < bytes.len() && bytes[i + 1] == b'"' => {
+                i = skip_verbatim_string(bytes, i);
+                continue;
+            }
+            _ => {
+                if &bytes[i..i + needle.len()] == needle {
+                    return Some(i);
+                }
+                i += 1;
+            }
+        }
+    }
+    None
+}
+
+/// Find the `=` (or `+=`) of an assignment/event, ignoring `=` inside string
+/// literals and stopping at the first `(`. A Designer assignment/event LHS
+/// (`this.<name>[.Prop]`) never contains `(`, so the first `(` marks a method
+/// call such as `this.cb.Items.AddRange(new object[] { "A = B" })`.
+fn find_assignment_eq(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    let mut i = 0usize;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'"' => {
+                i = skip_normal_string(bytes, i);
+                continue;
+            }
+            b'@' if i + 1 < bytes.len() && bytes[i + 1] == b'"' => {
+                i = skip_verbatim_string(bytes, i);
+                continue;
+            }
+            b'(' => return None,
+            b'=' => return Some(i),
+            _ => i += 1,
+        }
+    }
+    None
+}
+
 /// Parse a normal `"…"` string literal (leading `"`). Returns the decoded text
 /// and the number of bytes consumed.
 fn parse_normal_string(s: &str) -> Option<(String, usize)> {
@@ -515,11 +581,10 @@ fn parse_string_expr(expr: &str, resx: &dyn Fn(&str) -> Option<String>) -> Optio
                 return None;
             }
             let (key, used) = parse_normal_string(inner)?;
-            if !inner[used..].trim_start().starts_with(')') {
-                return None;
-            }
+            let after_key = inner[used..].trim_start();
+            let after_paren = after_key.strip_prefix(')')?;
             out.push_str(&resx(&key)?);
-            rest = &inner[used + 1..];
+            rest = after_paren;
         }
         found = true;
     }
@@ -528,7 +593,7 @@ fn parse_string_expr(expr: &str, resx: &dyn Fn(&str) -> Option<String>) -> Optio
 
 /// Extract the type name (last path segment) from a `new A.B.Type(...)` RHS.
 fn kind_from_new(rhs: &str) -> Option<String> {
-    let idx = rhs.find("new ")?;
+    let idx = find_outside_strings(rhs, "new ")?;
     let after = &rhs[idx + "new ".len()..];
     let type_path: String = after
         .chars()
@@ -536,6 +601,17 @@ fn kind_from_new(rhs: &str) -> Option<String> {
         .collect();
     let last = type_path.split('.').next_back()?;
     (!last.is_empty()).then(|| last.to_string())
+}
+
+/// Value types and other non-control types assigned on the form itself
+/// (`this.AutoScaleDimensions = new …SizeF`, `this.components = new …Container`,
+/// `this.MinimumSize = new …Size`, …). These are not UI controls and must not
+/// become entries in [`model::Window::controls`].
+fn is_non_control_kind(kind: &str) -> bool {
+    matches!(
+        kind,
+        "SizeF" | "Size" | "Point" | "Font" | "Padding" | "Container"
+    )
 }
 
 /// Parse `new <…>.Point(a, b)` into `[a, b]`.
@@ -623,8 +699,22 @@ fn parse_i32(expr: &str) -> Option<i32> {
     expr.trim().parse().ok()
 }
 
+/// True when `value` is a runtime-bound application setting
+/// (`global::AirScout.Properties.Settings.Default.<Key>` or
+/// `Properties.Settings.Default.<Key>`). These are resolved at startup, so the
+/// parser records no static value instead of flagging them as unreadable.
+fn is_settings_binding(value: &str) -> bool {
+    let v = value.trim();
+    v.starts_with("global::AirScout.Properties.Settings.Default.")
+        || v.starts_with("Properties.Settings.Default.")
+}
+
 /// Parse an `AddRange` argument: `new <type>[] { … }`.
-fn parse_addrange(content: &str, is_columns: bool) -> Option<AddRange> {
+fn parse_addrange(
+    content: &str,
+    is_columns: bool,
+    resx: &dyn Fn(&str) -> Option<String>,
+) -> Option<AddRange> {
     let idx = content.find("new ")?;
     let after = &content[idx + "new ".len()..];
     let array_type: String = after
@@ -642,7 +732,7 @@ fn parse_addrange(content: &str, is_columns: bool) -> Option<AddRange> {
     if is_items {
         let mut strings = Vec::with_capacity(elements.len());
         for el in &elements {
-            strings.push(parse_literal_string(el)?);
+            strings.push(parse_string_expr(el, resx)?);
         }
         Some(AddRange::Items(strings))
     } else {
@@ -655,18 +745,6 @@ fn parse_addrange(content: &str, is_columns: bool) -> Option<AddRange> {
             names.push(name.to_string());
         }
         Some(AddRange::Children(names))
-    }
-}
-
-/// Parse one array element as a plain (normal or verbatim) string literal.
-fn parse_literal_string(el: &str) -> Option<String> {
-    let el = el.trim();
-    if el.starts_with("@\"") {
-        parse_verbatim_string(el).map(|(s, _)| s)
-    } else if el.starts_with('"') {
-        parse_normal_string(el).map(|(s, _)| s)
-    } else {
-        None
     }
 }
 
