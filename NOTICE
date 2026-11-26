@@ -19,6 +19,9 @@ BouncyCastle, DotNetZip, AeroWizard, NDDE and others, under MIT, CPOL,
 Ms-PL and other licenses) are not part of this port; their functionality
 is provided by Rust crates under their own licenses.
 
+The desktop map's plane icon (crates/airscout/assets/plane_alpha.bin) is
+the alpha channel of the original's AirScout/plane.png.
+
 The web page that AirScout-RS serves (crates/as-web/assets) is a subset
 of the AirScout web UI (AirScout/wwwroot, GPL-3.0). It bundles jQuery,
 Chart.js, CoreUI (template, core, Chart.js plugin and utils), SimpleBar,

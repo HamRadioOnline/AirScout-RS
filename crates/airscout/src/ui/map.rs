@@ -1,8 +1,8 @@
 //! Central map: OSM tiles, distance rings, locator grid, path, beam wedges and live planes.
 //!
 //! The overlay geometry (`crate::overlays`) is computed once per path / settings change and kept
-//! in [`MapView`]; a frame only projects the cached points and paints them. Planes are plain
-//! rotated triangles.
+//! in [`MapView`]; a frame only projects the cached points and paints them. Planes are the
+//! upstream plane icon, recoloured by potential and rotated along their track.
 
 use crate::app::AppState;
 use crate::overlays::{self, LocatorCell, PathOverlay};
@@ -16,11 +16,57 @@ use as_maps::TileStore;
 use as_settings::Secret;
 use chrono::Utc;
 use eframe::egui::{
-    self, Align2, Color32, FontId, Painter, Pos2, Rect, Shape, Stroke, StrokeKind, Vec2,
+    self, Align2, Color32, ColorImage, FontId, Mesh, Painter, Pos2, Rect, Shape, Stroke,
+    StrokeKind, TextureHandle, TextureId, TextureOptions, Vec2,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
 use walkers::{lon_lat, Map, MapMemory, Projector, StyledSources};
+
+/// Alpha channel of the upstream plane icon (`AirScout/plane.png`, 128 x 128, nose up): the
+/// icon is a black silhouette, so only its alpha matters (`CreatePlaneIcon` keeps the alpha and
+/// replaces the colour).
+const PLANE_ALPHA: &[u8; PLANE_ICON_SIDE * PLANE_ICON_SIDE] =
+    include_bytes!("../../assets/plane_alpha.bin");
+const PLANE_ICON_SIDE: usize = 128;
+
+/// The plane icon as a white image with the upstream alpha, so a tint gives the exact colour.
+pub fn plane_icon_image() -> ColorImage {
+    let rgba: Vec<u8> = PLANE_ALPHA
+        .iter()
+        .flat_map(|&a| [255, 255, 255, a])
+        .collect();
+    ColorImage::from_rgba_unmultiplied([PLANE_ICON_SIDE, PLANE_ICON_SIDE], &rgba)
+}
+
+/// A `size` x `size` square centred on `c`, rotated by `track` (degrees clockwise from north,
+/// as `RotateImageByAngle`; a track outside 0..=360 draws north up), textured with `tex` and
+/// tinted `fill`.
+pub fn plane_icon_mesh(tex: TextureId, c: Pos2, size: f32, track: f64, fill: Color32) -> Mesh {
+    let track = if (0.0..=360.0).contains(&track) {
+        track
+    } else {
+        0.0
+    };
+    let (sin, cos) = (track as f32).to_radians().sin_cos();
+    let h = size / 2.0;
+    let rot = |x: f32, y: f32| c + Vec2::new(x * cos - y * sin, x * sin + y * cos);
+    let mut mesh = Mesh::with_texture(tex);
+    for (x, y, u, v) in [
+        (-h, -h, 0.0, 0.0),
+        (h, -h, 1.0, 0.0),
+        (h, h, 1.0, 1.0),
+        (-h, h, 0.0, 1.0),
+    ] {
+        mesh.vertices.push(egui::epaint::Vertex {
+            pos: rot(x, y),
+            uv: Pos2::new(u, v),
+            color: fill,
+        });
+    }
+    mesh.indices.extend_from_slice(&[0, 1, 2, 0, 2, 3]);
+    mesh
+}
 
 /// Locator cells are labelled when at least this wide [px].
 const LABEL_MIN_CELL_PX: f32 = 40.0;
@@ -70,6 +116,8 @@ pub struct MapView {
     was_auto_center: bool,
     /// The first frame zooms to the configured area.
     initialized: bool,
+    /// The plane icon texture, loaded on the first frame.
+    plane_tex: Option<TextureHandle>,
 }
 
 impl MapView {
@@ -92,6 +140,7 @@ impl MapView {
             fit_requested: false,
             was_auto_center: false,
             initialized: false,
+            plane_tex: None,
         }
     }
 
@@ -163,8 +212,15 @@ impl MapView {
             tiles,
             overlays,
             provider,
+            plane_tex,
             ..
         } = self;
+        let plane_tex = plane_tex
+            .get_or_insert_with(|| {
+                ui.ctx()
+                    .load_texture("plane-icon", plane_icon_image(), TextureOptions::LINEAR)
+            })
+            .id();
         let mut map = Map::new(None, memory, lon_lat(my_pos.lon, my_pos.lat));
         if let Some(t) = tiles.as_mut() {
             map = map.with_layer(t, state.settings.gui.map_opacity);
@@ -175,6 +231,7 @@ impl MapView {
                 projector,
                 state,
                 overlays,
+                plane_tex,
             };
             let hit = f.draw(response);
             // below the Fit button
@@ -308,6 +365,7 @@ struct Frame<'a> {
     projector: &'a Projector<'a>,
     state: &'a AppState,
     overlays: &'a mut Overlays,
+    plane_tex: TextureId,
 }
 
 impl Frame<'_> {
@@ -489,17 +547,15 @@ impl Frame<'_> {
         None
     }
 
-    /// Triangle pointing along `track` (degrees clockwise from north).
+    /// The plane icon pointing along `track` (degrees clockwise from north).
     fn plane_icon(&self, c: Pos2, size: f32, track: f64, fill: Color32) {
-        let (sin, cos) = (track as f32).to_radians().sin_cos();
-        let rot = |x: f32, y: f32| c + Vec2::new(x * cos - y * sin, x * sin + y * cos);
-        let h = size / 2.0;
-        let pts = vec![rot(0.0, -h), rot(-h * 0.7, h * 0.7), rot(h * 0.7, h * 0.7)];
-        self.painter.add(Shape::convex_polygon(
-            pts,
+        self.painter.add(Shape::mesh(plane_icon_mesh(
+            self.plane_tex,
+            c,
+            size,
+            track,
             fill,
-            Stroke::new(1.0, Color32::BLACK),
-        ));
+        )));
     }
 }
 
