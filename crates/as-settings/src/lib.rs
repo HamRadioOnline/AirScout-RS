@@ -338,6 +338,10 @@ pub struct Settings {
     pub planes_max_alt_m: i32,
     /// Name of the active plane feed. Default is the key-free OpenSky feed.
     pub feed: String,
+    /// Name of the second plane feed slot (`Planes_PlaneFeed2`); "" means none.
+    pub feed2: String,
+    /// Name of the third plane feed slot (`Planes_PlaneFeed3`); "" means none.
+    pub feed3: String,
     /// `Planes_Interval` [s]: pause between two feed requests.
     pub planes_interval_s: u64,
     /// `Planes_Position_TTL` [min]: how long a reported position stays valid.
@@ -407,6 +411,8 @@ impl Default for Settings {
             planes_min_alt_m: 5000,
             planes_max_alt_m: 12200,
             feed: "OpenSky".into(),
+            feed2: String::new(),
+            feed3: String::new(),
             planes_interval_s: 60,
             planes_position_ttl_min: 5,
             planes_keep_history: false,
@@ -523,6 +529,22 @@ impl Settings {
     /// Equivalent earth radius [km] for the current band.
     pub fn radius_km(&self) -> f64 {
         EARTH_RADIUS_KM * self.current_band_settings().k_factor
+    }
+
+    /// The three feed slot names in order (`feed`, `feed2`, `feed3`).
+    pub fn feed_slots(&self) -> [&str; 3] {
+        [self.feed.as_str(), self.feed2.as_str(), self.feed3.as_str()]
+    }
+
+    /// The distinct non-empty feed slots, in order. Empty slots (and the `[none]` sentinel)
+    /// are skipped, and a slot equal to an earlier one is ignored: one worker runs per
+    /// distinct feed.
+    pub fn distinct_feeds(&self) -> Vec<&str> {
+        let mut seen = std::collections::HashSet::new();
+        self.feed_slots()
+            .into_iter()
+            .filter(|n| !n.is_empty() && *n != "[none]" && seen.insert(*n))
+            .collect()
     }
 
     /// 6-character locator of my position (`None` if the position is invalid).
