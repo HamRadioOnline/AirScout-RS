@@ -48,6 +48,18 @@ cargo test --workspace --locked
 - Changes to prediction behaviour need a test and an entry in `docs/logic-findings.md`. This
   covers propagation, elevation, the crossing calculation and the aircraft positions.
 
+## Releases
+
+A pushed tag builds plain, unpackaged binaries for Linux x86_64, Windows x64 and macOS (Apple
+silicon and Intel) on GitHub-hosted runners and publishes them as a release
+(`.github/workflows/release.yml`):
+
+- `vX.Y.Z` is a release. `alpha-vX.Y.Z-<suffix>` and `beta-vX.Y.Z-<suffix>` are pre-releases.
+- `X.Y.Z` must equal the workspace version in `Cargo.toml`, or the workflow stops.
+- Use an annotated tag: its message opens the release notes, followed by the commits on `main`
+  since the previous tag, merged pull requests, the download list and `SHA256SUMS`.
+- The binaries are not signed.
+
 ## License
 
 By contributing you agree that your contribution is licensed under GPL-3.0-only, like the rest

@@ -1,0 +1,299 @@
+name: Tagged Release
+
+# A tag builds plain, unpackaged binaries for Linux, Windows and macOS and publishes them
+# as a GitHub release. Tags:
+#   vX.Y.Z                 a release
+#   alpha-vX.Y.Z-<suffix>  an alpha, published as a pre-release
+#   beta-vX.Y.Z-<suffix>   a beta, published as a pre-release
+# X.Y.Z must equal the workspace version in Cargo.toml.
+# Only GitHub-hosted runners: a tag is pushed by a maintainer, and the self-hosted
+# runner never builds release artefacts.
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "alpha-v*"
+      - "beta-v*"
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  # A tag whose X.Y.Z differs from Cargo.toml would ship binaries that report another
+  # version than their file names. Fail before an hour of building.
+  check-tag:
+    name: Check tag
+    runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.tag.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          elif [[ "$TAG" =~ ^(alpha|beta)-v([0-9]+\.[0-9]+\.[0-9]+)-[A-Za-z0-9.]+$ ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Tag '$TAG' is neither vX.Y.Z nor alpha-/beta-vX.Y.Z-<suffix>"
+            exit 1
+          fi
+          TAG_VERSION="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' <<<"$TAG" | head -1)"
+          CARGO_VERSION="$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"/\1/p' Cargo.toml)"
+          if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
+            echo "::error::Tag version $TAG_VERSION differs from the Cargo.toml version $CARGO_VERSION"
+            exit 1
+          fi
+          echo "Tag $TAG, version $CARGO_VERSION"
+
+  # The same gate as ci.yml, on hosted runners: no artefact from a failing commit.
+  test:
+    name: Test (${{ matrix.os }})
+    needs: check-tag
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-22.04, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends pkg-config libasound2-dev libgtk-3-dev libayatana-appindicator3-dev libxdo-dev
+      - uses: Swatinem/rust-cache@v2
+      - if: runner.os == 'Linux'
+        run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+
+  build:
+    name: Build (${{ matrix.name }})
+    needs: test
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          # 22.04 keeps the glibc requirement low enough for older distributions.
+          - name: linux-x86_64
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - name: windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - name: macos-arm64
+            os: macos-latest
+            target: aarch64-apple-darwin
+          - name: macos-x86_64
+            os: macos-latest
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends pkg-config libasound2-dev libgtk-3-dev libayatana-appindicator3-dev libxdo-dev
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+      - name: Build release binaries
+        run: cargo build --workspace --bins --release --locked --target ${{ matrix.target }}
+      - name: Assemble archive
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+          NAME: ${{ matrix.name }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          EXE=""
+          [ "$RUNNER_OS" = "Windows" ] && EXE=".exe"
+          DIR="AirScout-RS-${TAG}-${NAME}"
+          mkdir -p "dist/$DIR"
+          for bin in airscout airscout-planeserver airscout-cli catcheck elevation-tile-gen maptile-gen; do
+            cp "target/$TARGET/release/${bin}${EXE}" "dist/$DIR/"
+          done
+          cp README.md LICENSE NOTICE "dist/$DIR/"
+          cd dist
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            7z a -tzip -bso0 "$DIR.zip" "$DIR"
+          else
+            tar -czf "$DIR.tar.gz" "$DIR"
+          fi
+          rm -rf "$DIR"
+          ls -l
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish release
+    needs: [check-tag, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history and tags, needed to list the commits since the previous tag.
+          fetch-depth: 0
+
+      # The body, in the style of the KST4Contest release notes:
+      #   <tag message>          (annotated tags only; signature dropped)
+      #   <pre-release notice>   (alpha and beta tags)
+      #   ## What's Changed
+      #   ### Commits on main    (first-parent commits since the previous tag, no merges, no bots)
+      #   ### Merged PRs         (GitHub's generated PR list)
+      #   ## Downloads           (one line per archive, then the checksum file)
+      - name: Build release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.check-tag.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          # Releases compare against the previous release; alphas and betas against the
+          # previous tag of any kind.
+          if [ "$PRERELEASE" = "true" ]; then
+            PREVIOUS_TAG="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)"
+          else
+            PREVIOUS_TAG="$(git describe --tags --abbrev=0 --exclude 'alpha-*' --exclude 'beta-*' "${TAG}^" 2>/dev/null || true)"
+          fi
+          echo "Previous tag: ${PREVIOUS_TAG:-<none>}"
+          RANGE="$TAG"
+          [ -n "$PREVIOUS_TAG" ] && RANGE="${PREVIOUS_TAG}..${TAG}"
+
+          # actions/checkout can leave the tag as a lightweight ref; fetch the tag object.
+          git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          : > tag-message.md
+          if [ "$(git cat-file -t "refs/tags/${TAG}")" = "tag" ]; then
+            git for-each-ref "refs/tags/${TAG}" \
+              --format='%(contents:subject)%0a%0a%(contents:body)' > tag-message.md
+          fi
+
+          git log --first-parent --no-merges --format='%an%x09%s' "$RANGE" \
+            | awk -F '\t' '$1 != "github-actions[bot]" { print $2 }' \
+            | grep -Ev '\(#[0-9]+\)$' \
+            | sed 's/^/* /' > direct-commits.md || true
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+              -f tag_name="$TAG" -f previous_tag_name="$PREVIOUS_TAG" --jq .body > generated-notes.md
+          else
+            gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+              -f tag_name="$TAG" --jq .body > generated-notes.md
+          fi
+
+          python3 - <<'PY'
+          import os, re
+
+          tag = os.environ["TAG"]
+          prerelease = os.environ["PRERELEASE"] == "true"
+          commits = open("direct-commits.md", encoding="utf-8").read().strip()
+          tag_message = open("tag-message.md", encoding="utf-8").read().strip()
+          generated = open("generated-notes.md", encoding="utf-8").read()
+
+          # GitHub's body: "## What's Changed" with the PR list, optionally
+          # "## New Contributors", and a closing "**Full Changelog**" line.
+          prs, rest, section = [], [], None
+          for line in generated.splitlines():
+              if re.match(r"^##\s+What's Changed", line):
+                  section = "prs"
+                  continue
+              if line.startswith("## ") or line.startswith("**Full Changelog**"):
+                  section = "rest"
+              if section == "prs":
+                  if line.strip():
+                      prs.append(line)
+              elif line.strip() or rest:
+                  rest.append(line)
+
+          parts = []
+          if tag_message:
+              parts.append(tag_message)
+          if prerelease:
+              parts.append(
+                  "> **Pre-release.** Plain, unpackaged and unsigned binaries for testing. "
+                  "macOS: remove the quarantine flag with `xattr -dr com.apple.quarantine <folder>`. "
+                  "Windows: SmartScreen asks once (More info, Run anyway). "
+                  "Linux: needs GTK 3 and ALSA; the tray icon needs libayatana-appindicator3."
+              )
+          if commits or prs:
+              parts.append("## What's Changed")
+              if commits:
+                  parts.append("### Commits on main\n" + commits)
+              if prs:
+                  parts.append("### Merged PRs\n" + "\n".join(prs))
+          parts.append(
+              "## Downloads\n"
+              f"* `AirScout-RS-{tag}-linux-x86_64.tar.gz` — Linux x86_64 (glibc 2.35 or newer)\n"
+              f"* `AirScout-RS-{tag}-windows-x86_64.zip` — Windows 10/11 x64\n"
+              f"* `AirScout-RS-{tag}-macos-arm64.tar.gz` — macOS on Apple silicon\n"
+              f"* `AirScout-RS-{tag}-macos-x86_64.tar.gz` — macOS on Intel\n"
+              "* `SHA256SUMS` — checksums of the archives\n\n"
+              "Each archive holds `airscout`, `airscout-planeserver`, `airscout-cli`, `catcheck`, "
+              "`elevation-tile-gen` and `maptile-gen`, with README, LICENSE and NOTICE. "
+              "AirScout-RS is a port of AirScout by DL2ALF (GPL-3.0-only)."
+          )
+          if rest:
+              parts.append("\n".join(rest).strip())
+
+          with open("release-notes.md", "w", encoding="utf-8") as out:
+              out.write("\n\n".join(parts) + "\n")
+          PY
+
+          cat release-notes.md
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: release-assets
+        run: |
+          sha256sum AirScout-RS-* > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.check-tag.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          case "$TAG" in
+            alpha-*) TITLE="Alpha $TAG" ;;
+            beta-*) TITLE="Beta $TAG" ;;
+            *) TITLE="Release $TAG" ;;
+          esac
+          FLAGS=(--verify-tag --title "$TITLE" --notes-file release-notes.md)
+          if [ "$PRERELEASE" = "true" ]; then
+            FLAGS+=(--prerelease --latest=false)
+          else
+            FLAGS+=(--latest)
+          fi
+          gh release create "$TAG" "${FLAGS[@]}" release-assets/*
