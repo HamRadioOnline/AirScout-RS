@@ -40,10 +40,11 @@ jobs:
       - run: cargo test --workspace --locked
 
   # Windows cross build (mingw): catches compile and lint errors of the GNU target early.
+  # 24.04: the mingw binutils of 22.04 (2.38) reject the `-exclude-symbols` directive rustc emits.
   windows-cross:
     name: build (x86_64-pc-windows-gnu)
     needs: linux
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
