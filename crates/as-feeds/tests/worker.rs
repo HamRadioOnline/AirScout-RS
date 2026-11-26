@@ -256,11 +256,12 @@ fn worker_promotes_pending_reports_on_error_and_quiet_cycles_without_regressing(
     let mut baseline_same_hex = plane();
     baseline_same_hex.time = Some(t0 - ChronoDuration::seconds(1));
     // beyond the 10 s admission window (#376): held on the first cycle, then eligible on the
-    // error cycle (receipt ~t0 + 1 s, cutoff ~t0 + 11 s) and the quiet cycle respectively.
+    // error cycle (receipt ~t0 + 3 s, cutoff ~t0 + 13 s) and the quiet cycle (cutoff ~t0 + 16 s)
+    // respectively. A 3 s interval leaves 2 s of slack for a slow runner's start-up delay.
     let mut during_error = plane_for("3C0002");
-    during_error.time = Some(t0 + ChronoDuration::milliseconds(10500));
+    during_error.time = Some(t0 + ChronoDuration::seconds(12));
     let mut pending_quiet = plane_for("3C0003");
-    pending_quiet.time = Some(t0 + ChronoDuration::milliseconds(11500));
+    pending_quiet.time = Some(t0 + ChronoDuration::seconds(15));
 
     let feed = FakeFeed {
         script: VecDeque::from([
@@ -278,7 +279,7 @@ fn worker_promotes_pending_reports_on_error_and_quiet_cycles_without_regressing(
     let h = FeedWorker::spawn(
         Box::new(feed),
         a,
-        cfg(1),
+        cfg(3),
         cache.clone(),
         db.clone(),
         Some(positions.clone()),
