@@ -91,7 +91,11 @@ pub struct WtMessage {
 pub struct Decoded {
     pub msg: WtMessage,
     pub checksum: u8,
+    /// The raw trailing byte equals the checksum of the bytes before it.
     pub checksum_ok: bool,
+    /// The trailing byte has bit 7 set, so it is a Win-Test checksum. A sender without a
+    /// checksum (KST4Contest ends the payload in a space) leaves it below 0x80.
+    pub has_checksum: bool,
 }
 
 #[derive(thiserror::Error, Debug, PartialEq, Eq)]
@@ -137,7 +141,8 @@ pub fn encode(m: &WtMessage) -> Option<Vec<u8>> {
     Some(b)
 }
 
-/// `FromBytes` (`WinTest.cs:69-103`). The checksum is reported, never enforced.
+/// `FromBytes` (`WinTest.cs:69-103`). The checksum is reported here; the receiver drops a
+/// datagram whose checksum byte is wrong (#194).
 pub fn decode(bytes: &[u8]) -> Result<Decoded, DecodeError> {
     let Some(&last) = bytes.last() else {
         return Err(DecodeError::Empty);
@@ -169,5 +174,6 @@ pub fn decode(bytes: &[u8]) -> Result<Decoded, DecodeError> {
         },
         checksum: cs,
         checksum_ok: last == checksum(&bytes[..bytes.len() - 1]),
+        has_checksum: last >= 0x80,
     })
 }

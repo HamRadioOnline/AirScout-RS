@@ -142,6 +142,31 @@ fn decode_bit7_only_corruption_fails_checksum() {
     assert_eq!(d.msg.data, PATH);
     assert!(!d.checksum_ok);
     assert_eq!(d.checksum, 0xB0);
+    // a trailing byte below 0x80 cannot be a Win-Test checksum: the datagram reads as one
+    // without a checksum (#194, tolerant check)
+    assert!(!d.has_checksum);
+}
+
+#[test]
+fn decode_without_checksum_kst4c() {
+    // KST4Contest sends no checksum byte: the payload ends in a space (0x20).
+    let d = decode(b"ASSETPATH: \"KST\" \"AS\" 1440000,TE1ST,JO50AA,TE2ND,JO60AA ").unwrap();
+    assert_eq!(d.msg.kind, WtKind::AsSetPath);
+    assert_eq!(d.msg.dst, "AS");
+    assert_eq!(d.msg.data, "1440000,TE1ST,JO50AA,TE2ND,JO60AA");
+    assert!(!d.has_checksum);
+    assert!(!d.checksum_ok);
+}
+
+#[test]
+fn decode_wrong_checksum_with_bit7_is_a_checksum() {
+    let d = decode(&golden(
+        &format!("ASSETPATH: \"KST\" \"AS\" \"{PATH}\"?"),
+        0x81,
+    ))
+    .unwrap();
+    assert!(d.has_checksum);
+    assert!(!d.checksum_ok);
 }
 
 #[test]

@@ -149,15 +149,28 @@ fn other_destination_is_ignored() {
 #[test]
 fn corrupt_datagram_is_dropped_before_any_handler() {
     let r = rig(false);
-    // Encode a valid SHOW path, then corrupt only bit 7 of the trailing checksum byte. The
-    // receiver must drop it before any handler runs (#194).
+    // Encode a valid SHOW path, then corrupt the trailing checksum byte (bit 7 stays set, so it
+    // is still a checksum). The receiver must drop it before any handler runs (#194).
     let mut bytes = msg(WtKind::AsShowPath, "KST", "AS", SHOW);
-    *bytes.last_mut().unwrap() &= 0x7F;
-    assert!(!decode(&bytes).unwrap().checksum_ok);
+    *bytes.last_mut().unwrap() ^= 0x01;
+    let d = decode(&bytes).unwrap();
+    assert!(d.has_checksum && !d.checksum_ok);
     send(&r, &bytes);
     assert_eq!(next_cmd(&r, 1), None);
     // The correct datagram is handled.
     send(&r, &msg(WtKind::AsShowPath, "KST", "AS", SHOW));
+    assert!(matches!(
+        next_cmd(&r, 10),
+        Some(WinTestCommand::ShowPath(_))
+    ));
+}
+
+/// KST4Contest sends ASSHOWPATH without a checksum byte (the payload ends in a space). Such a
+/// datagram is handled, as by the C# receiver (#194, tolerant check).
+#[test]
+fn datagram_without_checksum_is_handled() {
+    let r = rig(false);
+    send(&r, format!("ASSHOWPATH: \"KST\" \"AS\" {SHOW} ").as_bytes());
     assert!(matches!(
         next_cmd(&r, 10),
         Some(WinTestCommand::ShowPath(_))

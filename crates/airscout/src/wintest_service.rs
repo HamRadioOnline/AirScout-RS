@@ -265,11 +265,12 @@ pub fn prepare_remove_watch(data: &str) -> RemoveWatch {
     RemoveWatch::Calls(data.split(',').skip(1).map(trim_upper).collect())
 }
 
-/// Handles one decoded datagram. Only messages for this server's name are looked at; a corrupt
-/// datagram is dropped before any handler runs (#194), and the source is not checked (1:1).
-/// Errors are dropped (upstream logs them).
+/// Handles one decoded datagram. Only messages for this server's name are looked at; a datagram
+/// whose checksum byte is wrong is dropped before any handler runs (#194). A datagram without a
+/// checksum (trailing byte below 0x80, as KST4Contest sends) is handled, as upstream does. The
+/// source is not checked (1:1). Errors are dropped (upstream logs them).
 pub fn dispatch(d: &Decoded, cfg: &WinTestConfig, ctx: &WinTestCtx, cancel: &AtomicBool) {
-    if !d.checksum_ok {
+    if d.has_checksum && !d.checksum_ok {
         return;
     }
     if d.msg.dst != cfg.server_name {
