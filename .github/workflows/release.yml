@@ -22,6 +22,10 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: "0"
+  # Without debug info the test build fits the hosted runners: with it, ld ran out of memory
+  # on ubuntu-22.04 (signal 7). Release builds carry no debug info anyway.
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
 
 jobs:
   # A tag whose X.Y.Z differs from Cargo.toml would ship binaries that report another
