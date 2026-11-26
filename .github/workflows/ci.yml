@@ -15,37 +15,53 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: "0"
+  # Without debug info the test build fits the hosted runners (ld ran out of memory with it).
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
 
 jobs:
-  # Self-hosted Linux runner: the full gate on every push.
-  # Pull requests from forks never run on the self-hosted runner.
+  # The full gate on every push, on a GitHub-hosted runner.
   linux:
-    name: test (self-hosted linux)
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, X64]
-    timeout-minutes: 120
+    name: test (ubuntu)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare runner
-        run: .github/scripts/ci-prepare.sh
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Linux build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends pkg-config libasound2-dev libgtk-3-dev libayatana-appindicator3-dev libxdo-dev
+      - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
 
-  # Windows cross build on the self-hosted runner: catches compile and lint errors early.
+  # Windows cross build (mingw): catches compile and lint errors of the GNU target early.
   windows-cross:
-    name: build (self-hosted, x86_64-pc-windows-gnu)
+    name: build (x86_64-pc-windows-gnu)
     needs: linux
-    runs-on: [self-hosted, X64]
-    timeout-minutes: 120
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare runner
-        run: .github/scripts/ci-prepare.sh x86_64-pc-windows-gnu
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: x86_64-pc-windows-gnu
+      - name: mingw toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-gnu
       - run: cargo clippy --workspace --all-targets --locked --target x86_64-pc-windows-gnu -- -D warnings
       - run: cargo build --workspace --all-targets --locked --target x86_64-pc-windows-gnu
 
-  # Real macOS and Windows tests on GitHub-hosted runners, only for main and pull requests.
+  # Real macOS and Windows tests, only for main, pull requests and manual runs.
   hosted:
     name: test (${{ matrix.os }})
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'

@@ -6,8 +6,7 @@ name: Tagged Release
 #   alpha-vX.Y.Z-<suffix>  an alpha, published as a pre-release
 #   beta-vX.Y.Z-<suffix>   a beta, published as a pre-release
 # X.Y.Z must equal the workspace version in Cargo.toml.
-# Only GitHub-hosted runners: a tag is pushed by a maintainer, and the self-hosted
-# runner never builds release artefacts.
+# GitHub-hosted runners only.
 
 on:
   push:
