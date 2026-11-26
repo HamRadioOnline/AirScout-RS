@@ -1,0 +1,82 @@
+[
+  {
+    "ICAO": "EKYT",
+    "IATA": "AAL",
+    "Lat": 57.092781,
+    "Lon": 9.849164,
+    "Alt": 10.0,
+    "Airport": "Aalborg Airport",
+    "Country": "Denmark",
+    "LastUpdated": "2019-03-08T19:05:45Z"
+  },
+  {
+    "ICAO": "EHAM",
+    "IATA": "AMS",
+    "Lat": 52.308609,
+    "Lon": 4.763889,
+    "Alt": 11.0,
+    "Airport": "Amsterdam Schiphol Airport",
+    "Country": "Netherlands",
+    "LastUpdated": "2019-03-08T19:05:46Z"
+  },
+  {
+    "ICAO": "LFPG",
+    "IATA": "CDG",
+    "Lat": 49.012516,
+    "Lon": 2.555752,
+    "Alt": 392.0,
+    "Airport": "Paris Charles de Gaulle Airport",
+    "Country": "France",
+    "LastUpdated": "2019-03-08T19:06:18Z"
+  },
+  {
+    "ICAO": "EDDF",
+    "IATA": "FRA",
+    "Lat": 50.037796,
+    "Lon": 8.555783,
+    "Alt": 364.0,
+    "Airport": "Frankfurt Airport",
+    "Country": "Germany",
+    "LastUpdated": "2019-03-08T19:05:56Z"
+  },
+  {
+    "ICAO": "EGLL",
+    "IATA": "LHR",
+    "Lat": 51.471626,
+    "Lon": -0.467081,
+    "Alt": 83.0,
+    "Airport": "London Heathrow Airport",
+    "Country": "United Kingdom",
+    "LastUpdated": "2019-03-08T19:06:05Z"
+  },
+  {
+    "ICAO": "EDDM",
+    "IATA": "MUC",
+    "Lat": 48.353779,
+    "Lon": 11.78608,
+    "Alt": 1487.0,
+    "Airport": "Munich Airport",
+    "Country": "Germany",
+    "LastUpdated": "2019-03-08T19:06:15Z"
+  },
+  {
+    "ICAO": "LOWW",
+    "IATA": "VIE",
+    "Lat": 48.110271,
+    "Lon": 16.569719,
+    "Alt": 600.0,
+    "Airport": "Vienna International Airport",
+    "Country": "Austria",
+    "LastUpdated": "2019-03-08T19:06:30Z"
+  },
+  {
+    "ICAO": "LSZH",
+    "IATA": "ZRH",
+    "Lat": 47.464722,
+    "Lon": 8.549167,
+    "Alt": 1416.0,
+    "Airport": "Zurich Airport",
+    "Country": "Switzerland",
+    "LastUpdated": "2019-03-08T19:06:32Z"
+  }
+]

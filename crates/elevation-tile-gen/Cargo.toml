@@ -1,0 +1,31 @@
+[package]
+name = "elevation-tile-gen"
+description = "AirScout-RS elevation tile generator: .loc tiles from SRTM and GLOBE files (port of ElevationTileGenerator)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "elevation_tile_gen"
+path = "src/lib.rs"
+
+[[bin]]
+name = "elevation-tile-gen"
+path = "src/main.rs"
+
+[dependencies]
+as-elevation.workspace = true
+as-geo.workspace = true
+chrono.workspace = true
+clap.workspace = true
+png.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+zip.workspace = true
+
+[dev-dependencies]
+as-golden.workspace = true
+assert_cmd.workspace = true
+tempfile.workspace = true
+mockito.workspace = true
+reqwest.workspace = true

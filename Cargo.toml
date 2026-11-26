@@ -1,0 +1,70 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-only"
+
+[workspace.dependencies]
+as-golden = { path = "crates/as-golden" }
+as-geo = { path = "crates/as-geo" }
+as-db = { path = "crates/as-db" }
+as-aircraft = { path = "crates/as-aircraft" }
+as-adsb = { path = "crates/as-adsb" }
+as-feeds = { path = "crates/as-feeds" }
+as-signals = { path = "crates/as-signals" }
+as-elevation = { path = "crates/as-elevation" }
+as-net = { path = "crates/as-net" }
+as-propagation = { path = "crates/as-propagation" }
+as-settings = { path = "crates/as-settings" }
+as-stations = { path = "crates/as-stations" }
+as-wintest = { path = "crates/as-wintest" }
+as-cat = { path = "crates/as-cat" }
+as-dde = { path = "crates/as-dde" }
+as-web = { path = "crates/as-web" }
+as-maps = { path = "crates/as-maps" }
+thiserror = "2"
+serial2 = "0.2"
+windows = "0.62"
+socket2 = { version = "0.6", features = ["all"] }
+rayon = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock", "serde"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+# PNG preview of a square (elevation-tile-gen; already in the tree through egui)
+png = "0.18"
+tempfile = "3"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls", "cookies"] }
+mockito = "1"
+# Fisher-Yates shuffle of the map preloader list (already in the tree through tempfile)
+fastrand = "2"
+# WHATWG URL parser (already in the tree through reqwest); the web API strips URL
+# credentials with it (airscout)
+url = "2.5"
+httpdate = "1"
+toml = "0.8"
+zstd = "0.13"
+fs4 = { version = "1.1.0", default-features = false, features = ["sync"] }
+directories = "5"
+clap = { version = "4", features = ["derive"] }
+assert_cmd = "2"
+# Ctrl-C and SIGTERM for the planeserver daemon
+ctrlc = { version = "3", features = ["termination"] }
+eframe = "0.37"
+# The planeserver tray icon (macOS, Windows, Linux with GTK 3)
+tray-icon = "0.26"
+egui_plot = "0.38"
+egui_extras = "0.37"
+egui_kittest = "0.37"
+walkers = { version = "0.66", default-features = false }
+rodio = { version = "0.23.0", default-features = false, features = ["playback"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+axum = { version = "0.8", default-features = false, features = ["tokio", "http1"] }
+tokio = { version = "1.54", default-features = false, features = ["rt", "net", "time", "sync"] }
+# The as-web serve loop (both already in the tree through axum and reqwest)
+hyper = { version = "1.1", default-features = false, features = ["http1", "server"] }
+hyper-util = { version = "0.1.3", default-features = false, features = ["tokio", "server", "http1", "service"] }

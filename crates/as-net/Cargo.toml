@@ -1,0 +1,15 @@
+[package]
+name = "as-net"
+description = "AirScout-RS HTTP helpers: User-Agent, conditional downloads"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+reqwest.workspace = true
+httpdate.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+mockito.workspace = true
+tempfile.workspace = true

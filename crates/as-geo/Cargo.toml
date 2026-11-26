@@ -1,0 +1,13 @@
+[package]
+name = "as-geo"
+description = "AirScout-RS geodesy, Maidenhead locator, propagation formulas, bands"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+as-golden.workspace = true

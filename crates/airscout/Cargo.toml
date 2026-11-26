@@ -1,0 +1,58 @@
+[package]
+name = "airscout"
+description = "AirScout-RS desktop application (live map)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "airscout"
+path = "src/main.rs"
+
+[features]
+default = ["sound"]
+# Alarm beep through the default audio output; off: the alarm is silent.
+sound = ["dep:rodio"]
+# Native hamlib CAT engine (Linux and macOS only); needs libhamlib at link time.
+hamlib = ["as-cat/hamlib"]
+
+[dependencies]
+as-cat = { workspace = true, features = ["settings"] }
+as-dde.workspace = true
+as-db.workspace = true
+as-geo.workspace = true
+as-maps.workspace = true
+as-elevation.workspace = true
+as-propagation.workspace = true
+as-settings.workspace = true
+as-aircraft.workspace = true
+as-feeds.workspace = true
+as-net.workspace = true
+as-signals.workspace = true
+as-stations.workspace = true
+as-wintest.workspace = true
+as-web.workspace = true
+reqwest.workspace = true
+serial2.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+fastrand.workspace = true
+eframe.workspace = true
+egui_plot.workspace = true
+egui_extras.workspace = true
+walkers.workspace = true
+directories.workspace = true
+rustls.workspace = true
+toml.workspace = true
+fs4.workspace = true
+zip.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+url.workspace = true
+rodio = { workspace = true, optional = true }
+
+[dev-dependencies]
+egui_kittest.workspace = true
+mockito.workspace = true
+rusqlite.workspace = true
+tempfile.workspace = true

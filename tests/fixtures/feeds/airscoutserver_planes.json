@@ -1,0 +1,6 @@
+[
+{"Hex":"3C6589","Call":"DLH4AB","Lat":50.612345,"Lon":10.987654,"Alt":37000.0,"Track":245.71,"Speed":482.3,"Type":"A388","Category":4,"Manufacturer":"AIRBUS","Model":"A-380-800","Reg":"D-AIMA","Time":1795435199},
+{"Hex":"4CA7B2","Call":"RYR12KA","Lat":50.301,"Lon":11.402,"Alt":35975.0,"Track":123.4,"Speed":451.0,"Type":"B738","Category":2,"Manufacturer":"BOEING","Model":"737-800","Reg":"EI-DWE","Time":1795435200},
+{"Hex":"3C4DD4","Call":"EWG7MB","Lat":null,"Lon":null,"Alt":17025.0,"Track":301.0,"Speed":270.5,"Type":"AT76","Category":2,"Manufacturer":"ATR","Model":"72-600","Reg":"D-AEWM","Time":null},
+{"Hex":"3E1C40","Call":"DIEXY","Alt":3500.0,"Track":15.0,"Speed":102.0,"Type":"C172","Manufacturer":"CESSNA","Model":"172","Reg":"D-EXYZ","Time":1795435190}
+]

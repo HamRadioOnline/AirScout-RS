@@ -1,0 +1,150 @@
+{
+ "src": 1,
+ "totalAc": 4711,
+ "acList": [
+  {
+   "Id": 3958153,
+   "Icao": "3C6589",
+   "Reg": "D-AIZZ",
+   "Alt": 37000,
+   "Lat": 50.1234,
+   "Long": 10.5678,
+   "Spd": 450,
+   "Trak": 245,
+   "Type": "A320",
+   "Call": "DLH4AB"
+  },
+  {
+   "Id": 3959270,
+   "Icao": "4CA2B1",
+   "Reg": "PH-BXA",
+   "Alt": 36000,
+   "Lat": 50.2345,
+   "Long": 10.6789,
+   "Spd": 480,
+   "Trak": 5,
+   "Type": "B738",
+   "Call": "KLM1023"
+  },
+  {
+   "Id": 3960387,
+   "Icao": "3C4DD2",
+   "Reg": "D-ABCD",
+   "Alt": 24000,
+   "Lat": 50.3456,
+   "Long": 10.7891,
+   "Spd": 410,
+   "Trak": 45,
+   "Type": "E190",
+   "Call": "EWG754"
+  },
+  {
+   "Id": 3961504,
+   "Icao": "40621D",
+   "Reg": "G-EUPT",
+   "Alt": 38000,
+   "Lat": 50.4567,
+   "Long": 10.8912,
+   "Spd": 400,
+   "Trak": 183,
+   "Type": "A21N",
+   "Call": "BAW91"
+  },
+  {
+   "Id": 3962621,
+   "Icao": "4B1814",
+   "Reg": "HB-JCA",
+   "Alt": 12500,
+   "Lat": 50.5678,
+   "Long": 11.0123,
+   "Spd": 390,
+   "Trak": 270,
+   "Type": "B77W",
+   "Call": "SWR12K"
+  },
+  {
+   "Id": 3963738,
+   "Icao": "3C66B3",
+   "Reg": "D-AIUA",
+   "Alt": 33000,
+   "Lat": 50.6789,
+   "Long": 11.1234,
+   "Spd": 460,
+   "Trak": 90,
+   "Type": "A333",
+   "Call": "DLH9CA"
+  },
+  {
+   "Id": 3964855,
+   "Icao": "484506",
+   "Reg": "PH-EXB",
+   "Alt": 29000,
+   "Lat": 50.7891,
+   "Long": 11.2345,
+   "Spd": 505,
+   "Trak": 315,
+   "Type": "CRJ9",
+   "Call": "KLM44"
+  },
+  {
+   "Id": 3965972,
+   "Icao": "3C5EE2",
+   "Reg": "D-ABMQ",
+   "Alt": 18000,
+   "Lat": 50.8912,
+   "Long": 11.3456,
+   "Spd": 420,
+   "Trak": 120,
+   "Type": "A319",
+   "Call": "EWG1TA"
+  },
+  {
+   "Id": 3967089,
+   "Icao": "440452",
+   "Reg": "OE-LBN",
+   "Alt": 39000,
+   "Lat": 50.9123,
+   "Long": 11.4567,
+   "Spd": 520,
+   "Trak": 359,
+   "Type": "B744",
+   "Call": "AUA7"
+  },
+  {
+   "Id": 3968206,
+   "Icao": "3C49C1",
+   "Reg": "D-AINA",
+   "Alt": 21000,
+   "Lat": 51.0234,
+   "Long": 11.5678,
+   "Spd": 380,
+   "Trak": 12,
+   "Type": "E75L",
+   "Call": "DLH2LX"
+  },
+  {
+   "Id": 3969323,
+   "Icao": "4010EE",
+   "Reg": "G-EZWA",
+   "Alt": 35000,
+   "Lat": 50.0345,
+   "Long": 11.6789,
+   "Spd": 470,
+   "Trak": 200,
+   "Type": "A20N",
+   "Call": "EZY81"
+  },
+  {
+   "Id": 3970440,
+   "Icao": "3C6DCB",
+   "Reg": "D-AIEB",
+   "Alt": 15500,
+   "Lat": 50.1456,
+   "Long": 11.7891,
+   "Spd": 430,
+   "Trak": 77,
+   "Type": "B789",
+   "Call": "DLH5MJ"
+  }
+ ]
+}

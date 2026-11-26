@@ -1,0 +1,1265 @@
+{
+  "upstream_commit": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "cases": [
+    {
+      "fn": "check",
+      "args": {
+        "call": "DL2ALF"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DL2ALF"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DL2ALF"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "DL2ALF/P"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DL2ALF/P"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DL2ALF/P"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "PA/DL2ALF/M"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "PA/DL2ALF/M"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "PA/DL2ALF/M"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "PA/DL2ALF"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "PA/DL2ALF"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "PA/DL2ALF"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "DL2ALF/MM"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DL2ALF/MM"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DL2ALF/MM"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "DL2ALF/QRP"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DL2ALF/QRP"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DL2ALF/QRP"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "dl2alf"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "dl2alf"
+      },
+      "result": "dl2alf"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "dl2alf"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": " DL2ALF "
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": " DL2ALF "
+      },
+      "result": " DL2ALF "
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": " DL2ALF "
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": ""
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": ""
+      },
+      "result": ""
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": ""
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "D"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "D"
+      },
+      "result": "D"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "D"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "DL"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DL"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DL"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "DL2"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DL2"
+      },
+      "result": "DL2"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DL2"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "9A5O"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "9A5O"
+      },
+      "result": "9A5O"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "9A5O"
+      },
+      "result": "9A"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "G7RAU"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "G7RAU"
+      },
+      "result": "G7RAU"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "G7RAU"
+      },
+      "result": "G"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "T91CO"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "T91CO"
+      },
+      "result": "T91CO"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "T91CO"
+      },
+      "result": "T9"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "T91"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "T91"
+      },
+      "result": "T91"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "T91"
+      },
+      "result": "T9"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "2E0ABO"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "2E0ABO"
+      },
+      "result": "2E0ABO"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "2E0ABO"
+      },
+      "result": "G"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "M0ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "M0ABC"
+      },
+      "result": "M0ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "M0ABC"
+      },
+      "result": "G"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "EA8/DL2ALF"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "EA8/DL2ALF"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "EA8/DL2ALF"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "DL/AB1"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DL/AB1"
+      },
+      "result": ""
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DL/AB1"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "/AB"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "/AB"
+      },
+      "result": ""
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "/AB"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "AB/"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "AB/"
+      },
+      "result": ""
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "AB/"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "A/B/C/D"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "A/B/C/D"
+      },
+      "result": "B"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "A/B/C/D"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "DL2-ALF"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DL2-ALF"
+      },
+      "result": "DL2-ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DL2-ALF"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "DLÄALF"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DLÄALF"
+      },
+      "result": "DLÄALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DLÄALF"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "OH2BH"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "OH2BH"
+      },
+      "result": "OH2BH"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "OH2BH"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "HB9/DL2ALF/P"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "HB9/DL2ALF/P"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "HB9/DL2ALF/P"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "HB0ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "HB0ABC"
+      },
+      "result": "HB0ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "HB0ABC"
+      },
+      "result": "HB0"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "YU1AA"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "YU1AA"
+      },
+      "result": "YU1AA"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "YU1AA"
+      },
+      "result": "YU"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "YU2AA"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "YU2AA"
+      },
+      "result": "YU2AA"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "YU2AA"
+      },
+      "result": "9A"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "UA3ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "UA3ABC"
+      },
+      "result": "UA3ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "UA3ABC"
+      },
+      "result": "UA"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "RA2ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "RA2ABC"
+      },
+      "result": "RA2ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "RA2ABC"
+      },
+      "result": "UA2"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "SV9ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "SV9ABC"
+      },
+      "result": "SV9ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "SV9ABC"
+      },
+      "result": "SV9"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "EH8ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "EH8ABC"
+      },
+      "result": "EH8ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "EH8ABC"
+      },
+      "result": "EA8"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "TM1A"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "TM1A"
+      },
+      "result": "TM1A"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "TM1A"
+      },
+      "result": "F"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "I0ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "I0ABC"
+      },
+      "result": "I0ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "I0ABC"
+      },
+      "result": "I"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "IZ1ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "IZ1ABC"
+      },
+      "result": "IZ1ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "IZ1ABC"
+      },
+      "result": "I"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "IS0ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "IS0ABC"
+      },
+      "result": "IS0ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "IS0ABC"
+      },
+      "result": "I"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "4N1A"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "4N1A"
+      },
+      "result": "4N1A"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "4N1A"
+      },
+      "result": "YU"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "XX1ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "XX1ABC"
+      },
+      "result": "XX1ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "XX1ABC"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "LX/DL2ALF"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "LX/DL2ALF"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "LX/DL2ALF"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "OE/DL2ALF/P"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "OE/DL2ALF/P"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "OE/DL2ALF/P"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "DL2ALF/OE"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DL2ALF/OE"
+      },
+      "result": "DL2ALF"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DL2ALF/OE"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "5B4AAA"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "5B4AAA"
+      },
+      "result": "5B4AAA"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "5B4AAA"
+      },
+      "result": "5B"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "P33W"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "P33W"
+      },
+      "result": "P33W"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "P33W"
+      },
+      "result": "5B"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "C31X"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "C31X"
+      },
+      "result": "C31X"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "C31X"
+      },
+      "result": "C3"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "K1ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "K1ABC"
+      },
+      "result": "K1ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "K1ABC"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "W1AW"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "W1AW"
+      },
+      "result": "W1AW"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "W1AW"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "VE3ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "VE3ABC"
+      },
+      "result": "VE3ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "VE3ABC"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "JA1ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "JA1ABC"
+      },
+      "result": "JA1ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "JA1ABC"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "S5/9A/DL1A"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "S5/9A/DL1A"
+      },
+      "result": "9A/DL1A"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "S5/9A/DL1A"
+      },
+      "result": "9A"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "123"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "123"
+      },
+      "result": "123"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "123"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "A1B"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "A1B"
+      },
+      "result": "A1B"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "A1B"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "1AB"
+      },
+      "result": false
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "1AB"
+      },
+      "result": "1AB"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "1AB"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "AB1"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "AB1"
+      },
+      "result": "AB1"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "AB1"
+      },
+      "result": "???"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "DL0GTH"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "DL0GTH"
+      },
+      "result": "DL0GTH"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "DL0GTH"
+      },
+      "result": "DL"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "HV0A"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "HV0A"
+      },
+      "result": "HV0A"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "HV0A"
+      },
+      "result": "HV"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "OT4A"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "OT4A"
+      },
+      "result": "OT4A"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "OT4A"
+      },
+      "result": "ON"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "ZB4/G4ABC"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "ZB4/G4ABC"
+      },
+      "result": "G4ABC"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "ZB4/G4ABC"
+      },
+      "result": "G"
+    },
+    {
+      "fn": "check",
+      "args": {
+        "call": "AM70A"
+      },
+      "result": true
+    },
+    {
+      "fn": "cut",
+      "args": {
+        "call": "AM70A"
+      },
+      "result": "AM70A"
+    },
+    {
+      "fn": "prefix",
+      "args": {
+        "call": "AM70A"
+      },
+      "result": "EA"
+    }
+  ]
+}

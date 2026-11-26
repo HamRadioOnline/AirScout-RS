@@ -1,0 +1,46 @@
+//! AirScout-RS desktop application: live map, plane list and path views.
+#![forbid(unsafe_code)]
+
+pub mod analysis;
+pub mod app;
+pub mod background;
+pub mod best_case;
+pub mod calculator;
+pub mod cat_service;
+pub mod charts;
+pub mod cleanup;
+pub mod coverage;
+pub mod crossing_csv;
+pub mod crossing_history;
+pub mod exports;
+mod feed_service;
+pub mod history;
+pub mod history_download;
+pub mod horizon_service;
+pub mod jobs;
+pub mod maintenance;
+pub mod map_preloader;
+pub mod net_addrs;
+pub mod overlays;
+pub mod pipeline;
+pub mod player;
+pub mod rotator_gs232;
+pub mod services;
+pub mod sound;
+pub mod speclab;
+pub mod style;
+pub mod tiles;
+pub mod track_outputs;
+pub mod track_service;
+pub mod tracker;
+pub mod tracking;
+pub mod traffic;
+pub mod ui;
+pub mod web_api;
+pub mod web_paths;
+pub mod web_service;
+pub mod web_settings_json;
+pub mod web_stations;
+pub mod wintest_nearest;
+pub mod wintest_service;
+pub mod wintest_watch;

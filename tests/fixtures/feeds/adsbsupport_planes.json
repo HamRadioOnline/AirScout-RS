@@ -1,0 +1,6 @@
+{"planes":[
+{"hex":"3c6589","callsign":"DLH4AB","altitude_barometric":37000,"altitude_gps":37625,"latitude":50.612345,"longitude":10.987654,"receivedAt":1795435199300,"angle":245.71,"speed":482.3,"squawk":"1000","verticalRate":64,"category":"A5","onGround":false},
+{"hex":"4ca7b2","callsign":"RYR12KA","altitude_barometric":35975,"latitude":50.301,"longitude":11.402,"receivedAt":1795435200000,"angle":123.4,"speed":451.0,"category":"A3","onGround":false},
+{"hex":"3c4dd4","callsign":null,"altitude_barometric":17025,"latitude":50.8,"longitude":10.55,"angle":301.0,"speed":270.5,"category":"A2"},
+{"hex":"3e1c40","callsign":"DIEXY","latitude":50.45,"longitude":11.12,"receivedAt":1795435187500,"speed":102.0,"category":"A1","onGround":false}
+]}

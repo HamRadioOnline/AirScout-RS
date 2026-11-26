@@ -1,0 +1,24 @@
+[package]
+name = "as-aircraft"
+description = "AirScout-RS aircraft data: PlaneInfo, aircraft database, plane cache, crossing prediction"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+as-geo.workspace = true
+as-propagation.workspace = true
+as-db.workspace = true
+as-net.workspace = true
+rusqlite.workspace = true
+reqwest.workspace = true
+zip.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+as-golden.workspace = true
+mockito.workspace = true
+tempfile.workspace = true

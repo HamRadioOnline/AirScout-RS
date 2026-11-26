@@ -1,0 +1,210 @@
+[
+  {
+    "IATA": "",
+    "ICAO": "A388",
+    "Manufacturer": "Airbus",
+    "Model": "A380 861",
+    "Category": 4,
+    "LastUpdated": "2019-03-13T16:34:09Z"
+  },
+  {
+    "IATA": "",
+    "ICAO": "B788",
+    "Manufacturer": "Boeing",
+    "Model": "787 8",
+    "Category": 3,
+    "LastUpdated": "2019-03-13T16:34:09Z"
+  },
+  {
+    "IATA": "",
+    "ICAO": "C172",
+    "Manufacturer": "Reims/Cessna",
+    "Model": "FR172K Hawk XP",
+    "Category": 1,
+    "LastUpdated": "2019-03-13T16:02:10Z"
+  },
+  {
+    "IATA": "",
+    "ICAO": "E190",
+    "Manufacturer": "Embraer",
+    "Model": "EMB-190 STD",
+    "Category": 2,
+    "LastUpdated": "2019-03-13T16:34:09Z"
+  },
+  {
+    "IATA": "319",
+    "ICAO": "A319",
+    "Manufacturer": "Airbus",
+    "Model": "A319",
+    "Category": 2,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "320",
+    "ICAO": "A320",
+    "Manufacturer": "Airbus",
+    "Model": "A320",
+    "Category": 2,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "321",
+    "ICAO": "A321",
+    "Manufacturer": "Airbus",
+    "Model": "A321",
+    "Category": 2,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "32A",
+    "ICAO": "A320",
+    "Manufacturer": "Airbus",
+    "Model": "A320",
+    "Category": 2,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "32B",
+    "ICAO": "A321",
+    "Manufacturer": "Airbus",
+    "Model": "A321",
+    "Category": 2,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "32D",
+    "ICAO": "A319",
+    "Manufacturer": "Airbus",
+    "Model": "A319",
+    "Category": 2,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "359",
+    "ICAO": "A359",
+    "Manufacturer": "Airbus",
+    "Model": "A350-900",
+    "Category": 3,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "738",
+    "ICAO": "B738",
+    "Manufacturer": "Boeing",
+    "Model": "737-800",
+    "Category": 2,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "73H",
+    "ICAO": "B738",
+    "Manufacturer": "Boeing",
+    "Model": "737-800",
+    "Category": 2,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "744",
+    "ICAO": "B744",
+    "Manufacturer": "Boeing",
+    "Model": "747-400",
+    "Category": 3,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "74E",
+    "ICAO": "B744",
+    "Manufacturer": "Boeing",
+    "Model": "747-400",
+    "Category": 3,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "74J",
+    "ICAO": "B744",
+    "Manufacturer": "Boeing",
+    "Model": "747-400",
+    "Category": 3,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "74Y",
+    "ICAO": "B744",
+    "Manufacturer": "Boeing",
+    "Model": "747-400",
+    "Category": 3,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "77W",
+    "ICAO": "B77W",
+    "Manufacturer": "Boeing",
+    "Model": "777-300ER",
+    "Category": 3,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "DH1",
+    "ICAO": "DH8A",
+    "Manufacturer": "De Havilland Canada",
+    "Model": "DHC-8-100 Dash 8",
+    "Category": 2,
+    "LastUpdated": "2015-04-19T12:35:49Z"
+  },
+  {
+    "IATA": "",
+    "ICAO": "B738",
+    "Manufacturer": "Boeing",
+    "Model": "737NG 8AS/W",
+    "Category": 2,
+    "LastUpdated": "2019-03-13T16:34:09Z"
+  },
+  {
+    "IATA": "",
+    "ICAO": "A319",
+    "Manufacturer": "Airbus",
+    "Model": "A319 111",
+    "Category": 2,
+    "LastUpdated": "2019-03-13T16:34:09Z"
+  },
+  {
+    "IATA": "",
+    "ICAO": "A320",
+    "Manufacturer": "Airbus",
+    "Model": "A320 232SL",
+    "Category": 2,
+    "LastUpdated": "2019-03-13T16:34:09Z"
+  },
+  {
+    "IATA": "",
+    "ICAO": "A321",
+    "Manufacturer": "Airbus",
+    "Model": "A321 231SL",
+    "Category": 2,
+    "LastUpdated": "2019-03-13T16:34:09Z"
+  },
+  {
+    "IATA": "",
+    "ICAO": "B744",
+    "Manufacturer": "Boeing",
+    "Model": "BOEING 747-481F",
+    "Category": 3,
+    "LastUpdated": "2019-03-13T16:34:09Z"
+  },
+  {
+    "IATA": "",
+    "ICAO": "A359",
+    "Manufacturer": "Airbus",
+    "Model": "A350 941",
+    "Category": 3,
+    "LastUpdated": "2019-03-13T16:34:09Z"
+  },
+  {
+    "IATA": "",
+    "ICAO": "B77W",
+    "Manufacturer": "Boeing",
+    "Model": "777 300ER",
+    "Category": 3,
+    "LastUpdated": "2019-03-13T16:34:09Z"
+  }
+]

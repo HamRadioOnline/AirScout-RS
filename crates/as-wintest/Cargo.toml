@@ -1,0 +1,10 @@
+[package]
+name = "as-wintest"
+description = "AirScout-RS Win-Test UDP wire format, .NET number formatting and track messages"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+socket2.workspace = true
+thiserror.workspace = true

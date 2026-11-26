@@ -1,0 +1,9 @@
+{"src":1,"feeds":[{"id":1,"name":"Local","polarPlot":false}],"srcFeed":1,"showSil":true,"showFlg":true,"showPic":true,"flgH":20,"flgW":85,
+"acList":[
+{"Id":3958153,"Rcvr":1,"HasSig":true,"Sig":180,"Icao":"3c6589","Bad":false,"Reg":"D-AIMA","FSeen":"\/Date(1795434000000)\/","TSecs":1200,"CMsgs":812,"Alt":37000,"GAlt":37625,"InHg":29.92,"AltT":0,"Call":"DLH4AB","Lat":50.612345,"Long":10.987654,"PosTime":1795435199300,"Mlat":false,"Tisb":false,"Spd":482.3,"Trak":245.71,"TrkH":false,"Type":"A388","Mdl":"Airbus A380 842","Man":"Airbus","CNum":"041","From":"EDDF Frankfurt","To":"KJFK New York","Op":"Lufthansa","OpIcao":"DLH","Sqk":"1000","Vsi":64,"VsiT":0,"WTC":3,"Species":1,"EngType":3,"EngMount":0,"Mil":false,"Cou":"Germany","HasPic":false,"Interested":false,"FlightsCount":0,"Gnd":false,"SpdTyp":0,"CallSus":false,"Trt":2},
+{"Id":5023666,"Icao":"4ca7b2","Reg":"EI-DWE","Alt":35975,"GAlt":36500,"Call":"RYR12KA","Lat":50.301,"Long":11.402,"PosTime":1795435200000,"Spd":451.0,"Trak":123.4,"Type":"B738","Mdl":"Boeing 737 8AS","Man":"Boeing","From":"EDDN Nuremberg","To":"EGSS London Stansted","Vsi":0,"WTC":2,"Cou":"Ireland"},
+{"Id":3951060,"Icao":"3c4dd4","Reg":"D-AEWM","Alt":17025,"Call":"EWG7MB","Lat":50.8,"Long":10.55,"Spd":270.5,"Trak":301.0,"Type":"AT76","WTC":2,"Cou":"Germany"},
+{"Id":4101740,"Icao":"3e1c40","Reg":"D-EXYZ","Alt":3500,"Call":"DIEXY","Lat":50.45,"Long":11.12,"PosTime":1795435187500,"Spd":102.0,"Trak":15.0,"Type":"C172","Mdl":"Cessna 172S","Man":"Cessna","WTC":1,"Cou":"Germany"},
+{"Id":4919852,"Icao":"4b1a2c","Reg":"HB-JNA","Alt":39000,"Call":"SWR14","Lat":50.95,"Long":11.6,"PosTime":1795435195800,"Spd":495.5,"Trak":250.0,"Type":"B77W","Mdl":"Boeing 777 3DEER","Man":"Boeing","WTC":0,"Cou":"Switzerland"}
+],
+"totalAc":5,"lastDv":"638676336000000000","shtTrlSec":65,"stm":1795435200500}

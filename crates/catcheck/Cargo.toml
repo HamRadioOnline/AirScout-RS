@@ -1,0 +1,20 @@
+[package]
+name = "catcheck"
+description = "AirScout-RS CAT test bench: rig status, set commands and a Doppler test over as-cat"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+# Native hamlib CAT engine (Linux and macOS only); needs libhamlib at link time.
+hamlib = ["as-cat/hamlib"]
+
+[dependencies]
+as-cat = { workspace = true, features = ["settings"] }
+as-settings.workspace = true
+clap.workspace = true
+serial2.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+tempfile.workspace = true

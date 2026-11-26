@@ -1,0 +1,25 @@
+[package]
+name = "as-elevation"
+description = "AirScout-RS elevation model: tiles, store, paths, horizons, downloader"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+as-geo.workspace = true
+as-db.workspace = true
+as-net.workspace = true
+rusqlite.workspace = true
+serde.workspace = true
+# `float_roundtrip`: parse `.loc` coordinates to the nearest f64. The default parser is off by
+# one ulp in 1 709 of the 9 220 fixture coordinates, and `to_loc_json` then writes another number.
+serde_json = { workspace = true, features = ["float_roundtrip"] }
+thiserror.workspace = true
+chrono.workspace = true
+reqwest.workspace = true
+zip.workspace = true
+
+[dev-dependencies]
+as-golden.workspace = true
+mockito.workspace = true
+tempfile.workspace = true

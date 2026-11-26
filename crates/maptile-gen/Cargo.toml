@@ -1,0 +1,17 @@
+[package]
+name = "maptile-gen"
+description = "AirScout-RS map tile tool: export, import and combine GMap .gmdb tiles (port of MapTileGenerator)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+as-maps.workspace = true
+chrono.workspace = true
+clap.workspace = true
+png.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+rusqlite.workspace = true
+tempfile.workspace = true

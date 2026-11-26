@@ -1,0 +1,245 @@
+{
+  "upstream_commit": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "cases": [
+    {
+      "fn": "number",
+      "args": {
+        "name": "0",
+        "bits": "0"
+      },
+      "result": "[\n  0.0\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "1",
+        "bits": "4607182418800017408"
+      },
+      "result": "[\n  1.0\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "-0.0",
+        "bits": "-9223372036854775808"
+      },
+      "result": "[\n  -0.0\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "0.1",
+        "bits": "4591870180066957722"
+      },
+      "result": "[\n  0.1\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "1e-5",
+        "bits": "4532020583610935537"
+      },
+      "result": "[\n  1E-05\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "0.0001",
+        "bits": "4547007122018943789"
+      },
+      "result": "[\n  0.0001\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "1e14",
+        "bits": "4816244402031689728"
+      },
+      "result": "[\n  100000000000000.0\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "1e15",
+        "bits": "4831355200913801216"
+      },
+      "result": "[\n  1000000000000000.0\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "123456789012345",
+        "bits": "4817745636528479808"
+      },
+      "result": "[\n  123456789012345.0\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "1234567890123456",
+        "bits": "4832797072101665536"
+      },
+      "result": "[\n  1234567890123456.0\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "MaxValue",
+        "bits": "9218868437227405311"
+      },
+      "result": "[\n  1.7976931348623157E+308\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "MinValue",
+        "bits": "-4503599627370497"
+      },
+      "result": "[\n  -1.7976931348623157E+308\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "5e-324",
+        "bits": "1"
+      },
+      "result": "[\n  5E-324\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "NaN",
+        "bits": "-2251799813685248"
+      },
+      "result": "[\n  \"NaN\"\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "+Infinity",
+        "bits": "9218868437227405312"
+      },
+      "result": "[\n  \"Infinity\"\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "-Infinity",
+        "bits": "-4503599627370496"
+      },
+      "result": "[\n  \"-Infinity\"\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "1e16",
+        "bits": "4846369599423283200"
+      },
+      "result": "[\n  10000000000000000.0\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "1e17",
+        "bits": "4861130398305394688"
+      },
+      "result": "[\n  1E+17\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "1.5e17",
+        "bits": "4864071497932765184"
+      },
+      "result": "[\n  1.5E+17\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "1e18",
+        "bits": "4876203697187506176"
+      },
+      "result": "[\n  1E+18\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "1.2345e-5",
+        "bits": "4533404827286226701"
+      },
+      "result": "[\n  1.2345E-05\n]"
+    },
+    {
+      "fn": "number",
+      "args": {
+        "name": "-2.5e-7",
+        "bits": "-4715050043001410163"
+      },
+      "result": "[\n  -2.5E-07\n]"
+    },
+    {
+      "fn": "date",
+      "args": {
+        "unix_s": 1795521600,
+        "ticks": 0
+      },
+      "result": "\"2026-11-24T12:00:00Z\""
+    },
+    {
+      "fn": "date",
+      "args": {
+        "unix_s": 1795521600,
+        "ticks": 5000000
+      },
+      "result": "\"2026-11-24T12:00:00.5Z\""
+    },
+    {
+      "fn": "date",
+      "args": {
+        "unix_s": 1795521600,
+        "ticks": 1234567
+      },
+      "result": "\"2026-11-24T12:00:00.1234567Z\""
+    },
+    {
+      "fn": "date_min",
+      "args": {},
+      "result": "\"0001-01-01T00:00:00Z\""
+    },
+    {
+      "fn": "plane_info_default",
+      "args": {},
+      "result": "{\n  \"Track\": 0.0,\n  \"IntPoint\": null,\n  \"IntQRB\": 1.7976931348623157E+308,\n  \"AltDiff\": 0.0,\n  \"Potential\": 0,\n  \"Eps1\": 0.0,\n  \"Eps2\": 0.0,\n  \"Theta1\": 0.0,\n  \"Theta2\": 0.0,\n  \"Angle\": 0.0,\n  \"Squint\": 0.0,\n  \"SignalStrength\": -1.7976931348623157E+308,\n  \"Ambiguous\": false,\n  \"Comment\": \"\",\n  \"OldTime\": \"0001-01-01T00:00:00Z\",\n  \"OldLat\": 0.0,\n  \"OldLon\": 0.0,\n  \"OldAlt\": 0.0,\n  \"OldTrack\": 0.0,\n  \"OldSpeed\": 0.0,\n  \"Time\": \"2026-11-24T12:00:00Z\",\n  \"Call\": \"\",\n  \"Reg\": \"\",\n  \"Hex\": \"\",\n  \"Lat\": 0.0,\n  \"Lon\": 0.0,\n  \"Alt\": 0.0,\n  \"Alt_m\": 0.0,\n  \"Speed\": 0.0,\n  \"Speed_kmh\": 0.0,\n  \"Type\": \"\",\n  \"Manufacturer\": \"\",\n  \"Model\": \"\",\n  \"Category\": 0,\n  \"From\": \"\",\n  \"To\": \"\",\n  \"VSpeed\": 0\n}"
+    },
+    {
+      "fn": "plane_info_intpoint",
+      "args": {
+        "alt_m": 10667.99965862401,
+        "speed_kmh": 833.4000000000001
+      },
+      "result": "{\n  \"Track\": 87.5,\n  \"IntPoint\": {\n    \"Lat\": 50.125,\n    \"Lon\": 11.0625\n  },\n  \"IntQRB\": 123.456,\n  \"AltDiff\": -1500.5,\n  \"Potential\": 75,\n  \"Eps1\": 0.25,\n  \"Eps2\": -0.125,\n  \"Theta1\": 1.5,\n  \"Theta2\": 2.5,\n  \"Angle\": 33.3,\n  \"Squint\": 4.75,\n  \"SignalStrength\": -97.5,\n  \"Ambiguous\": true,\n  \"Comment\": \"synthetic\",\n  \"OldTime\": \"2026-11-24T11:59:30Z\",\n  \"OldLat\": 50.2,\n  \"OldLon\": 11.1,\n  \"OldAlt\": 34900.0,\n  \"OldTrack\": 87.0,\n  \"OldSpeed\": 449.0,\n  \"Time\": \"2026-11-24T12:00:00Z\",\n  \"Call\": \"TST123\",\n  \"Reg\": \"X-TEST\",\n  \"Hex\": \"ABC123\",\n  \"Lat\": 50.25,\n  \"Lon\": 11.125,\n  \"Alt\": 35000.0,\n  \"Alt_m\": 10667.99965862401,\n  \"Speed\": 450.0,\n  \"Speed_kmh\": 833.4000000000001,\n  \"Type\": \"A320\",\n  \"Manufacturer\": \"Airbus\",\n  \"Model\": \"A320-200\",\n  \"Category\": 2,\n  \"From\": \"XXAA\",\n  \"To\": \"XXBB\",\n  \"VSpeed\": -640\n}"
+    },
+    {
+      "fn": "string",
+      "args": {
+        "text": "a\"b\\c/<>\u0001\b\t\n\f\r\u001f\u0085\u2028\u2029é😀"
+      },
+      "result": "[\n  \"a\\\"b\\\\c/<>\\u0001\\b\\t\\n\\f\\r\\u001f\\u0085\\u2028\\u2029é😀\"\n]"
+    },
+    {
+      "fn": "band_values",
+      "args": {},
+      "result": "[{\"Name\":\"50M\",\"Value\":50},{\"Name\":\"70M\",\"Value\":70},{\"Name\":\"144M\",\"Value\":144},{\"Name\":\"432M\",\"Value\":432},{\"Name\":\"1.2G\",\"Value\":1296},{\"Name\":\"2.3G\",\"Value\":2320},{\"Name\":\"3.4G\",\"Value\":3400},{\"Name\":\"5.7G\",\"Value\":5760},{\"Name\":\"10G\",\"Value\":10368},{\"Name\":\"24G\",\"Value\":24048},{\"Name\":\"47G\",\"Value\":47088},{\"Name\":\"76G\",\"Value\":76032}]"
+    },
+    {
+      "fn": "aircraft_categories",
+      "args": {},
+      "result": "[{\"Name\":\"None\",\"Value\":0},{\"Name\":\"Light\",\"Value\":1},{\"Name\":\"Medium\",\"Value\":2},{\"Name\":\"Heavy\",\"Value\":3},{\"Name\":\"Superheavy\",\"Value\":4}]"
+    },
+    {
+      "fn": "band_settings",
+      "args": {},
+      "result": "[\n  {\n    \"BAND\": \"144M\",\n    \"K-FACTOR\": 1.5,\n    \"F1-CLEARANCE\": 0.2,\n    \"GROUNDCLEARANCE\": 0.0,\n    \"MAXDISTANCE\": 10.0,\n    \"MAXSQUINT\": 1.7976931348623157E+308,\n    \"MAXELEVATION\": 1.7976931348623157E+308\n  },\n  {\n    \"BAND\": \"1.2G\",\n    \"K-FACTOR\": 1.33,\n    \"F1-CLEARANCE\": 0.6,\n    \"GROUNDCLEARANCE\": 2.5,\n    \"MAXDISTANCE\": 100.0,\n    \"MAXSQUINT\": 45.0,\n    \"MAXELEVATION\": 90.0\n  }\n]"
+    }
+  ]
+}

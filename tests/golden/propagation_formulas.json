@@ -1,0 +1,8971 @@
+{
+  "upstream_commit": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "cases": [
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 0.0,
+        "re": 6371.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 5.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 12.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.0100000846382374
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.5666820289348937
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.5666820224770293
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 4.990000000766857
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707787851912298
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707787989117232
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 11.990000000294295
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707893105312865
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707893237088673
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 10.000000000218279
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 10.000000000218279
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 10.000000000218279
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 10.000000000218279
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.5
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.5707963267948966
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.5707963267948966
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 4.5
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 11.5
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 500.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 500.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 500.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 500.0
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 2.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.5707963267948966
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.5707963267948966
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 3.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 10.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5707963267948966
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 2000.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 2000.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 2000.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 2000.0
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 0.05,
+        "re": 6371.0
+      },
+      "result": 7.848061528802386E-06
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.04999997615813641
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -3.924028893287139E-06
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 3.924028893287139E-06
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 5.000250190197396
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5607888073322322
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5607966553977575
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 12.000104362312136
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5666218382923518
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.566629686350035
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": -0.49982042673946125
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.00019620165403466672
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 0.25019829445227515
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 2.5022826030181022
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.05099018835605651
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.1973995104737937
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.19739166241950934
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 4.990250692322213
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5607687460533655
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5607765941247584
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 11.990104449646799
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5666183540785892
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5666262021411843
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 9.50017878858489
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 10.000196201872313
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 10.25019868848176
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 12.502286531343998
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.5024939714373793
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.4711278095967266
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.4711199615428419
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 4.500278008999465
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.559676953613777
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5596848016751792
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 11.500108908184211
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5664403435202752
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5664481915734916
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 499.50014034766355
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 500.00019621711544
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 500.2502179304429
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 502.5024789838426
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 2.0006250991571
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.545801522783205
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.54579367471764
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 3.0004170967268258
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5541181025586792
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5541259506310134
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 10.000125274022535
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5657869499018902
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.5657947979649967
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 1999.5000226690536
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 2000.0001962634997
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 2000.2502768375052
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 2002.503068126316
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 1.0,
+        "re": 6371.0
+      },
+      "result": 0.0001569612305760477
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 1.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -7.848061536858692E-05
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 7.848061536858692E-05
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 5.099096468930216
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.3732468253900139
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.3734037866202256
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 12.041672788137753
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.4874986750977777
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.4876556363286564
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": -9.921837239744491
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.0784806161391316
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 5.078526309262088
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 50.12058307966072
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 1.0000507818679496
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.010078139440600391
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.009921178210122015
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 5.089291344247538
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.3728611766279244
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.373018137859417
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 12.031707489307424
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.4874295233880332
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.4875864846188431
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 0.07814718719600933
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 10.07848074004869
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 15.078534281201428
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 60.120661750261206
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 1.1180690874968362
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.4637103919941098
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.46355343076307437
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 4.6098658704432225
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.351957495192803
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.352114456423157
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 11.543481371319697
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.4838948427386616
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.4840518039699317
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 490.07738408909063
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 500.07848677523725
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 505.07892487530626
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 550.1245165742148
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 2.2361381716617763
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.1071644145959192
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -1.1070074533651582
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 3.162451418684437
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.2488024905380215
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 1.2489594517688023
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 10.0499849778687
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.4709404092154539
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 1.4710973704467307
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 1990.075048073777
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 2000.078505253441
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 2005.0801205734388
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 2050.1363170569675
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 100.0,
+        "re": 6371.0
+      },
+      "result": 0.01569612305760477
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 99.99897346863769
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.007848061528800217
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.007848061528800217
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 100.16308000050132
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.04208974704589311
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.057785870103494744
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 100.80986884104455
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.11146713351174442
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.12716325656934305
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": -215.19496308064845
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 784.886724010903
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 1285.0328157783224
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 5794.019907748407
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 99.9990524484028
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.007948059396911868
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.007748063660685664
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 100.16265972563409
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.041989997861717254
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.05768612091932466
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 100.80875696649515
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.11136855140425019
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.12706467446186204
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": -205.1953008522105
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 794.887955978993
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 1295.0348327822212
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 5804.029002113566
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 100.00414733809976
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.012847721026547574
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.002848402031051808
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 100.14328734935552
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.037101302350451365
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.052797425408053225
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 100.75547590065742
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.10653540157117995
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.12223152462877829
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 284.78814828667964
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 1284.9483224044889
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 1785.1336659441586
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 6294.474625995463
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 100.03466326697738
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.02784184763785719
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.012145724580260957
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 100.09887221633349
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.02212587121903533
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.03782199427663791
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 100.60703120868845
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.09170989360128351
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.10740601665888098
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 1784.7374823877544
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 2785.1331175834275
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 3285.4362164425766
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 7795.83878073754
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 400.0,
+        "re": 6371.0
+      },
+      "result": 0.06278449223041908
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 399.9343050293738
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.031392246115209764
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.03139224611520975
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 400.12245135823645
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": -0.018901903601094398
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.043882588629325495
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 400.49059279732137
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": -0.0014392796119245565
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.0613452126184941
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 8566.772169715478
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 12577.555703324833
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 14584.789027176157
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 32723.529299404618
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 399.9346190251713
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.031417237882775756
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.03136725434764327
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 400.12264049094875
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": -0.01892689147389528
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.04385760075652689
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 400.4906073149649
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": -0.0014642489606717947
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.06132024326974776
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 8576.785616226516
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 12587.575445211769
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 14594.81191964096
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 32733.580662659733
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 399.9503108055915
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.03264178579176246
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.030142706438657376
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 400.1322140325256
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": -0.02015126767299352
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.04263322455742496
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 400.4916245527415
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": -0.0026877442023274857
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.06009674802809081
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 9067.4444952665
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 13078.542797635237
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 15085.9336503936
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 33226.09746211856
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 400.0020742895687
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.03638977752149122
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.02639471470892668
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 400.16524909534616
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": -0.02389896682755558
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.03888552540286448
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 400.49846515329045
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": -0.006433072135897923
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.05635142009452223
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 10569.461471919567
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 14581.504080566447
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 16589.367520043197
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 34733.801950259476
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 800.0,
+        "re": 6371.0
+      },
+      "result": 0.12556898446083817
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 799.474517918436
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.06278449223041915
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.06278449223041915
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 799.803801636975
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": -0.056545235962962
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.06902374849787653
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 800.3170521423377
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": -0.04781941880432546
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.0777495656565119
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 42463.52294451481
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 50559.709607212426
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 54615.37162891727
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 91382.07499293913
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 799.4751454132552
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.06279697579175213
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.06277200866908672
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 799.804366850373
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": -0.05655771903739248
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.06901126542344614
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 800.3175302166433
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": -0.04783189956142353
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.07773708489941568
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 42473.58959578287
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 50569.78896635519
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 54625.45735387812
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 91392.21842736879
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 799.5060452755266
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.06340864621388052
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.06216033824695706
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 799.8322149746837
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": -0.05716936799352416
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.06839961646731339
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 800.3411085669554
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": -0.04844343831524674
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.07712554614559076
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 42966.855507923356
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 51063.677564331556
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 55119.657876887686
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 91889.24671441055
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 799.6024958226009
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": -0.0652808094452583
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.06028817501558009
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 799.9193241236214
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": -0.059041494650172104
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 6371.0
+      },
+      "result": 0.06652748981066547
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 800.4151475324094
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": -0.050315268388268455
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 6371.0
+      },
+      "result": 0.0752537160725695
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 44476.85319814718
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 52575.58143568804
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 56632.516620796196
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 93410.76187882572
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 0.0,
+        "re": 8473.43
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 4.999999997019768
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 12.000000001241764
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.570781933121618
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5707819534836294
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.010000829662238302
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -1.5579153057798696
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -1.557915290577357
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 4.989999999273755
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 11.990000000294295
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5707893162142479
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5707893261348485
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 10.000000000218279
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 10.000000000218279
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 10.000000000218279
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 10.000000000218279
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.5
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 4.499999996688631
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 11.500000001295753
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5707813052122643
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5707813255656795
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 500.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 500.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 500.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 500.0
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 2.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -1.5707960614872643
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -1.5707960614872643
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 3.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5707960614872643
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5707960614872643
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 10.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 2000.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 2000.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 2000.0
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 2000.0
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 0.05,
+        "re": 8473.43
+      },
+      "result": 5.900798141956681E-06
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.04999997615813641
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -2.950397664122377E-06
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 2.950397664122377E-06
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 5.000250139535982
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.560790794138085
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5607966949158498
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 12.000104315125535
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5666237556570985
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5666296564946296
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": -0.49986911835731007
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.00014752004062756896
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 0.25014961101987865
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 0.05,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 2.502233677660115
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.0509903344737737
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.19739796373604632
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.19739206292461658
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 4.9902506430523115
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5607707050250859
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5607766058259824
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 11.990104401178055
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5666202970808696
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5666261978881355
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 9.500130292508402
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 10.000147520258906
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 10.25014990591444
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 0.05,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 12.502236631917185
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.5024939269557654
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -1.4711277211972222
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -1.471121820400135
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 4.500277947742919
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.559679152138062
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.559685052917494
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 11.500108857002447
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5664423406408865
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.566448241479921
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 499.5001013867295
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 500.0001475291356
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 500.2501643721189
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 0.05,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 502.50238133048697
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 2.0006250507434573
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -1.545801517120714
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -1.545795616318345
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 3.0004169849836506
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.554121309856166
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.554127210675713
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 10.000125206223101
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5657892788750427
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.5657951796834857
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 1999.500012896533
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 2000.0001475546014
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 2000.250208655416
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 0.05,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 2002.5028242853296
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 1.0,
+        "re": 8473.43
+      },
+      "result": 0.00011801596283913362
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 1.0
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -5.9007981453810535E-05
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 5.9007981453810535E-05
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 5.099077373033376
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.3732850231011262
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.3734030390626404
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 12.041653383417074
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.4875374854250412
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.4876555013888226
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": -9.941313679519226
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.05900798169022892
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 5.059052657088614
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 1.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 50.101012473533046
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 1.000050588162672
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.010058668757233491
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.009940652794401114
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 5.08927217203265
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.3728994476710774
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.3730174636328258
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 12.031688051795044
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.4874683662285655
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.4875863821916102
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 0.05867459003638942
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 10.059008051030105
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 15.059058627230115
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 1.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 60.10107160000189
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 1.1180603778858849
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.4636948148452173
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.4635767988822733
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 4.609842632301194
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.3519996496448072
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.3521176656060612
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 11.543460282963906
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.4839353216560334
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.484053337620196
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 490.0580997054931
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 500.05901146323595
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 505.05935118235357
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 1.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 550.1039688315359
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 2.2361207557717697
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -1.1071605193147587
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -1.1070425033517055
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 3.1624082974192116
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.2488628539663658
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 1.2489808699285996
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 10.049957837661628
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.4709868745167791
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 1.4711048904785693
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 1990.056339853254
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 2000.059021909692
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 2005.0602467563294
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 1.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 2050.1128379110014
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 100.0,
+        "re": 8473.43
+      },
+      "result": 0.011801596283913363
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 99.9994196773618
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.0059007981419564835
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.005900798141956485
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 100.15380504721502
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.044042307994278114
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.055843904278174324
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 100.78713056248712
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.11344304896918611
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.12524464525312212
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": -409.9173241847893
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 590.1140598616621
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 1090.2057753664849
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 100.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 5597.823304869962
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 99.99947918502963
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.00600079692197235
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.005800799361945771
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 100.15336526489409
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.04394255794653322
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.05574415423044397
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 100.78599905327935
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.11334446660212943
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.12514606288605093
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": -399.9178079502599
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 600.1147562910774
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 1100.207061985202
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 100.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 5607.829911194131
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 100.00361997832277
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.01090055093466891
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.0009010453492406271
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 100.13303693874339
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.03905377239992653
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.05085536868381364
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 100.73175564655173
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.1085112563258942
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.12031285260982724
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 90.05848742344824
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 1090.1488813015021
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 1590.270106211392
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 100.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 6098.153621122037
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 100.03121626611157
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.025895541008071458
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.014093944724154643
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 100.08569503223593
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.02407748354992344
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.03587907983383598
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 100.58036250410488
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.09368497972580601
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.10548657600971256
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 1589.985922240885
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 2590.253345619203
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 3090.4630987370183
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 100.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 7599.144569881901
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 400.0,
+        "re": 8473.43
+      },
+      "result": 0.04720638513565345
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 399.9628603212722
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.023603192567826985
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.023603192567826985
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 400.1120903885943
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": -0.011109850217526434
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.03609653491812337
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 400.42582110733076
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.006361041147908196
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.053567426283565325
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 5444.371939300254
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 9450.051372792586
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 11454.26060977843
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 400.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 29551.47767376002
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 399.96309645623614
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.023628187910312595
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.023578197225342757
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 400.1122016097793
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": -0.01113484166448647
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.036071543471165535
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 400.4257576221643
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.006336068234714983
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.05354245337036669
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 5454.378364529475
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 9460.062525362446
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 11464.2741276366
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 400.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 29561.512549220424
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 399.9749731673836
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.0248529229070755
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.022353462228578053
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 400.1179575688405
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": -0.012359404914519607
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.034846980221127054
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 400.4229527656289
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.005112386417212704
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.05231877155287168
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 5944.693200699476
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 9950.609001249177
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 11954.936502577766
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 400.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 30053.221446803946
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 400.01505938136427
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.028601632486800786
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.018604752648851513
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 400.1393073055172
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": -0.016107821829084865
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.031098563306565567
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 400.4180937191161
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.001366342146566748
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.04857272728221808
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 7445.656984893503
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 11452.28188661713
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 13456.964180968498
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 400.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 31558.452765941183
+    },
+    {
+      "fn": "alpha_from_distance",
+      "args": {
+        "dist": 800.0,
+        "re": 8473.43
+      },
+      "result": 0.0944127702713069
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 799.7029073982712
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.04720638513565282
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.047206385135652805
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 799.9544429160007
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": -0.040962951625893786
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.05344981864541099
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 800.3589380002176
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": -0.032229255003562496
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.06218351526774594
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 29853.487618162035
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 37905.880699534464
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 41937.698160521904
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "dist": 800.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 78430.27724348576
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 799.7033793492096
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.04721887584172476
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.0471938944295822
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 799.9548524933698
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": -0.04097544184496759
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.05343732842633738
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 800.3592602993701
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": -0.03224174290408522
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.0621710273672218
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 29863.52285004432
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 37915.92543452498
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 41947.7476537013
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "dist": 800.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 78440.36980373312
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 799.7266577808019
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.04783090230080894
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.04658186797049835
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 799.9750746572678
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": -0.041587446833434086
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.05282532343787003
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 800.3752058526896
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": -0.03285363763070426
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.06155913264060466
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 30355.249212207127
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 38408.1174490384
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 42440.172819437066
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "dist": 800.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 78934.9052558282
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 799.7997801682459
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": -0.04970422784324298
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.044708542428062735
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 800.0388415999047
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": -0.043460735789865736
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 5000.0,
+        "radius": 8473.43
+      },
+      "result": 0.050952034481440846
+    },
+    {
+      "fn": "slant_range_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 800.425881430863
+    },
+    {
+      "fn": "epsilon_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": -0.034726629825249586
+    },
+    {
+      "fn": "theta_from_heights",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "H": 12000.0,
+        "radius": 8473.43
+      },
+      "result": 0.05968614044605646
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 31860.53399433331
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 39914.82769755021
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 43947.596796178914
+    },
+    {
+      "fn": "height_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "dist": 800.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 80448.78929285551
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 0.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 127.4200000000086
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 0.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 0.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 2.829292355954749E-12
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 0.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": -5.658584711909498E-12
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 0.0,
+        "h2": 0.0,
+        "re": 6371.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 5000.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 323.95066324018626
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 5000.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 252.32590278943943
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 5000.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 222.47268551114695
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 5000.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 87.76193972046164
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 0.0,
+        "h2": 5000.0,
+        "re": 6371.0
+      },
+      "result": 252.4083992263332
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 12000.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 459.5865705283451
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 12000.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 390.72290068086465
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 12000.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 360.1626700316314
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 12000.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 185.4452521513465
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 0.0,
+        "h2": 12000.0,
+        "re": 6371.0
+      },
+      "result": 391.0294106585846
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 0.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 126.41206041832626
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 0.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 0.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": -2.067047398791678
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 0.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": -0.19989597249974644
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 10.0,
+        "h2": 0.0,
+        "re": 6371.0
+      },
+      "result": 11.288046775239728
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 5000.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 323.7058724923711
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 5000.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 252.07341764227976
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 5000.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 222.22219170029084
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 5000.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 87.60532150939886
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 10.0,
+        "h2": 5000.0,
+        "re": 6371.0
+      },
+      "result": 263.69644600157295
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 12000.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 459.4258111069629
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 12000.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 390.5600145164156
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 12000.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 360.0003234302896
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 12000.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 185.31909027512472
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 10.0,
+        "h2": 12000.0,
+        "re": 6371.0
+      },
+      "result": 402.3174574338243
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 0.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 0.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 0.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 0.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": -10.153346713449361
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 500.0,
+        "h2": 0.0,
+        "re": 6371.0
+      },
+      "result": 79.81854421122951
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 5000.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 311.41512682716996
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 5000.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 239.37580490692852
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 5000.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 209.63007085870743
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 5000.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 79.85571704656921
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 500.0,
+        "h2": 5000.0,
+        "re": 6371.0
+      },
+      "result": 332.2269434375627
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 12000.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 451.46706815842725
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 12000.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 382.4937355393088
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 12000.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 351.96133534532254
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 12000.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 179.0980611121774
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 500.0,
+        "h2": 12000.0,
+        "re": 6371.0
+      },
+      "result": 470.84795486981415
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 0.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 0.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 0.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 0.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": -42.8460393299455
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 2000.0,
+        "h2": 0.0,
+        "re": 6371.0
+      },
+      "result": 159.63708842245902
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 5000.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 269.2743692600455
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 5000.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 195.4456937317914
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 5000.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 166.16884168992388
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 5000.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 55.136073970128045
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 2000.0,
+        "h2": 5000.0,
+        "re": 6371.0
+      },
+      "result": 412.0454876487922
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 12000.0,
+        "eps": -0.01,
+        "radius": 6371.0
+      },
+      "result": 426.01980655646145
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 12000.0,
+        "eps": 0.0,
+        "radius": 6371.0
+      },
+      "result": 356.6702583581667
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 12000.0,
+        "eps": 0.005,
+        "radius": 6371.0
+      },
+      "result": 326.23347214760213
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 12000.0,
+        "eps": 0.05,
+        "radius": 6371.0
+      },
+      "result": 159.55221133541102
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 2000.0,
+        "h2": 12000.0,
+        "re": 6371.0
+      },
+      "result": 550.6664990810435
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 0.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 169.46860000001143
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 0.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 0.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 3.762958833419816E-12
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 0.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": -7.525917666839632E-12
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 0.0,
+        "h2": 0.0,
+        "re": 8473.43
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 5000.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 387.8345021944845
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 5000.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 291.0200238869706
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 5000.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 251.71944247490387
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 5000.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 90.25417525835157
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 0.0,
+        "h2": 5000.0,
+        "re": 8473.43
+      },
+      "result": 291.0915663498343
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 12000.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 543.3144338908004
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 12000.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 450.69125760204037
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 12000.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 410.30921570453864
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 0.0,
+        "H": 12000.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 194.75458338715512
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 0.0,
+        "h2": 12000.0,
+        "re": 8473.43
+      },
+      "result": 450.9571154777358
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 0.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 168.46266245144162
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 0.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 0.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": -2.049557751857625
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 0.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": -0.19988041624408168
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 10.0,
+        "h2": 0.0,
+        "re": 8473.43
+      },
+      "result": 13.018010600702397
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 5000.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 387.5549338584623
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 5000.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 290.7288296258529
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 5000.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 251.43129001941816
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 5000.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 90.08947455546478
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 10.0,
+        "h2": 5000.0,
+        "re": 8473.43
+      },
+      "result": 304.10957695053673
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 12000.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 543.1298018539165
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 12000.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 450.5033861734293
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 12000.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 410.1221700438305
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 10.0,
+        "H": 12000.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 194.61779560175188
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 10.0,
+        "h2": 12000.0,
+        "re": 8473.43
+      },
+      "result": 463.9751260784382
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 0.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 0.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 0.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 0.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": -10.112247306868625
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 500.0,
+        "h2": 0.0,
+        "re": 8473.43
+      },
+      "result": 92.05123573315026
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 5000.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 373.5248818726992
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 5000.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 276.0844789793688
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 5000.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 236.9480477565044
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 5000.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 81.95350481728306
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 500.0,
+        "h2": 5000.0,
+        "re": 8473.43
+      },
+      "result": 383.1428020829846
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 12000.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 533.9899808233979
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 12000.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 441.1997902844829
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 12000.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 400.8603400166294
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 500.0,
+        "H": 12000.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 187.87778184518993
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 500.0,
+        "h2": 12000.0,
+        "re": 8473.43
+      },
+      "result": 543.0083512108861
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 0.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 0.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 0.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 0.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": -42.05205521588986
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 2000.0,
+        "h2": 0.0,
+        "re": 8473.43
+      },
+      "result": 184.10247146630053
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 5000.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 325.54917112752736
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 5000.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 225.4187091555866
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 5000.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 186.99750806482865
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 5000.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 56.19179369039666
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 2000.0,
+        "h2": 5000.0,
+        "re": 8473.43
+      },
+      "result": 475.1940378161348
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 12000.0,
+        "eps": -0.01,
+        "radius": 8473.43
+      },
+      "result": 504.7776877290331
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 12000.0,
+        "eps": 0.0,
+        "radius": 8473.43
+      },
+      "result": 411.41486236629913
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 12000.0,
+        "eps": 0.005,
+        "radius": 8473.43
+      },
+      "result": 371.22172029595214
+    },
+    {
+      "fn": "distance_from_epsilon",
+      "args": {
+        "h": 2000.0,
+        "H": 12000.0,
+        "eps": 0.05,
+        "radius": 8473.43
+      },
+      "result": 166.76785453796887
+    },
+    {
+      "fn": "visibility_distance",
+      "args": {
+        "h1": 2000.0,
+        "h2": 12000.0,
+        "re": 8473.43
+      },
+      "result": 635.0595869440363
+    },
+    {
+      "fn": "slant_range_from_heights_latlon",
+      "args": {
+        "h": 10.0,
+        "lat1": 50.0208333333,
+        "lon1": 10.0416666667,
+        "lat2": 51.2291666667,
+        "lon2": 13.7083333333,
+        "H": 10000.0,
+        "radius": 8473.43
+      },
+      "result": 291.74976255971893
+    },
+    {
+      "fn": "slant_range_from_heights_latlon",
+      "args": {
+        "h": 10.0,
+        "lat1": 51.5,
+        "lon1": 10.0,
+        "lat2": 51.5,
+        "lon2": -0.1,
+        "H": 10000.0,
+        "radius": 8473.43
+      },
+      "result": 698.857769820571
+    },
+    {
+      "fn": "slant_range_from_heights_latlon",
+      "args": {
+        "h": 10.0,
+        "lat1": 10.0,
+        "lon1": 179.99,
+        "lat2": 10.0,
+        "lon2": -179.99,
+        "H": 10000.0,
+        "radius": 8473.43
+      },
+      "result": 10.227529477126154
+    },
+    {
+      "fn": "slant_range_from_heights_latlon",
+      "args": {
+        "h": 10.0,
+        "lat1": 89.9,
+        "lon1": 0.0,
+        "lat2": 89.9,
+        "lon2": 180.0,
+        "H": 10000.0,
+        "radius": 8473.43
+      },
+      "result": 24.391731038574466
+    },
+    {
+      "fn": "slant_range_from_heights_latlon",
+      "args": {
+        "h": 10.0,
+        "lat1": 50.0,
+        "lon1": 10.0,
+        "lat2": 50.0,
+        "lon2": 10.0,
+        "H": 10000.0,
+        "radius": 8473.43
+      },
+      "result": 9.989999999935563
+    },
+    {
+      "fn": "slant_range_from_heights_latlon",
+      "args": {
+        "h": 10.0,
+        "lat1": -33.9,
+        "lon1": 18.4,
+        "lat2": -34.6,
+        "lon2": -58.4,
+        "H": 10000.0,
+        "radius": 8473.43
+      },
+      "result": 6687.871786150647
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.0,
+        "dist2": 0.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.0,
+        "dist2": 0.05
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.0,
+        "dist2": 1.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.0,
+        "dist2": 100.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.0,
+        "dist2": 400.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.0,
+        "dist2": 800.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.05,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.05,
+        "dist2": 0.05
+      },
+      "result": 7.216878364870323
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.05,
+        "dist2": 1.0
+      },
+      "result": 9.960238411119947
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.05,
+        "dist2": 100.0
+      },
+      "result": 10.203656666214602
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.05,
+        "dist2": 400.0
+      },
+      "result": 10.205569433438493
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 0.05,
+        "dist2": 800.0
+      },
+      "result": 10.205888332569371
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 1.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 1.0,
+        "dist2": 0.05
+      },
+      "result": 9.960238411119947
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 1.0,
+        "dist2": 1.0
+      },
+      "result": 32.274861218395145
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 1.0,
+        "dist2": 100.0
+      },
+      "result": 45.41702621954747
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 1.0,
+        "dist2": 400.0
+      },
+      "result": 45.586598780369954
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 1.0,
+        "dist2": 800.0
+      },
+      "result": 45.615045958664446
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 100.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 100.0,
+        "dist2": 0.05
+      },
+      "result": 10.203656666214602
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 100.0,
+        "dist2": 1.0
+      },
+      "result": 45.41702621954747
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 100.0,
+        "dist2": 100.0
+      },
+      "result": 322.7486121839514
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 100.0,
+        "dist2": 400.0
+      },
+      "result": 408.24829046386304
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 100.0,
+        "dist2": 800.0
+      },
+      "result": 430.3314829119352
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 400.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 400.0,
+        "dist2": 0.05
+      },
+      "result": 10.205569433438493
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 400.0,
+        "dist2": 1.0
+      },
+      "result": 45.586598780369954
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 400.0,
+        "dist2": 100.0
+      },
+      "result": 408.24829046386304
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 400.0,
+        "dist2": 400.0
+      },
+      "result": 645.4972243679028
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 400.0,
+        "dist2": 800.0
+      },
+      "result": 745.3559924999299
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 800.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 800.0,
+        "dist2": 0.05
+      },
+      "result": 10.205888332569371
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 800.0,
+        "dist2": 1.0
+      },
+      "result": 45.615045958664446
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 800.0,
+        "dist2": 100.0
+      },
+      "result": 430.3314829119352
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 800.0,
+        "dist2": 400.0
+      },
+      "result": 745.3559924999299
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.144,
+        "dist1": 800.0,
+        "dist2": 800.0
+      },
+      "result": 912.870929175277
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.0,
+        "dist2": 0.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.0,
+        "dist2": 0.05
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.0,
+        "dist2": 1.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.0,
+        "dist2": 100.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.0,
+        "dist2": 400.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.0,
+        "dist2": 800.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.05,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.05,
+        "dist2": 0.05
+      },
+      "result": 4.166666666666667
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.05,
+        "dist2": 1.0
+      },
+      "result": 5.750546327852952
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.05,
+        "dist2": 100.0
+      },
+      "result": 5.89108392295752
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.05,
+        "dist2": 400.0
+      },
+      "result": 5.89218825962913
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 0.05,
+        "dist2": 800.0
+      },
+      "result": 5.892372376128187
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 1.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 1.0,
+        "dist2": 0.05
+      },
+      "result": 5.750546327852952
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 1.0,
+        "dist2": 1.0
+      },
+      "result": 18.633899812498246
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 1.0,
+        "dist2": 100.0
+      },
+      "result": 26.221532313648027
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 1.0,
+        "dist2": 400.0
+      },
+      "result": 26.31943507728606
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 1.0,
+        "dist2": 800.0
+      },
+      "result": 26.33585906333207
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 100.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 100.0,
+        "dist2": 0.05
+      },
+      "result": 5.89108392295752
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 100.0,
+        "dist2": 1.0
+      },
+      "result": 26.221532313648027
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 100.0,
+        "dist2": 100.0
+      },
+      "result": 186.33899812498248
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 100.0,
+        "dist2": 400.0
+      },
+      "result": 235.70226039551585
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 100.0,
+        "dist2": 800.0
+      },
+      "result": 248.45199749997664
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 400.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 400.0,
+        "dist2": 0.05
+      },
+      "result": 5.892188259629131
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 400.0,
+        "dist2": 1.0
+      },
+      "result": 26.31943507728606
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 400.0,
+        "dist2": 100.0
+      },
+      "result": 235.70226039551585
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 400.0,
+        "dist2": 400.0
+      },
+      "result": 372.67799624996496
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 400.0,
+        "dist2": 800.0
+      },
+      "result": 430.3314829119352
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 800.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 800.0,
+        "dist2": 0.05
+      },
+      "result": 5.892372376128187
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 800.0,
+        "dist2": 1.0
+      },
+      "result": 26.33585906333207
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 800.0,
+        "dist2": 100.0
+      },
+      "result": 248.45199749997664
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 800.0,
+        "dist2": 400.0
+      },
+      "result": 430.3314829119352
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 0.432,
+        "dist1": 800.0,
+        "dist2": 800.0
+      },
+      "result": 527.04627669473
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.0,
+        "dist2": 0.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.0,
+        "dist2": 0.05
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.0,
+        "dist2": 1.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.0,
+        "dist2": 100.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.0,
+        "dist2": 400.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.0,
+        "dist2": 800.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.05,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.05,
+        "dist2": 0.05
+      },
+      "result": 2.405626121623441
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.05,
+        "dist2": 1.0
+      },
+      "result": 3.3200794703733156
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.05,
+        "dist2": 100.0
+      },
+      "result": 3.4012188887382004
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.05,
+        "dist2": 400.0
+      },
+      "result": 3.401856477812831
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 0.05,
+        "dist2": 800.0
+      },
+      "result": 3.401962777523124
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 1.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 1.0,
+        "dist2": 0.05
+      },
+      "result": 3.3200794703733156
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 1.0,
+        "dist2": 1.0
+      },
+      "result": 10.75828707279838
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 1.0,
+        "dist2": 100.0
+      },
+      "result": 15.139008739849157
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 1.0,
+        "dist2": 400.0
+      },
+      "result": 15.195532926789983
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 1.0,
+        "dist2": 800.0
+      },
+      "result": 15.205015319554814
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 100.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 100.0,
+        "dist2": 0.05
+      },
+      "result": 3.4012188887382004
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 100.0,
+        "dist2": 1.0
+      },
+      "result": 15.139008739849157
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 100.0,
+        "dist2": 100.0
+      },
+      "result": 107.58287072798379
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 100.0,
+        "dist2": 400.0
+      },
+      "result": 136.08276348795434
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 100.0,
+        "dist2": 800.0
+      },
+      "result": 143.44382763731173
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 400.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 400.0,
+        "dist2": 0.05
+      },
+      "result": 3.401856477812831
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 400.0,
+        "dist2": 1.0
+      },
+      "result": 15.195532926789983
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 400.0,
+        "dist2": 100.0
+      },
+      "result": 136.08276348795434
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 400.0,
+        "dist2": 400.0
+      },
+      "result": 215.16574145596758
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 400.0,
+        "dist2": 800.0
+      },
+      "result": 248.4519974999766
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 800.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 800.0,
+        "dist2": 0.05
+      },
+      "result": 3.401962777523124
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 800.0,
+        "dist2": 1.0
+      },
+      "result": 15.205015319554814
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 800.0,
+        "dist2": 100.0
+      },
+      "result": 143.44382763731173
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 800.0,
+        "dist2": 400.0
+      },
+      "result": 248.4519974999766
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 1.296,
+        "dist1": 800.0,
+        "dist2": 800.0
+      },
+      "result": 304.29030972509224
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.0,
+        "dist2": 0.0
+      },
+      "result": "NaN"
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.0,
+        "dist2": 0.05
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.0,
+        "dist2": 1.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.0,
+        "dist2": 100.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.0,
+        "dist2": 400.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.0,
+        "dist2": 800.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.05,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.05,
+        "dist2": 0.05
+      },
+      "result": 0.8505172717997146
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.05,
+        "dist2": 1.0
+      },
+      "result": 1.1738253537896064
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.05,
+        "dist2": 100.0
+      },
+      "result": 1.2025124702632775
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.05,
+        "dist2": 400.0
+      },
+      "result": 1.2027378920424183
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 0.05,
+        "dist2": 800.0
+      },
+      "result": 1.2027754746654116
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 1.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 1.0,
+        "dist2": 0.05
+      },
+      "result": 1.1738253537896064
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 1.0,
+        "dist2": 1.0
+      },
+      "result": 3.8036288715636535
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 1.0,
+        "dist2": 100.0
+      },
+      "result": 5.352447870194874
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 1.0,
+        "dist2": 400.0
+      },
+      "result": 5.3724321881383315
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 1.0,
+        "dist2": 800.0
+      },
+      "result": 5.375784720251275
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 100.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 100.0,
+        "dist2": 0.05
+      },
+      "result": 1.2025124702632775
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 100.0,
+        "dist2": 1.0
+      },
+      "result": 5.352447870194874
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 100.0,
+        "dist2": 100.0
+      },
+      "result": 38.03628871563653
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 100.0,
+        "dist2": 400.0
+      },
+      "result": 48.11252243246881
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 100.0,
+        "dist2": 800.0
+      },
+      "result": 50.71505162084871
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 400.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 400.0,
+        "dist2": 0.05
+      },
+      "result": 1.2027378920424183
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 400.0,
+        "dist2": 1.0
+      },
+      "result": 5.3724321881383315
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 400.0,
+        "dist2": 100.0
+      },
+      "result": 48.11252243246881
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 400.0,
+        "dist2": 400.0
+      },
+      "result": 76.07257743127306
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 400.0,
+        "dist2": 800.0
+      },
+      "result": 87.8410461157883
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 800.0,
+        "dist2": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 800.0,
+        "dist2": 0.05
+      },
+      "result": 1.2027754746654116
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 800.0,
+        "dist2": 1.0
+      },
+      "result": 5.375784720251275
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 800.0,
+        "dist2": 100.0
+      },
+      "result": 50.71505162084871
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 800.0,
+        "dist2": 400.0
+      },
+      "result": 87.8410461157883
+    },
+    {
+      "fn": "f1_radius",
+      "args": {
+        "qrg": 10.368,
+        "dist1": 800.0,
+        "dist2": 800.0
+      },
+      "result": 107.58287072798379
+    },
+    {
+      "fn": "doppler_shift",
+      "args": {
+        "qrg": 144300000.0,
+        "speed": -300.0
+      },
+      "result": -144.30014431476593
+    },
+    {
+      "fn": "doppler_shift",
+      "args": {
+        "qrg": 144300000.0,
+        "speed": -50.0
+      },
+      "result": -24.05000400543213
+    },
+    {
+      "fn": "doppler_shift",
+      "args": {
+        "qrg": 144300000.0,
+        "speed": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "doppler_shift",
+      "args": {
+        "qrg": 144300000.0,
+        "speed": 50.0
+      },
+      "result": 24.049995988607407
+    },
+    {
+      "fn": "doppler_shift",
+      "args": {
+        "qrg": 144300000.0,
+        "speed": 300.0
+      },
+      "result": 144.29985570907593
+    },
+    {
+      "fn": "doppler_shift",
+      "args": {
+        "qrg": 10368100000.0,
+        "speed": -300.0
+      },
+      "result": -10368.110368728638
+    },
+    {
+      "fn": "doppler_shift",
+      "args": {
+        "qrg": 10368100000.0,
+        "speed": -50.0
+      },
+      "result": -1728.016954421997
+    },
+    {
+      "fn": "doppler_shift",
+      "args": {
+        "qrg": 10368100000.0,
+        "speed": 0.0
+      },
+      "result": 0.0
+    },
+    {
+      "fn": "doppler_shift",
+      "args": {
+        "qrg": 10368100000.0,
+        "speed": 50.0
+      },
+      "result": 1728.01637840271
+    },
+    {
+      "fn": "doppler_shift",
+      "args": {
+        "qrg": 10368100000.0,
+        "speed": 300.0
+      },
+      "result": 10368.089632034302
+    }
+  ]
+}

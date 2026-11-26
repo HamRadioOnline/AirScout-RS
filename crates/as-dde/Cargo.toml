@@ -1,0 +1,18 @@
+[package]
+name = "as-dde"
+description = "AirScout-RS DDE: the DDEML client of the Ham Radio Deluxe rotator output (Windows)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+
+# `DdeConnect` takes a `CONVCONTEXT`, which the `windows` crate gates behind `Win32_Security`;
+# the message pump needs `Win32_UI_WindowsAndMessaging`.
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_DataExchange",
+    "Win32_UI_WindowsAndMessaging",
+] }

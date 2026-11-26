@@ -1,0 +1,17 @@
+
+Maidenhead locator system elvation tiles calculated by DL2ALF based on elevation data of the SRTM project:
+
+This material is based on SRTM1 data V3.0 services provided by the OpenTopography Facility with support from the National Science Foundation under NSF Award Numbers 1226353 & 1225810
+http://opentopo.sdsc.edu/raster?opentopoID=OTSRTM.082015.4326.1
+
+The Shuttle Radar Topography Mission (SRTM) obtained elevation data on a near-global scale to generate the most complete high-resolution digital topographic database of Earth. SRTM consisted of a specially modified radar system that flew onboard the Space Shuttle Endeavour during an 11-day mission in February of 2000. SRTM is an international project spearheaded by the National Geospatial-Intelligence Agency (NGA) and the National Aeronautics and Space Administration (NASA).
+Version 3: Elimination of the voids in the NASA SRTM DEM was the primary goal of a project under the NASA MEaSUREs (Making Earth System Data Records for Use in Research Environments) Program. Ultimately this was achieved by filling the voids with elevation data primarily from the ASTER GDEM2 (Global Digital Elevation Model Version 2) and secondarily from the USGS GMTED2010 elevation model or the USGS National Elevation Dataset (NED). NASA SRTM V3.0 three-arc-second data are provided in two forms: (1) by three-by-three averaging of the one arc-second samples, and (2) by extracting the middle sample of those same three-by-three samples. For more information on this dataset visit the LP DAAC NASA Shuttle Radar Topography Mission Global 1 arc second page.
+https://lpdaac.usgs.gov/dataset_discovery/measures/measures_products_table/srtmgl1
+
+ASTER GDEM is a product of NASA and METI. See https://lpdaac.usgs.gov/dataset_discovery/aster
+
+MEaSUREs data and products are available at no charge from the LP DAAC.See https://lpdaac.usgs.gov/dataset_discovery/measures
+
+
+
+
