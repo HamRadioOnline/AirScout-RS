@@ -162,8 +162,9 @@ looks at it most):
 - Snapshot images (egui_kittest) per window and tab go into the repo for visual review,
   total budget 10 MB, updated with every UI change of that window. Builder's call whether
   they run on all CI hosts or only on one (rendering backend availability).
-- Optional: owner screenshots of the original on Windows as visual reference in
-  `docs/gui-reference/screenshots/`. Not required.
+- Screenshots of the original (taken 2026-11-26 under Mono, V1.4.5.1) are a local visual
+  reference only, in the git-ignored `.superpowers/` workspace. They never go into the repo
+  (owner decision 2026-11-26).
 
 ### 5. Process
 
