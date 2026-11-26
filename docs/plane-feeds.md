@@ -18,3 +18,14 @@ Restricted feeds are off by default and show a disclaimer in the plane server.
 The desktop applies the disclaimers listed in the table. OpenSky supports
 anonymous access or your OAuth client. ADSBSupport requires credentials.
 Plane feed requests use the configured coverage area.
+
+## Multiple feeds
+
+The desktop runs up to three feeds at once (the C# `Planes_PlaneFeed1/2/3`
+slots). Options → Planes shows three selectors "Feed 1/2/3"; slots 2 and 3
+offer a `[none]` entry and default to it. One worker runs per distinct
+non-empty slot, so a slot that repeats an earlier feed adds nothing, and every
+feed writes into the same aircraft cache. The status line reports each active
+feed's state (for example `OpenSky: 123 planes | VRS: error`) without
+credentials. A feed with an unaccepted disclaimer keeps its slot empty until
+you accept it.

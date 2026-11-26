@@ -53,7 +53,7 @@ fn get(api: &WebApi, raw: &str) -> String {
 }
 
 /// The settings members in `Settings.Designer.cs` declaration order.
-const SETTINGS_MEMBERS: [&str; 43] = [
+const SETTINGS_MEMBERS: [&str; 45] = [
     "MyCall",
     "DXCall",
     "Band",
@@ -70,6 +70,8 @@ const SETTINGS_MEMBERS: [&str; 43] = [
     "DXLat",
     "DXLon",
     "Path_BestCaseElevation",
+    "Planes_PlaneFeed2",
+    "Planes_PlaneFeed3",
     "Planes_PlaneFeed1",
     "Planes_Position_TTL",
     "Server_Name",
@@ -144,6 +146,8 @@ fn settings_json_members_exact() {
     assert!(text.contains("\"MyLat\": 50.02,"));
     assert_eq!(o["Map_SmallMarkers"], true);
     assert_eq!(o["Server_Name"], "AS");
+    assert_eq!(o["Planes_PlaneFeed2"], "");
+    assert_eq!(o["Planes_PlaneFeed3"], "");
     assert_eq!(o["Planes_PlaneFeed1"], "OpenSky");
 
     let providers = o["Map_Providers"].as_array().unwrap();
@@ -195,6 +199,17 @@ fn map_provider_falls_back_to_a_served_one() {
         let v: serde_json::Value = serde_json::from_str(&settings_json(&s)).unwrap();
         assert_eq!(v["Map_Provider"], served, "{selected}");
     }
+}
+
+#[test]
+fn settings_json_serves_all_three_feed_slots() {
+    let mut s = settings();
+    s.feed2 = "VRSWebServer".into();
+    s.feed3 = "Readsb".into();
+    let v: serde_json::Value = serde_json::from_str(&settings_json(&s)).unwrap();
+    assert_eq!(v["Planes_PlaneFeed1"], "OpenSky");
+    assert_eq!(v["Planes_PlaneFeed2"], "VRSWebServer");
+    assert_eq!(v["Planes_PlaneFeed3"], "Readsb");
 }
 
 /// Every file below `dir` with its size and modification time.

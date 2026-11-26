@@ -54,3 +54,21 @@ fn distinct_feeds_skip_empty_and_duplicates() {
     s.feed3 = "[none]".into();
     assert_eq!(s.distinct_feeds(), vec!["OpenSky"]);
 }
+
+#[test]
+fn feed_slot_getter_and_setter_cover_the_three_slots() {
+    let mut s = Settings::default();
+    assert_eq!(s.feed_slot(1), "OpenSky");
+    assert_eq!(s.feed_slot(2), "");
+    assert_eq!(s.feed_slot(3), "");
+    s.set_feed_slot(2, "VRSWebServer".into());
+    s.set_feed_slot(3, "Readsb".into());
+    assert_eq!(s.feed_slot(2), "VRSWebServer");
+    assert_eq!(s.feed_slot(3), "Readsb");
+    assert_eq!(s.feed_slot(1), "OpenSky");
+    // an out-of-range slot falls back to slot 1
+    assert_eq!(s.feed_slot(0), "OpenSky");
+    assert_eq!(s.feed_slot(4), "OpenSky");
+    s.set_feed_slot(0, "Dump1090".into());
+    assert_eq!(s.feed, "Dump1090");
+}

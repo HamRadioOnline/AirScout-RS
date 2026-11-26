@@ -124,6 +124,12 @@ struct SettingsJson<'a> {
     /// :500
     #[serde(rename = "Path_BestCaseElevation")]
     path_best_case_elevation: bool,
+    /// :536
+    #[serde(rename = "Planes_PlaneFeed2")]
+    planes_plane_feed2: String,
+    /// :548
+    #[serde(rename = "Planes_PlaneFeed3")]
+    planes_plane_feed3: String,
     /// :560
     #[serde(rename = "Planes_PlaneFeed1")]
     planes_plane_feed1: String,
@@ -237,6 +243,8 @@ pub fn settings_json(s: &Settings) -> String {
         dx_lat: Num(s.dx_lat),
         dx_lon: Num(s.dx_lon),
         path_best_case_elevation: s.path_best_case_elevation,
+        planes_plane_feed2: feed_web_name(&s.feed2),
+        planes_plane_feed3: feed_web_name(&s.feed3),
         planes_plane_feed1: feed_web_name(&s.feed),
         planes_position_ttl: s
             .planes_position_ttl_min

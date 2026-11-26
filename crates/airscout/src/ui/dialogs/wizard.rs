@@ -217,7 +217,7 @@ impl WizardState {
     fn show_disclaimer(&mut self, ctx: &egui::Context) {
         if let Some(dlg) = self.disclaimer_dlg.take() {
             let result: DisclaimerResult = dlg.show(ctx);
-            self.disclaimer_dlg = disclaimer::resolve(&mut self.draft, dlg, result);
+            self.disclaimer_dlg = disclaimer::resolve(&mut self.draft, 1, dlg, result);
         }
     }
 
@@ -255,10 +255,12 @@ impl WizardState {
             WizardPage::User => self.user_page(ui),
             WizardPage::Feed => {
                 ui.label("Where AirScout gets its plane positions.");
-                if let planes::FeedAction::Select(name) = planes::feed_combo(ui, &self.draft) {
-                    self.disclaimer_dlg = disclaimer::select_feed(&mut self.draft, &name);
+                if let planes::FeedAction::Select(slot, name) =
+                    planes::feed_combo(ui, &self.draft, 1)
+                {
+                    self.disclaimer_dlg = disclaimer::select_feed(&mut self.draft, slot, &name);
                 }
-                planes::feed_info(ui, &self.draft);
+                planes::feed_info(ui, &self.draft, 1);
             }
             WizardPage::Finish => {
                 ui.label("Finish saves the settings and starts AirScout.");

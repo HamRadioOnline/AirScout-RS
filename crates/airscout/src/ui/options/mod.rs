@@ -117,9 +117,9 @@ pub struct OptionsDlg {
     /// The horizon or obstruction dialog the user asked for; the app opens it
     /// ([`Self::take_request`]).
     request: Option<StationAction>,
-    /// The disclaimer of the feed the user just picked; the draft keeps the old feed until
-    /// it is accepted.
-    pub disclaimer_dlg: Option<DisclaimerDlg>,
+    /// The disclaimer of the feed the user just picked for a slot; the draft keeps the old feed
+    /// until it is accepted.
+    pub disclaimer_dlg: Option<(usize, DisclaimerDlg)>,
     /// The settings editor of the selected feed.
     pub feed_dlg: Option<FeedSettingsDlg>,
     /// Database files and sizes of the Database tab; the app keeps them current.
@@ -401,16 +401,18 @@ impl OptionsDlg {
     fn handle_feed_action(&mut self, action: planes::FeedAction) {
         match action {
             planes::FeedAction::None => {}
-            planes::FeedAction::Select(name) => {
-                self.disclaimer_dlg = disclaimer::select_feed(&mut self.draft, &name);
+            planes::FeedAction::Select(slot, name) => {
+                self.disclaimer_dlg =
+                    disclaimer::select_feed(&mut self.draft, slot, &name).map(|d| (slot, d));
             }
-            planes::FeedAction::Settings => {
+            planes::FeedAction::Settings(slot) => {
+                let feed = self.draft.feed_slot(slot).to_string();
                 let stored = self
                     .draft
                     .feed_settings
-                    .get(&self.draft.feed)
+                    .get(&feed)
                     .and_then(|v| v.as_table());
-                self.feed_dlg = FeedSettingsDlg::new(&self.draft.feed, stored);
+                self.feed_dlg = FeedSettingsDlg::new(&feed, stored);
             }
         }
     }
@@ -418,9 +420,10 @@ impl OptionsDlg {
     /// Disclaimer (Accept remembers the feed and selects it, Decline keeps the old one) and
     /// feed settings (OK stores the table that a fresh feed accepted).
     fn show_feed_dialogs(&mut self, ctx: &egui::Context) {
-        if let Some(dlg) = self.disclaimer_dlg.take() {
+        if let Some((slot, dlg)) = self.disclaimer_dlg.take() {
             let result = dlg.show(ctx);
-            self.disclaimer_dlg = disclaimer::resolve(&mut self.draft, dlg, result);
+            self.disclaimer_dlg =
+                disclaimer::resolve(&mut self.draft, slot, dlg, result).map(|d| (slot, d));
         }
         if let Some(mut dlg) = self.feed_dlg.take() {
             match dlg.show(ctx) {

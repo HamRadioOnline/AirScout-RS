@@ -536,6 +536,24 @@ impl Settings {
         [self.feed.as_str(), self.feed2.as_str(), self.feed3.as_str()]
     }
 
+    /// The feed name of a 1-based slot; any other number is slot 1.
+    pub fn feed_slot(&self, slot: usize) -> &str {
+        match slot {
+            2 => &self.feed2,
+            3 => &self.feed3,
+            _ => &self.feed,
+        }
+    }
+
+    /// Set the feed name of a 1-based slot; any other number sets slot 1.
+    pub fn set_feed_slot(&mut self, slot: usize, name: String) {
+        match slot {
+            2 => self.feed2 = name,
+            3 => self.feed3 = name,
+            _ => self.feed = name,
+        }
+    }
+
     /// The distinct non-empty feed slots, in order. Empty slots (and the `[none]` sentinel)
     /// are skipped, and a slot equal to an earlier one is ignored: one worker runs per
     /// distinct feed.

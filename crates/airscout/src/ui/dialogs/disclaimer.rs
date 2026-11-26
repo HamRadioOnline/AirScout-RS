@@ -44,16 +44,17 @@ impl DisclaimerDlg {
     }
 }
 
-/// The user picked feed `name` for `draft`: a feed whose disclaimer is not yet accepted returns
-/// the dialog to show and leaves `draft.feed` alone; any other feed is selected at once.
-pub fn select_feed(draft: &mut Settings, name: &str) -> Option<DisclaimerDlg> {
+/// The user picked feed `name` for `slot` in `draft`: a feed whose disclaimer is not yet
+/// accepted returns the dialog to show and leaves the slot alone; any other feed is selected at
+/// once.
+pub fn select_feed(draft: &mut Settings, slot: usize, name: &str) -> Option<DisclaimerDlg> {
     let text = as_feeds::registry::feed_by_name(name).and_then(|f| f.disclaimer());
     match text {
         Some(t) if !draft.feeds_disclaimer_accepted.contains(&name.to_string()) => {
             Some(DisclaimerDlg::new(name, t))
         }
         _ => {
-            draft.feed = name.to_string();
+            draft.set_feed_slot(slot, name.to_string());
             None
         }
     }
@@ -63,6 +64,7 @@ pub fn select_feed(draft: &mut Settings, name: &str) -> Option<DisclaimerDlg> {
 /// one. Returns the dialog while it is still open.
 pub fn resolve(
     draft: &mut Settings,
+    slot: usize,
     dlg: DisclaimerDlg,
     result: DisclaimerResult,
 ) -> Option<DisclaimerDlg> {
@@ -72,7 +74,7 @@ pub fn resolve(
             if !draft.feeds_disclaimer_accepted.contains(&dlg.feed) {
                 draft.feeds_disclaimer_accepted.push(dlg.feed.clone());
             }
-            draft.feed = dlg.feed;
+            draft.set_feed_slot(slot, dlg.feed);
             None
         }
         DisclaimerResult::Decline => None,

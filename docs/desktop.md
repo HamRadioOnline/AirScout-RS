@@ -11,8 +11,9 @@ cargo run -p airscout --release
   checked stations in the watchlist. HISTORY pauses the live feed and replays
   recorded positions. History downloads have no default URL. They start after
   you accept the disclaimer and press Start.
-- Options controls feeds, elevation downloads, alerts, map preloading, tracking
-  and CAT.
+- Options controls up to three simultaneous plane feeds (see
+  [plane-feeds.md](plane-feeds.md)), elevation downloads, alerts, map
+  preloading, tracking and CAT.
 - Tracking can send UDP, write `<data directory>/Tmp/azel.dat` or drive a
   GS-232A rotator. Windows also supports HRD DDE and OmniRig. These hardware
   integrations have yet to be tested with real devices.
