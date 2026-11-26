@@ -5,12 +5,16 @@
 //! shapes it recognises but cannot read in [`model::Window::unparsed`].
 
 use super::model::{Control, Event, Window};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Parse a Designer source into a reference window.
 ///
 /// `src` may be the full `*.Designer.cs` text or just the body of
 /// `InitializeComponent`. `resx` resolves `resources.GetString("…")` keys.
+///
+/// Components that are never attached to a parent (`BackgroundWorker`, `Timer`,
+/// `ImageList`, `ToolTip`, …) are not controls and are dropped from
+/// [`model::Window::controls`].
 pub fn parse(window: &str, src: &str, resx: &dyn Fn(&str) -> Option<String>) -> Window {
     let body = initialize_component_body(src);
     let statements = split_statements(body);
@@ -18,13 +22,20 @@ pub fn parse(window: &str, src: &str, resx: &dyn Fn(&str) -> Option<String>) -> 
     for stmt in &statements {
         parser.handle_statement(stmt);
     }
-    parser.window
+    let mut window = parser.window;
+    window
+        .controls
+        .retain(|c| parser.parented.contains(&c.name));
+    window
 }
 
 struct Parser<'a> {
     window: Window,
     by_name: HashMap<String, usize>,
     counters: HashMap<String, usize>,
+    /// Control names that were explicitly attached to a parent via `Controls.Add`,
+    /// `Pages.Add`, `Items.AddRange` or `Columns.AddRange`.
+    parented: HashSet<String>,
     resx: &'a dyn Fn(&str) -> Option<String>,
 }
 
@@ -34,6 +45,7 @@ impl<'a> Parser<'a> {
             window: Window::new(window),
             by_name: HashMap::new(),
             counters: HashMap::new(),
+            parented: HashSet::new(),
             resx,
         }
     }
@@ -107,6 +119,9 @@ impl<'a> Parser<'a> {
                 if is_settings_binding(value) {
                     return; // runtime-bound at startup — no static text
                 }
+                if is_user_input_kind(&self.control_mut(name).kind) {
+                    return; // user-input default values are not part of the reference
+                }
                 match self.parse_string_expr(value) {
                     Some(s) => self.control_mut(name).text = Some(s),
                     None => self.unparsed(stmt),
@@ -172,7 +187,9 @@ impl<'a> Parser<'a> {
 
     fn handle_method_call(&mut self, stmt: &str, rest: &str) {
         if let Some(pos) = rest.find("Controls.Add(") {
-            self.handle_controls_add(stmt, rest, pos);
+            self.handle_controls_add(stmt, rest, pos, "Controls.Add(");
+        } else if let Some(pos) = rest.find(".Pages.Add(") {
+            self.handle_controls_add(stmt, rest, pos, ".Pages.Add(");
         } else if let Some(pos) = rest.find(".Items.AddRange(") {
             self.handle_addrange_at(stmt, rest, pos, ".Items.AddRange(", false);
         } else if let Some(pos) = rest.find(".Columns.AddRange(") {
@@ -183,14 +200,14 @@ impl<'a> Parser<'a> {
         // `SuspendLayout` / `ResumeLayout` / `PerformLayout` / `DataBindings.Add` — ignored
     }
 
-    fn handle_controls_add(&mut self, stmt: &str, rest: &str, pos: usize) {
+    fn handle_controls_add(&mut self, stmt: &str, rest: &str, pos: usize, needle: &str) {
         let parent_path = rest[..pos].trim().trim_end_matches('.');
         let parent = if parent_path.is_empty() {
             "$this".to_string()
         } else {
             parent_path.to_string()
         };
-        let open = pos + "Controls.Add(".len() - 1;
+        let open = pos + needle.len() - 1;
         let Some(close) = matching_paren(rest, open) else {
             self.unparsed(stmt);
             return;
@@ -209,6 +226,7 @@ impl<'a> Parser<'a> {
         let c = self.control_mut(child);
         c.parent = parent;
         c.index = index;
+        self.parented.insert(child.to_string());
     }
 
     fn handle_addrange_at(
@@ -237,6 +255,7 @@ impl<'a> Parser<'a> {
                     let c = self.control_mut(name);
                     c.parent = parent.to_string();
                     c.index = start + i;
+                    self.parented.insert(name.clone());
                 }
                 self.counters
                     .insert(parent.to_string(), start + names.len());
@@ -611,6 +630,22 @@ fn is_non_control_kind(kind: &str) -> bool {
     matches!(
         kind,
         "SizeF" | "Size" | "Point" | "Font" | "Padding" | "Container"
+    )
+}
+
+/// Text-entry controls (`TextBox` and its `ScoutBase.Core` subclasses). Their
+/// Designer default values are user input (callsigns, locators, coordinates),
+/// not labels, so the reference records no `Text` for them.
+fn is_user_input_kind(kind: &str) -> bool {
+    matches!(
+        kind,
+        "TextBox"
+            | "MaskedTextBox"
+            | "DoubleTextBox"
+            | "Int32TextBox"
+            | "LongTextBox"
+            | "LocatorTextBox"
+            | "CallsignTextBox"
     )
 }
 

@@ -1,0 +1,156 @@
+{
+  "window": "PlaneFeedSettingsDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "PlaneFeedSettingsDlg",
+  "client_size": [
+    784,
+    441
+  ],
+  "controls": [
+    {
+      "name": "gb_Info",
+      "kind": "GroupBox",
+      "parent": "$this",
+      "index": 2,
+      "text": "Info",
+      "location": [
+        431,
+        9
+      ],
+      "size": [
+        341,
+        350
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "lbl_Info",
+      "kind": "Label",
+      "parent": "gb_Info",
+      "index": 0,
+      "text": "PlaneFeed Info",
+      "location": [
+        3,
+        16
+      ],
+      "size": [
+        335,
+        331
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gb_Properties",
+      "kind": "GroupBox",
+      "parent": "$this",
+      "index": 1,
+      "text": "Settings",
+      "location": [
+        12,
+        9
+      ],
+      "size": [
+        413,
+        420
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "pg_Main",
+      "kind": "PropertyGrid",
+      "parent": "gb_Properties",
+      "index": 0,
+      "text": null,
+      "location": [
+        3,
+        16
+      ],
+      "size": [
+        407,
+        401
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gb_Version",
+      "kind": "GroupBox",
+      "parent": "$this",
+      "index": 0,
+      "text": "Version",
+      "location": [
+        431,
+        365
+      ],
+      "size": [
+        341,
+        61
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "lbl_Version",
+      "kind": "Label",
+      "parent": "gb_Version",
+      "index": 0,
+      "text": "PlaneFeed Version",
+      "location": [
+        3,
+        16
+      ],
+      "size": [
+        335,
+        42
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

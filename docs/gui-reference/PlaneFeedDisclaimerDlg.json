@@ -1,0 +1,84 @@
+{
+  "window": "PlaneFeedDisclaimerDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "Plane Feed Disclaimer",
+  "client_size": [
+    482,
+    288
+  ],
+  "controls": [
+    {
+      "name": "btn_DeepLinkDlg_Accept",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 2,
+      "text": "&Accept",
+      "location": [
+        135,
+        253
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 12,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_DeepLinkDlg_Decline",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 1,
+      "text": "&Decline",
+      "location": [
+        231,
+        253
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 13,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_DisclaimerText",
+      "kind": "RichTextBox",
+      "parent": "$this",
+      "index": 0,
+      "text": "",
+      "location": [
+        12,
+        12
+      ],
+      "size": [
+        454,
+        210
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 14,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

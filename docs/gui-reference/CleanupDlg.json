@@ -1,0 +1,262 @@
+{
+  "window": "CleanupDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "AirScout Cleanup",
+  "client_size": [
+    624,
+    317
+  ],
+  "controls": [
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 9,
+      "text": "This will cleanup your AirScout database and user settings.\r\nPlease choose which parts should be erased:",
+      "location": [
+        38,
+        22
+      ],
+      "size": [
+        501,
+        48
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_UserSettings",
+      "kind": "CheckBox",
+      "parent": "$this",
+      "index": 8,
+      "text": "User Settings",
+      "location": [
+        42,
+        87
+      ],
+      "size": [
+        107,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_AirScout_Database",
+      "kind": "CheckBox",
+      "parent": "$this",
+      "index": 7,
+      "text": "AirScout Database (Aircraft data and positions)",
+      "location": [
+        42,
+        110
+      ],
+      "size": [
+        305,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_ScoutBase_Database",
+      "kind": "CheckBox",
+      "parent": "$this",
+      "index": 6,
+      "text": "ScoutBase Database (Elevation, propagation and station data)",
+      "location": [
+        42,
+        133
+      ],
+      "size": [
+        400,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_LogFiles",
+      "kind": "CheckBox",
+      "parent": "$this",
+      "index": 5,
+      "text": "Log Directory",
+      "location": [
+        42,
+        156
+      ],
+      "size": [
+        107,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_ElevationFiles",
+      "kind": "CheckBox",
+      "parent": "$this",
+      "index": 4,
+      "text": "Elevation Directory (up to V1.2.0.7)",
+      "location": [
+        42,
+        179
+      ],
+      "size": [
+        229,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_TmpFiles",
+      "kind": "CheckBox",
+      "parent": "$this",
+      "index": 3,
+      "text": "Tmp Directory",
+      "location": [
+        42,
+        205
+      ],
+      "size": [
+        112,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_OK",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 2,
+      "text": "Continue",
+      "location": [
+        152,
+        276
+      ],
+      "size": [
+        114,
+        29
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 7,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_OK_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Cancel",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 1,
+      "text": "Cancel",
+      "location": [
+        323,
+        276
+      ],
+      "size": [
+        114,
+        29
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Cancel_Click"
+        }
+      ]
+    },
+    {
+      "name": "cb_PluginFiles",
+      "kind": "CheckBox",
+      "parent": "$this",
+      "index": 0,
+      "text": "Plugin Directory",
+      "location": [
+        42,
+        231
+      ],
+      "size": [
+        121,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 9,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

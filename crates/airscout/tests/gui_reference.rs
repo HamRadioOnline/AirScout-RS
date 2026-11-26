@@ -1,13 +1,18 @@
-//! Task 1 — parse WinForms `*.Designer.cs` files into a reference model.
+//! GUI 1:1 reference: Task 1 parses WinForms `*.Designer.cs` into a reference
+//! model; Task 2 runs the parser over every real upstream window and commits the
+//! generated `docs/gui-reference/*.json` files.
 //!
-//! Each test parses a small synthetic Designer snippet and checks the fields the
-//! brief specifies. Synthetic snippets only (no upstream text is copied here).
+//! The Task 1 tests parse small synthetic Designer snippets only (no upstream
+//! text is copied here). Task 2 tests read the upstream checkout and the
+//! committed reference files.
 
 mod gui_ref;
 
 use gui_ref::designer::parse;
 use gui_ref::model::{Control, Event, Window};
 use gui_ref::resx::lookup;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 fn parse_src(src: &str) -> Window {
     parse("Window", src, &|_| None)
@@ -47,6 +52,7 @@ fn parses_geometry_dock_anchor() {
         this.x.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
         this.x.SplitterDistance = 342;
         this.x.Orientation = System.Windows.Forms.Orientation.Horizontal;
+        this.Controls.Add(this.x);
     "#;
     let w = parse_src(src);
     let x = control(&w, "x");
@@ -66,6 +72,7 @@ fn joins_concatenated_strings_and_escapes() {
         this.l = new System.Windows.Forms.Label();
         this.l.Text = "A 1 arcsec\r\nCoverage: 58°S" +
             " ... 60°N";
+        this.Controls.Add(this.l);
         "#,
     );
     assert_eq!(
@@ -74,11 +81,23 @@ fn joins_concatenated_strings_and_escapes() {
     );
 
     // Escaped quote and backslash.
-    let w = parse_src(r#"this.l.Text = "say \"hi\" \\ ok";"#);
+    let w = parse_src(
+        r#"
+        this.l = new System.Windows.Forms.Label();
+        this.l.Text = "say \"hi\" \\ ok";
+        this.Controls.Add(this.l);
+        "#,
+    );
     assert_eq!(control(&w, "l").text.as_deref(), Some("say \"hi\" \\ ok"));
 
     // Verbatim string (backslash is literal).
-    let w = parse_src(r#"this.l.Text = @"C:\x";"#);
+    let w = parse_src(
+        r#"
+        this.l = new System.Windows.Forms.Label();
+        this.l.Text = @"C:\x";
+        this.Controls.Add(this.l);
+        "#,
+    );
     assert_eq!(control(&w, "l").text.as_deref(), Some("C:\\x"));
 }
 
@@ -86,7 +105,11 @@ fn joins_concatenated_strings_and_escapes() {
 fn resolves_resource_strings() {
     let resx =
         "<data name=\"l.Text\" xml:space=\"preserve\"><value>a &amp; b&#xD;\nc</value></data>";
-    let src = r#"this.l.Text = resources.GetString("l.Text");"#;
+    let src = r#"
+        this.l = new System.Windows.Forms.Label();
+        this.l.Text = resources.GetString("l.Text");
+        this.Controls.Add(this.l);
+    "#;
     let w = parse("Window", src, &|k| lookup(resx, k));
     assert_eq!(control(&w, "l").text.as_deref(), Some("a & b\r\nc"));
 }
@@ -103,6 +126,9 @@ fn reads_items_columns_events_visibility() {
         this.b = new System.Windows.Forms.Button();
         this.b.Click += new System.EventHandler(this.b_Click);
         this.b.Visible = false;
+        this.Controls.Add(this.cb);
+        this.Controls.Add(this.lv);
+        this.Controls.Add(this.b);
     "#;
     let w = parse_src(src);
     assert_eq!(
@@ -139,6 +165,7 @@ fn form_level_value_types_are_not_controls() {
         this.components = new System.ComponentModel.Container();
         this.MinimumSize = new System.Drawing.Size(0, 0);
         this.gb = new System.Windows.Forms.GroupBox();
+        this.Controls.Add(this.gb);
     "#;
     let w = parse_src(src);
     for name in ["AutoScaleDimensions", "components", "MinimumSize"] {
@@ -167,6 +194,8 @@ fn skips_runtime_settings_bindings() {
         this.y = new System.Windows.Forms.CheckBox();
         this.x.Text = global::AirScout.Properties.Settings.Default.Foo;
         this.y.Enabled = global::AirScout.Properties.Settings.Default.Bar;
+        this.Controls.Add(this.x);
+        this.Controls.Add(this.y);
     "#;
     let w = parse_src(src);
     assert!(w.unparsed.is_empty());
@@ -181,6 +210,7 @@ fn items_addrange_with_equals_in_string() {
     let src = r#"
         this.cb = new System.Windows.Forms.ComboBox();
         this.cb.Items.AddRange(new object[] { "A = B", "C" });
+        this.Controls.Add(this.cb);
     "#;
     let w = parse_src(src);
     assert_eq!(
@@ -209,7 +239,11 @@ fn resource_string_allows_space_before_paren() {
     let resx = "<data name=\"k\" xml:space=\"preserve\"><value>v</value></data>";
     let w = parse(
         "Window",
-        r#"this.l.Text = resources.GetString("k" );"#,
+        r#"
+        this.l = new System.Windows.Forms.Label();
+        this.l.Text = resources.GetString("k" );
+        this.Controls.Add(this.l);
+        "#,
         &|key| lookup(resx, key),
     );
     assert_eq!(control(&w, "l").text.as_deref(), Some("v"));
@@ -222,6 +256,7 @@ fn items_addrange_concatenates_strings() {
     let src = r#"
         this.cb = new System.Windows.Forms.ComboBox();
         this.cb.Items.AddRange(new object[] { "a" + "b", "c" });
+        this.Controls.Add(this.cb);
     "#;
     let w = parse_src(src);
     assert_eq!(
@@ -229,4 +264,242 @@ fn items_addrange_concatenates_strings() {
         vec!["ab".to_string(), "c".to_string()]
     );
     assert!(w.unparsed.is_empty());
+}
+
+// --- Task 2: parser rules added for the real upstream windows. ---
+
+// Components that are never attached to a parent (BackgroundWorker, Timer,
+// ImageList, ToolTip, …) are not controls and must be dropped.
+#[test]
+fn drops_unparented_components() {
+    let src = r#"
+        this.bw = new System.ComponentModel.BackgroundWorker();
+        this.bw.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bw_DoWork);
+        this.tt = new System.Windows.Forms.ToolTip(this.components);
+        this.b = new System.Windows.Forms.Button();
+        this.Controls.Add(this.b);
+    "#;
+    let w = parse_src(src);
+    assert!(w.controls.iter().any(|c| c.name == "b"));
+    assert!(
+        !w.controls.iter().any(|c| c.name == "bw"),
+        "BackgroundWorker must be dropped from controls"
+    );
+    assert!(
+        !w.controls.iter().any(|c| c.name == "tt"),
+        "ToolTip must be dropped from controls"
+    );
+}
+
+// `Pages.Add` attaches a page to its wizard, exactly like `Controls.Add`.
+#[test]
+fn parses_pages_add_parent() {
+    let src = r#"
+        this.sw = new AeroWizard.StepWizardControl();
+        this.wp1 = new AeroWizard.WizardPage();
+        this.wp2 = new AeroWizard.WizardPage();
+        this.sw.Pages.Add(this.wp1);
+        this.sw.Pages.Add(this.wp2);
+        this.Controls.Add(this.sw);
+    "#;
+    let w = parse_src(src);
+    assert_eq!(control(&w, "wp1").parent, "sw");
+    assert_eq!(control(&w, "wp2").parent, "sw");
+    assert_eq!(control(&w, "wp2").index, 1);
+    assert_eq!(control(&w, "sw").parent, "$this");
+}
+
+// Text-entry controls (`TextBox` and subclasses) carry user-input default values
+// (callsigns, locators, coordinates) that must not be copied into the reference.
+#[test]
+fn drops_text_of_user_input_controls() {
+    let src = r#"
+        this.l = new System.Windows.Forms.Label();
+        this.l.Text = "A label";
+        this.tb = new ScoutBase.Core.DoubleTextBox();
+        this.tb.Text = "10.68327000";
+        this.Controls.Add(this.l);
+        this.Controls.Add(this.tb);
+    "#;
+    let w = parse_src(src);
+    assert_eq!(control(&w, "l").text.as_deref(), Some("A label"));
+    assert_eq!(control(&w, "tb").text, None);
+    assert!(w.unparsed.is_empty());
+}
+
+// --- Task 2: generator over every upstream window. ---
+
+/// Upstream commit the Designer files are extracted from (`tools/fetch-upstream.sh`).
+const PINNED_SHA: &str = "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5";
+
+fn upstream_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/upstream/AirScout")
+}
+
+fn reference_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/gui-reference")
+}
+
+/// `HEAD` of the upstream checkout, or `None` when it has not been fetched.
+fn upstream_sha() -> Option<String> {
+    let out = Command::new("git")
+        .args(["-C"])
+        .arg(upstream_dir())
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    Some(String::from_utf8_lossy(&out.stdout).trim().to_string())
+}
+
+/// Window names of every `*.Designer.cs` in the upstream checkout, except the
+/// never-instantiated `ReflectionDlg` (25 windows).
+fn designer_windows() -> Vec<String> {
+    let dir = upstream_dir().join("AirScout");
+    let mut windows = Vec::new();
+    for entry in std::fs::read_dir(&dir).expect("upstream AirScout directory") {
+        let path = entry.expect("directory entry").path();
+        if path.extension().and_then(|e| e.to_str()) != Some("cs") {
+            continue;
+        }
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default();
+        let Some(name) = stem.strip_suffix(".Designer") else {
+            continue;
+        };
+        if name == "ReflectionDlg" {
+            continue;
+        }
+        windows.push(name.to_string());
+    }
+    windows.sort();
+    windows
+}
+
+/// Window names of the committed `docs/gui-reference/*.json` files.
+fn committed_windows() -> Vec<String> {
+    let dir = reference_dir();
+    let mut windows = Vec::new();
+    if !dir.is_dir() {
+        return windows;
+    }
+    for entry in std::fs::read_dir(&dir).expect("docs/gui-reference directory") {
+        let path = entry.expect("directory entry").path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default();
+        windows.push(stem.to_string());
+    }
+    windows.sort();
+    windows
+}
+
+/// Parse one upstream window into a reference model with the pinned SHA filled in.
+fn read_upstream_window(window: &str) -> Window {
+    let dir = upstream_dir().join("AirScout");
+    let designer = std::fs::read_to_string(dir.join(format!("{window}.Designer.cs")))
+        .expect("upstream Designer file");
+    let resx = std::fs::read_to_string(dir.join(format!("{window}.resx"))).unwrap_or_default();
+    let mut w = parse(window, &designer, &|key| lookup(&resx, key));
+    w.upstream_sha = PINNED_SHA.to_string();
+    w
+}
+
+/// Writes `docs/gui-reference/*.json` for every upstream window. Ignored by
+/// default; run explicitly to (re)generate the committed reference files.
+#[test]
+#[ignore]
+fn generate_gui_reference() {
+    if !upstream_dir().is_dir() {
+        panic!("run tools/fetch-upstream.sh");
+    }
+    let dir = reference_dir();
+    std::fs::create_dir_all(&dir).expect("create docs/gui-reference");
+    for window in designer_windows() {
+        let w = read_upstream_window(&window);
+        let json = serde_json::to_string_pretty(&w).expect("serialize reference");
+        std::fs::write(dir.join(format!("{window}.json")), format!("{json}\n"))
+            .expect("write reference");
+    }
+}
+
+/// Asserts the committed reference files match a fresh parse of the upstream
+/// checkout at the pinned SHA (and that no file is extra or missing). Skips when
+/// the upstream checkout is absent.
+#[test]
+fn gui_reference_is_current() {
+    let Some(sha) = upstream_sha() else {
+        eprintln!("skipped: upstream not fetched");
+        return;
+    };
+    if sha != PINNED_SHA {
+        eprintln!("skipped: upstream not fetched");
+        return;
+    }
+
+    let windows = designer_windows();
+    let generated: std::collections::BTreeMap<String, Window> = windows
+        .iter()
+        .map(|w| (w.clone(), read_upstream_window(w)))
+        .collect();
+
+    let mut committed = committed_windows();
+    committed.sort();
+    let mut expected = windows.clone();
+    expected.sort();
+    assert_eq!(
+        committed, expected,
+        "committed reference files differ from the upstream window set"
+    );
+
+    for window in &windows {
+        let on_disk = gui_ref::load(window);
+        assert_eq!(
+            on_disk, generated[window],
+            "committed reference for {window} is out of date; regenerate it"
+        );
+    }
+}
+
+/// Every committed reference has no unparsed Designer statements, and `MapDlg`
+/// carries the expected split-container geometry.
+#[test]
+fn reference_has_no_unparsed_statements() {
+    let windows = committed_windows();
+    assert!(
+        !windows.is_empty(),
+        "no committed reference files under docs/gui-reference"
+    );
+    for window in &windows {
+        let w = gui_ref::load(window);
+        assert!(
+            w.unparsed.is_empty(),
+            "{} has unparsed Designer statements: {:?}",
+            window,
+            w.unparsed
+        );
+    }
+
+    let map = gui_ref::load("MapDlg");
+    let sc_map = map
+        .controls
+        .iter()
+        .find(|c| c.name == "sc_Map")
+        .expect("MapDlg has sc_Map");
+    assert_eq!(sc_map.splitter_distance, Some(342));
+    assert_eq!(sc_map.orientation.as_deref(), Some("Horizontal"));
+    let sc_main = map
+        .controls
+        .iter()
+        .find(|c| c.name == "sc_Main")
+        .expect("MapDlg has sc_Main");
+    assert_eq!(sc_main.splitter_distance, Some(852));
 }

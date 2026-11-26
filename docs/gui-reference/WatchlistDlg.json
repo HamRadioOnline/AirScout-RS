@@ -1,0 +1,388 @@
+{
+  "window": "WatchlistDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "Manage Watchlist",
+  "client_size": [
+    484,
+    457
+  ],
+  "controls": [
+    {
+      "name": "ss_Watchlist_Main",
+      "kind": "StatusStrip",
+      "parent": "$this",
+      "index": 12,
+      "text": null,
+      "location": [
+        0,
+        435
+      ],
+      "size": [
+        484,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Watchlist_Main",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Watchlist_Main",
+      "index": 0,
+      "text": "tsl_Main",
+      "location": null,
+      "size": [
+        51,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Watchlist_Add",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 11,
+      "text": ">",
+      "location": [
+        207,
+        176
+      ],
+      "size": [
+        70,
+        30
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Watchlist_Add_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Watchlist_Remove",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 10,
+      "text": "<",
+      "location": [
+        207,
+        226
+      ],
+      "size": [
+        70,
+        30
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Watchlist_Remove_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Watchlist_RemoveAll",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 9,
+      "text": "<<",
+      "location": [
+        207,
+        274
+      ],
+      "size": [
+        70,
+        30
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 7,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Watchlist_RemoveAll_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Watchlist_Cancel",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 8,
+      "text": "Cancel",
+      "location": [
+        245,
+        402
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Watchlist_OK",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 7,
+      "text": "OK",
+      "location": [
+        153,
+        402
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 9,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 6,
+      "text": "You can select callsigns from database and set them on a watchlist.",
+      "location": [
+        43,
+        13
+      ],
+      "size": [
+        406,
+        16
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 10,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Watchlist_Callsigns",
+      "kind": "TextBox",
+      "parent": "$this",
+      "index": 5,
+      "text": null,
+      "location": [
+        15,
+        75
+      ],
+      "size": [
+        180,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 11,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "TextChanged",
+          "handler": "tb_Watchlist_Callsigns_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "tb_Watchlist_Selected",
+      "kind": "TextBox",
+      "parent": "$this",
+      "index": 4,
+      "text": null,
+      "location": [
+        288,
+        75
+      ],
+      "size": [
+        180,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 12,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "TextChanged",
+          "handler": "tb_Watchlist_Selected_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "dgv_Watchlist_Callsigns",
+      "kind": "DataGridView",
+      "parent": "$this",
+      "index": 3,
+      "text": null,
+      "location": [
+        15,
+        101
+      ],
+      "size": [
+        180,
+        280
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 13,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CellContentDoubleClick",
+          "handler": "dgv_Watchlist_Callsigns_CellContentDoubleClick"
+        },
+        {
+          "event": "CellPainting",
+          "handler": "dgv_Watchlist_Callsigns_CellPainting"
+        }
+      ]
+    },
+    {
+      "name": "dgv_Watchlist_Selected",
+      "kind": "DataGridView",
+      "parent": "$this",
+      "index": 2,
+      "text": null,
+      "location": [
+        288,
+        101
+      ],
+      "size": [
+        180,
+        280
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 14,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CellContentDoubleClick",
+          "handler": "dgv_Watchlist_Selected_CellContentDoubleClick"
+        },
+        {
+          "event": "CellPainting",
+          "handler": "dgv_Watchlist_Selected_CellPainting"
+        }
+      ]
+    },
+    {
+      "name": "label2",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 1,
+      "text": "Available Callsigns",
+      "location": [
+        15,
+        42
+      ],
+      "size": [
+        180,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 15,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label3",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 0,
+      "text": "Selected Callsigns",
+      "location": [
+        288,
+        42
+      ],
+      "size": [
+        180,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 16,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

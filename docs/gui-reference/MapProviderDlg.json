@@ -1,0 +1,84 @@
+{
+  "window": "MapProviderDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "Map Provider - Term of Use",
+  "client_size": [
+    478,
+    293
+  ],
+  "controls": [
+    {
+      "name": "richTextBox1",
+      "kind": "RichTextBox",
+      "parent": "$this",
+      "index": 2,
+      "text": "The map selection is part of the Great Maps Open Source library\n(see http://greatmaps.codeplex.com/).\n\nWARNING: This software can access different map providers and may violate their Terms of Service.\n\nBy clicking on Accept you understand that you are\n\n                                    DOING THAT AT YOUR OWN RISK.\n\nThe auhor of this software will not be responsible in any case.",
+      "location": [
+        12,
+        12
+      ],
+      "size": [
+        454,
+        210
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 15,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_MapProviderDlg_Decline",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 0,
+      "text": "&Decline",
+      "location": [
+        246,
+        258
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 17,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_MapProviderDlg_Accept",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 1,
+      "text": "&Accept",
+      "location": [
+        148,
+        258
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 16,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

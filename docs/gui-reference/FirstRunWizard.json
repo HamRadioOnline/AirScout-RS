@@ -1,0 +1,2053 @@
+{
+  "window": "FirstRunWizard",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": null,
+  "client_size": [
+    834,
+    561
+  ],
+  "controls": [
+    {
+      "name": "sw_FirstRun",
+      "kind": "StepWizardControl",
+      "parent": "$this",
+      "index": 0,
+      "text": "Welcome to AirScout",
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        834,
+        539
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "wp_TermsAndConditions",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 0,
+      "text": "Agree to the Terms and C.",
+      "location": null,
+      "size": [
+        586,
+        396
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "wp_TermsAndConditions_Enter"
+        }
+      ]
+    },
+    {
+      "name": "cb_TermsAndConditions",
+      "kind": "CheckBox",
+      "parent": "wp_TermsAndConditions",
+      "index": 0,
+      "text": "I agree with the terms and conditions above.",
+      "location": [
+        15,
+        373
+      ],
+      "size": [
+        260,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CheckedChanged",
+          "handler": "cb_TermsAndConditions_CheckedChanged"
+        }
+      ]
+    },
+    {
+      "name": "rb_TermsAndConditions",
+      "kind": "RichTextBox",
+      "parent": "wp_TermsAndConditions",
+      "index": 1,
+      "text": "+++ TERMS AND CONDITIONS +++\n\nCopyright (c)  2018 by DL2ALF\n\nAirScout is free for personal ham radio related use. You may free distribute the package without changes. It has been developed using C# and Microsoft Visual Studio Express. It is released under the GNU Public Licence V3, the source code is available on request. It could not have been developed without the great help of Open Source software found on the Internet for almost all presentation and calculation tasks inside the software. You may use it \"as it is\" without any warranties. For further information see the disclaimer on the \"Options/Info\" tab.\n\n+++ PRIVACY POLICY +++\n\nAirScout is retrieveing user information to maintain a station database. Therefore a minimum of personal data will be stored on the AirScout server. Most of them is publically available. Please support the community with details about your station and your QTH.\n\nThe following user information is collected (as stored in your program settings):\n\n\t- your call sign\n\t- your latitude\n\t- your longitude\n\t- your grid square\n\t- your elevation\n\t- your antenna height (per band\n                - your antenna gain (per band)\n                - your power output (per band)\n\t- a timestamp (UTC)\n\nThe data are uploaded either at program startup or on user action. The transfer of the collected data is encrypted via Secure FTP (SFTP) to the AirScout web server.\nAll information is kept confidental and is used only to maintain the global station database and for statistical purposes. \nIn case of any change an update is redistributed to all AirScout users.\nNo further user tracking, analysis or advertisement is performed.\n\n+++ LIABILITY DISCLAIMER +++\n\nTHIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\nYou must agree to these terms and conditions to run AirScout.\nTo view complete license information please refer to \"Options/Info\".",
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        586,
+        343
+      ],
+      "dock": "Top",
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "wp_GeneralCoverage",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 1,
+      "text": "Select the Covered Area",
+      "location": null,
+      "size": [
+        586,
+        398
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "wp_GeneralCoverage_Enter"
+        }
+      ]
+    },
+    {
+      "name": "label6",
+      "kind": "Label",
+      "parent": "wp_GeneralCoverage",
+      "index": 0,
+      "text": "CAUTION: Select area of interest just as large to cover a range of 1000-2000km around your qth.\r\nLarger areas together with SRTM3 and SRTM1 elevation data will result in extensive disk space usage!",
+      "location": [
+        14,
+        24
+      ],
+      "size": [
+        532,
+        30
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 9,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label17",
+      "kind": "Label",
+      "parent": "wp_GeneralCoverage",
+      "index": 1,
+      "text": "Select a covered area of your interest by entering lat/long values in the numeric boxes below.",
+      "location": [
+        14,
+        6
+      ],
+      "size": [
+        504,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label4",
+      "kind": "Label",
+      "parent": "wp_GeneralCoverage",
+      "index": 2,
+      "text": "Max. Latitude (-90 ... + 90):",
+      "location": [
+        14,
+        85
+      ],
+      "size": [
+        148,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label3",
+      "kind": "Label",
+      "parent": "wp_GeneralCoverage",
+      "index": 3,
+      "text": "Min. Latitude (-90 ... +90):",
+      "location": [
+        14,
+        61
+      ],
+      "size": [
+        143,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 7,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ud_MaxLat",
+      "kind": "NumericUpDown",
+      "parent": "wp_GeneralCoverage",
+      "index": 4,
+      "text": null,
+      "location": [
+        163,
+        83
+      ],
+      "size": [
+        49,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "ValueChanged",
+          "handler": "ud_MaxLat_ValueChanged"
+        }
+      ]
+    },
+    {
+      "name": "ud_MinLat",
+      "kind": "NumericUpDown",
+      "parent": "wp_GeneralCoverage",
+      "index": 5,
+      "text": null,
+      "location": [
+        163,
+        59
+      ],
+      "size": [
+        49,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "ValueChanged",
+          "handler": "ud_MinLat_ValueChanged"
+        }
+      ]
+    },
+    {
+      "name": "ud_MaxLon",
+      "kind": "NumericUpDown",
+      "parent": "wp_GeneralCoverage",
+      "index": 6,
+      "text": null,
+      "location": [
+        424,
+        83
+      ],
+      "size": [
+        49,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "ValueChanged",
+          "handler": "ud_MaxLon_ValueChanged"
+        }
+      ]
+    },
+    {
+      "name": "label2",
+      "kind": "Label",
+      "parent": "wp_GeneralCoverage",
+      "index": 7,
+      "text": "Max. Longitude (-180 ... +180):",
+      "location": [
+        251,
+        85
+      ],
+      "size": [
+        168,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "wp_GeneralCoverage",
+      "index": 8,
+      "text": "Min. Longitude (-180 ...  +180):",
+      "location": [
+        251,
+        61
+      ],
+      "size": [
+        169,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ud_MinLon",
+      "kind": "NumericUpDown",
+      "parent": "wp_GeneralCoverage",
+      "index": 9,
+      "text": null,
+      "location": [
+        426,
+        59
+      ],
+      "size": [
+        47,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "ValueChanged",
+          "handler": "ud_MinLon_ValueChanged"
+        }
+      ]
+    },
+    {
+      "name": "gm_Coverage",
+      "kind": "GMapControl",
+      "parent": "wp_GeneralCoverage",
+      "index": 10,
+      "text": null,
+      "location": [
+        17,
+        108
+      ],
+      "size": [
+        456,
+        287
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "gm_Coverage_Enter"
+        }
+      ]
+    },
+    {
+      "name": "wp_ElevationModel",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 2,
+      "text": "Elevation Model",
+      "location": null,
+      "size": [
+        586,
+        398
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 7,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "wp_ElevationModel_Enter"
+        }
+      ]
+    },
+    {
+      "name": "cb_ASTER1",
+      "kind": "CheckBox",
+      "parent": "wp_ElevationModel",
+      "index": 0,
+      "text": "Use ASTER1 Elevation Model (experimental)",
+      "location": [
+        85,
+        355
+      ],
+      "size": [
+        332,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CheckedChanged",
+          "handler": "cb_ASTER1_CheckedChanged"
+        }
+      ]
+    },
+    {
+      "name": "cb_ASTER3",
+      "kind": "CheckBox",
+      "parent": "wp_ElevationModel",
+      "index": 1,
+      "text": "Use ASTER3 Elevation Model (experimental)",
+      "location": [
+        85,
+        329
+      ],
+      "size": [
+        332,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CheckedChanged",
+          "handler": "cb_ASTER3_CheckedChanged"
+        }
+      ]
+    },
+    {
+      "name": "richTextBox2",
+      "kind": "RichTextBox",
+      "parent": "wp_ElevationModel",
+      "index": 2,
+      "text": "Elevation models are essential for work with AirScout. They are needed for calculating radio horizons and propagation paths.\nThe software can handle the most common models available for the public:\n\nGLOBE: 1km x 1km resolution, covers whole earth\nSRTM3: 90m x 90m resolution, covers only -60° ... +60° (with some inoffical extensions to Norh)\nSRTM1: 30m x 30m resolution, covers only -60° ... +60°\nASTER3: 90m x 90m resolution, covers -83° ... +83° (aggregated from ASTER1, very raw data )\nASTER1: 30m x 30m resolution, covers -83° ... +83° (very raw data)\n\nElevation data are provided in files. AirScout is trying to download and stores them locally. If you have them already somewhere on your computer, you can select a user specific path.\n\nYou must choose at least one elevation model to continue.",
+      "location": [
+        13,
+        13
+      ],
+      "size": [
+        558,
+        212
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_SRTM1",
+      "kind": "CheckBox",
+      "parent": "wp_ElevationModel",
+      "index": 3,
+      "text": "Use SRTM1 Elevation Model (not recommended)",
+      "location": [
+        85,
+        303
+      ],
+      "size": [
+        365,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CheckedChanged",
+          "handler": "cb_SRTM1_CheckedChanged"
+        }
+      ]
+    },
+    {
+      "name": "cb_SRTM3",
+      "kind": "CheckBox",
+      "parent": "wp_ElevationModel",
+      "index": 4,
+      "text": "Use SRTM3 Elevation Model (optional)",
+      "location": [
+        85,
+        277
+      ],
+      "size": [
+        294,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CheckedChanged",
+          "handler": "cb_SRTM3_CheckedChanged"
+        }
+      ]
+    },
+    {
+      "name": "cb_GLOBE",
+      "kind": "CheckBox",
+      "parent": "wp_ElevationModel",
+      "index": 5,
+      "text": "Use GLOBE Elevation Model (strongly recommended)",
+      "location": [
+        85,
+        252
+      ],
+      "size": [
+        397,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CheckedChanged",
+          "handler": "cb_GLOBE_CheckedChanged"
+        }
+      ]
+    },
+    {
+      "name": "wp_GLOBE",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 3,
+      "text": "GLOBE",
+      "location": null,
+      "size": [
+        586,
+        398
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Commit",
+          "handler": "wp_GLOBE_Commit"
+        },
+        {
+          "event": "Enter",
+          "handler": "wp_GLOBE_Enter"
+        },
+        {
+          "event": "Leave",
+          "handler": "wp_GLOBE_Leave"
+        }
+      ]
+    },
+    {
+      "name": "lbl_GLOBE_Status",
+      "kind": "Label",
+      "parent": "wp_GLOBE",
+      "index": 0,
+      "text": "Status",
+      "location": [
+        4,
+        58
+      ],
+      "size": [
+        40,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label5",
+      "kind": "Label",
+      "parent": "wp_GLOBE",
+      "index": 1,
+      "text": "(G)lobal (L)and (O)ne-km (B)ase (E)levation Project",
+      "location": [
+        3,
+        6
+      ],
+      "size": [
+        371,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_GLOBE_EnableCache",
+      "kind": "CheckBox",
+      "parent": "wp_GLOBE",
+      "index": 2,
+      "text": "Keep downloaded elevation tiles in cache",
+      "location": [
+        7,
+        36
+      ],
+      "size": [
+        243,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gm_GLOBE",
+      "kind": "GMapControl",
+      "parent": "wp_GLOBE",
+      "index": 3,
+      "text": null,
+      "location": [
+        0,
+        84
+      ],
+      "size": [
+        480,
+        311
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "wp_SRTM3",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 4,
+      "text": "SRTM3",
+      "location": null,
+      "size": [
+        586,
+        398
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "wp_SRTM3_Enter"
+        },
+        {
+          "event": "Leave",
+          "handler": "wp_SRTM3_Leave"
+        }
+      ]
+    },
+    {
+      "name": "lbl_SRTM3_Status",
+      "kind": "Label",
+      "parent": "wp_SRTM3",
+      "index": 0,
+      "text": "Status",
+      "location": [
+        4,
+        65
+      ],
+      "size": [
+        40,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label21",
+      "kind": "Label",
+      "parent": "wp_SRTM3",
+      "index": 1,
+      "text": "(S)huttle (R)adar (T)opography (M)ission 3 arcsec",
+      "location": [
+        3,
+        13
+      ],
+      "size": [
+        358,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_SRTM3_EnableCache",
+      "kind": "CheckBox",
+      "parent": "wp_SRTM3",
+      "index": 2,
+      "text": "Keep downloaded elevation tiles in cache",
+      "location": [
+        7,
+        43
+      ],
+      "size": [
+        243,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gm_SRTM3",
+      "kind": "GMapControl",
+      "parent": "wp_SRTM3",
+      "index": 3,
+      "text": null,
+      "location": [
+        3,
+        84
+      ],
+      "size": [
+        480,
+        311
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "wp_SRTM1",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 5,
+      "text": "SRTM1",
+      "location": null,
+      "size": [
+        586,
+        398
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 9,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "wp_SRTM1_Enter"
+        },
+        {
+          "event": "Leave",
+          "handler": "wp_SRTM1_Leave"
+        }
+      ]
+    },
+    {
+      "name": "lbl_SRTM1_Status",
+      "kind": "Label",
+      "parent": "wp_SRTM1",
+      "index": 0,
+      "text": "Status",
+      "location": [
+        4,
+        60
+      ],
+      "size": [
+        40,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 12,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label7",
+      "kind": "Label",
+      "parent": "wp_SRTM1",
+      "index": 1,
+      "text": "(S)huttle (R)adar (T)opography (M)ission 1 arcsec",
+      "location": [
+        3,
+        9
+      ],
+      "size": [
+        357,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 11,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_SRTM1_EnableCache",
+      "kind": "CheckBox",
+      "parent": "wp_SRTM1",
+      "index": 2,
+      "text": "Keep downloaded elevation tiles in cache",
+      "location": [
+        7,
+        38
+      ],
+      "size": [
+        243,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 10,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gm_SRTM1",
+      "kind": "GMapControl",
+      "parent": "wp_SRTM1",
+      "index": 3,
+      "text": null,
+      "location": [
+        3,
+        84
+      ],
+      "size": [
+        480,
+        314
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 9,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "wp_ASTER3",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 6,
+      "text": "ASTER3",
+      "location": null,
+      "size": [
+        586,
+        398
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 12,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "wp_ASTER3_Enter"
+        },
+        {
+          "event": "Leave",
+          "handler": "wp_ASTER3_Leave"
+        }
+      ]
+    },
+    {
+      "name": "lbl_ASTER3_Status",
+      "kind": "Label",
+      "parent": "wp_ASTER3",
+      "index": 0,
+      "text": "Status",
+      "location": [
+        54,
+        60
+      ],
+      "size": [
+        40,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 9,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label23",
+      "kind": "Label",
+      "parent": "wp_ASTER3",
+      "index": 1,
+      "text": "(A)dvanced (S)paceborne (T)hermal (E)mission and (R)eflection 3 arcsec",
+      "location": [
+        53,
+        8
+      ],
+      "size": [
+        459,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_ASTER3_EnableCache",
+      "kind": "CheckBox",
+      "parent": "wp_ASTER3",
+      "index": 2,
+      "text": "Keep downloaded elevation tiles in cache",
+      "location": [
+        57,
+        38
+      ],
+      "size": [
+        243,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 7,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gm_ASTER3",
+      "kind": "GMapControl",
+      "parent": "wp_ASTER3",
+      "index": 3,
+      "text": null,
+      "location": [
+        53,
+        79
+      ],
+      "size": [
+        480,
+        311
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "wp_ASTER1",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 7,
+      "text": "ASTER1",
+      "location": null,
+      "size": [
+        586,
+        398
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 13,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "wp_ASTER1_Enter"
+        },
+        {
+          "event": "Leave",
+          "handler": "wp_ASTER1_Leave"
+        }
+      ]
+    },
+    {
+      "name": "lbl_ASTER1_Status",
+      "kind": "Label",
+      "parent": "wp_ASTER1",
+      "index": 0,
+      "text": "Status",
+      "location": [
+        54,
+        60
+      ],
+      "size": [
+        40,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 9,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label25",
+      "kind": "Label",
+      "parent": "wp_ASTER1",
+      "index": 1,
+      "text": "(A)dvanced (S)paceborne (T)hermal (E)mission and (R)eflection 1 arcsec",
+      "location": [
+        53,
+        8
+      ],
+      "size": [
+        458,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_ASTER1_EnableCache",
+      "kind": "CheckBox",
+      "parent": "wp_ASTER1",
+      "index": 2,
+      "text": "Keep downloaded elevation tiles in cache",
+      "location": [
+        57,
+        38
+      ],
+      "size": [
+        243,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 7,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gm_ASTER1",
+      "kind": "GMapControl",
+      "parent": "wp_ASTER1",
+      "index": 3,
+      "text": null,
+      "location": [
+        53,
+        79
+      ],
+      "size": [
+        480,
+        311
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "wp_UserDetails",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 8,
+      "text": "User Details",
+      "location": null,
+      "size": [
+        586,
+        398
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "wp_UserDetails_Enter"
+        }
+      ]
+    },
+    {
+      "name": "label19",
+      "kind": "Label",
+      "parent": "wp_UserDetails",
+      "index": 0,
+      "text": "Update your user details here. Exact lat/long values are essential for calculation of the radio horizon.\nStart with entering a valid callsign into the callsign box.\nUse the lat/lon textboxes for numeric input or enter a valid Maidenhead Locator.\nDrag the needle on the map for exact location. Use mouse wheel to zoom in and out.",
+      "location": [
+        9,
+        6
+      ],
+      "size": [
+        531,
+        60
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 28,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label18",
+      "kind": "Label",
+      "parent": "wp_UserDetails",
+      "index": 1,
+      "text": "Map Zoom:",
+      "location": [
+        342,
+        365
+      ],
+      "size": [
+        69,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 27,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Zoom",
+      "kind": "TextBox",
+      "parent": "wp_UserDetails",
+      "index": 2,
+      "text": null,
+      "location": [
+        495,
+        361
+      ],
+      "size": [
+        30,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 26,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Zoom_Out",
+      "kind": "Button",
+      "parent": "wp_UserDetails",
+      "index": 3,
+      "text": "-",
+      "location": [
+        533,
+        360
+      ],
+      "size": [
+        30,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 25,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Zoom_Out_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Zoom_In",
+      "kind": "Button",
+      "parent": "wp_UserDetails",
+      "index": 4,
+      "text": "+",
+      "location": [
+        456,
+        360
+      ],
+      "size": [
+        30,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 24,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Zoom_In_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_QRZ",
+      "kind": "Button",
+      "parent": "wp_UserDetails",
+      "index": 5,
+      "text": "QRZ lookup",
+      "location": [
+        458,
+        216
+      ],
+      "size": [
+        107,
+        26
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 17,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_QRZ_Click"
+        }
+      ]
+    },
+    {
+      "name": "label12",
+      "kind": "Label",
+      "parent": "wp_UserDetails",
+      "index": 6,
+      "text": null,
+      "location": [
+        3,
+        6
+      ],
+      "size": [
+        0,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label11",
+      "kind": "Label",
+      "parent": "wp_UserDetails",
+      "index": 7,
+      "text": "Locator:",
+      "location": [
+        344,
+        120
+      ],
+      "size": [
+        50,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label10",
+      "kind": "Label",
+      "parent": "wp_UserDetails",
+      "index": 8,
+      "text": "Longitude:",
+      "location": [
+        344,
+        177
+      ],
+      "size": [
+        64,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label9",
+      "kind": "Label",
+      "parent": "wp_UserDetails",
+      "index": 9,
+      "text": "Latitude:",
+      "location": [
+        344,
+        148
+      ],
+      "size": [
+        53,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label8",
+      "kind": "Label",
+      "parent": "wp_UserDetails",
+      "index": 10,
+      "text": "Callsign:",
+      "location": [
+        344,
+        93
+      ],
+      "size": [
+        52,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gm_Callsign",
+      "kind": "GMapControl",
+      "parent": "wp_UserDetails",
+      "index": 11,
+      "text": null,
+      "location": [
+        0,
+        84
+      ],
+      "size": [
+        320,
+        311
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "OnMarkerEnter",
+          "handler": "gm_Callsign_OnMarkerEnter"
+        },
+        {
+          "event": "OnMapZoomChanged",
+          "handler": "gm_Callsign_OnMapZoomChanged"
+        },
+        {
+          "event": "MouseDown",
+          "handler": "gm_Callsign_MouseDown"
+        },
+        {
+          "event": "MouseMove",
+          "handler": "gm_Callsign_MouseMove"
+        },
+        {
+          "event": "MouseUp",
+          "handler": "gm_Callsign_MouseUp"
+        }
+      ]
+    },
+    {
+      "name": "tb_Callsign",
+      "kind": "CallsignTextBox",
+      "parent": "wp_UserDetails",
+      "index": 12,
+      "text": null,
+      "location": [
+        458,
+        90
+      ],
+      "size": [
+        107,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "TextChanged",
+          "handler": "tb_Callsign_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "tb_Locator",
+      "kind": "LocatorTextBox",
+      "parent": "wp_UserDetails",
+      "index": 13,
+      "text": null,
+      "location": [
+        458,
+        117
+      ],
+      "size": [
+        107,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "TextChanged",
+          "handler": "tb_Locator_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "tb_Longitude",
+      "kind": "DoubleTextBox",
+      "parent": "wp_UserDetails",
+      "index": 14,
+      "text": null,
+      "location": [
+        458,
+        174
+      ],
+      "size": [
+        107,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "TextChanged",
+          "handler": "tb_Longitude_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "tb_Latitude",
+      "kind": "DoubleTextBox",
+      "parent": "wp_UserDetails",
+      "index": 15,
+      "text": null,
+      "location": [
+        458,
+        144
+      ],
+      "size": [
+        107,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "TextChanged",
+          "handler": "tb_Latitude_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "wp_PlaneFeeds",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 9,
+      "text": "Select a Plane Feed",
+      "location": null,
+      "size": [
+        586,
+        398
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 10,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "wp_PlaneFeeds_Enter"
+        }
+      ]
+    },
+    {
+      "name": "label20",
+      "kind": "Label",
+      "parent": "wp_PlaneFeeds",
+      "index": 0,
+      "text": "Plane feeds are necessary to get aircraft positions in real time.\nYou can choose between web feeds, local feeds or dummy feed only for demonstration.\nYou can combine up to three different feeds.\n\nPlease enter at least one plane feed to continue.",
+      "location": [
+        29,
+        34
+      ],
+      "size": [
+        521,
+        85
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label16",
+      "kind": "Label",
+      "parent": "wp_PlaneFeeds",
+      "index": 1,
+      "text": "Plane Feed 3:",
+      "location": [
+        12,
+        242
+      ],
+      "size": [
+        101,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 7,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label15",
+      "kind": "Label",
+      "parent": "wp_PlaneFeeds",
+      "index": 2,
+      "text": "Plane Feed 2:",
+      "location": [
+        12,
+        213
+      ],
+      "size": [
+        101,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label14",
+      "kind": "Label",
+      "parent": "wp_PlaneFeeds",
+      "index": 3,
+      "text": "Plane Feed 1:",
+      "location": [
+        12,
+        184
+      ],
+      "size": [
+        101,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_PlaneFeed3",
+      "kind": "ComboBox",
+      "parent": "wp_PlaneFeeds",
+      "index": 4,
+      "text": null,
+      "location": [
+        119,
+        242
+      ],
+      "size": [
+        431,
+        26
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "cb_PlaneFeed3_SelectedIndexChanged"
+        }
+      ]
+    },
+    {
+      "name": "cb_PlaneFeed2",
+      "kind": "ComboBox",
+      "parent": "wp_PlaneFeeds",
+      "index": 5,
+      "text": null,
+      "location": [
+        119,
+        213
+      ],
+      "size": [
+        431,
+        26
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "cb_PlaneFeed2_SelectedIndexChanged"
+        }
+      ]
+    },
+    {
+      "name": "cb_PlaneFeed1",
+      "kind": "ComboBox",
+      "parent": "wp_PlaneFeeds",
+      "index": 6,
+      "text": null,
+      "location": [
+        119,
+        184
+      ],
+      "size": [
+        431,
+        26
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "cb_PlaneFeed1_SelectedIndexChanged"
+        }
+      ]
+    },
+    {
+      "name": "label13",
+      "kind": "Label",
+      "parent": "wp_PlaneFeeds",
+      "index": 7,
+      "text": null,
+      "location": [
+        3,
+        14
+      ],
+      "size": [
+        0,
+        15
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "wp_Finish",
+      "kind": "WizardPage",
+      "parent": "sw_FirstRun",
+      "index": 10,
+      "text": "Finish",
+      "location": null,
+      "size": [
+        586,
+        398
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 11,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "wp_Finish_Enter"
+        }
+      ]
+    },
+    {
+      "name": "lbl_Finish",
+      "kind": "Label",
+      "parent": "wp_Finish",
+      "index": 0,
+      "text": "Finish statement.",
+      "location": [
+        55,
+        67
+      ],
+      "size": [
+        486,
+        271
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ss_Main",
+      "kind": "StatusStrip",
+      "parent": "$this",
+      "index": 1,
+      "text": "statusStrip1",
+      "location": [
+        0,
+        539
+      ],
+      "size": [
+        834,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Status",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 0,
+      "text": "Status.",
+      "location": null,
+      "size": [
+        42,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

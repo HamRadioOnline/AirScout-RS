@@ -1,0 +1,216 @@
+{
+  "window": "DatabaseEditDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "Edit Database",
+  "client_size": [
+    1008,
+    361
+  ],
+  "controls": [
+    {
+      "name": "ss_Main",
+      "kind": "StatusStrip",
+      "parent": "$this",
+      "index": 2,
+      "text": "statusStrip1",
+      "location": [
+        0,
+        339
+      ],
+      "size": [
+        1008,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Status",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 0,
+      "text": "Status",
+      "location": null,
+      "size": [
+        39,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "pa_Buttons",
+      "kind": "Panel",
+      "parent": "$this",
+      "index": 1,
+      "text": null,
+      "location": [
+        0,
+        285
+      ],
+      "size": [
+        1008,
+        54
+      ],
+      "dock": "Bottom",
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "dgv_Main",
+      "kind": "DataGridView",
+      "parent": "$this",
+      "index": 0,
+      "text": null,
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        1008,
+        285
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CellValidating",
+          "handler": "dgv_Main_CellValidating"
+        },
+        {
+          "event": "DataError",
+          "handler": "dgv_Main_DataError"
+        },
+        {
+          "event": "RowsAdded",
+          "handler": "dgv_Main_RowsAdded"
+        },
+        {
+          "event": "RowValidating",
+          "handler": "dgv_Main_RowValidating"
+        },
+        {
+          "event": "KeyDown",
+          "handler": "dgv_Main_KeyDown"
+        }
+      ]
+    },
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "pa_Buttons",
+      "index": 2,
+      "text": "Find in any column:",
+      "location": [
+        12,
+        18
+      ],
+      "size": [
+        98,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Search",
+      "kind": "TextBox",
+      "parent": "pa_Buttons",
+      "index": 1,
+      "text": null,
+      "location": [
+        116,
+        15
+      ],
+      "size": [
+        143,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "TextChanged",
+          "handler": "tb_Search_TextChanged"
+        },
+        {
+          "event": "KeyDown",
+          "handler": "tb_Search_KeyDown"
+        }
+      ]
+    },
+    {
+      "name": "btn_FindNext",
+      "kind": "Button",
+      "parent": "pa_Buttons",
+      "index": 0,
+      "text": "Find next (F3)",
+      "location": [
+        275,
+        13
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_FindNext_Click"
+        },
+        {
+          "event": "KeyDown",
+          "handler": "btn_FindNext_KeyDown"
+        }
+      ]
+    }
+  ],
+  "unparsed": []
+}

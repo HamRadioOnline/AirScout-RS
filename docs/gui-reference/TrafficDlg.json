@@ -1,0 +1,351 @@
+{
+  "window": "TrafficDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "Show All Traffic",
+  "client_size": [
+    832,
+    569
+  ],
+  "controls": [
+    {
+      "name": "groupBox1",
+      "kind": "GroupBox",
+      "parent": "$this",
+      "index": 2,
+      "text": "Traftic Map",
+      "location": [
+        12,
+        12
+      ],
+      "size": [
+        808,
+        482
+      ],
+      "dock": null,
+      "anchor": [
+        "Top",
+        "Bottom",
+        "Left",
+        "Right"
+      ],
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gm_Options_Traffic",
+      "kind": "GMapControl",
+      "parent": "groupBox1",
+      "index": 0,
+      "text": null,
+      "location": [
+        3,
+        16
+      ],
+      "size": [
+        802,
+        463
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "OnRouteEnter",
+          "handler": "gm_Options_Traffic_OnRouteEnter"
+        }
+      ]
+    },
+    {
+      "name": "groupBox2",
+      "kind": "GroupBox",
+      "parent": "$this",
+      "index": 1,
+      "text": "Traffic Data",
+      "location": [
+        12,
+        500
+      ],
+      "size": [
+        808,
+        55
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Left",
+        "Right"
+      ],
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Options_Traffic_Show",
+      "kind": "Button",
+      "parent": "groupBox2",
+      "index": 4,
+      "text": "Show",
+      "location": [
+        630,
+        19
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": [
+        "Top",
+        "Right"
+      ],
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Options_Traffic_Show_Click"
+        }
+      ]
+    },
+    {
+      "name": "dtp_Options_Traffic_Stop",
+      "kind": "DateTimePicker",
+      "parent": "groupBox2",
+      "index": 5,
+      "text": null,
+      "location": [
+        258,
+        18
+      ],
+      "size": [
+        131,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "dtp_Options_Traffic_Start",
+      "kind": "DateTimePicker",
+      "parent": "groupBox2",
+      "index": 6,
+      "text": null,
+      "location": [
+        55,
+        18
+      ],
+      "size": [
+        128,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Options_Traffic_Close",
+      "kind": "Button",
+      "parent": "groupBox2",
+      "index": 7,
+      "text": "Close",
+      "location": [
+        711,
+        19
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": [
+        "Top",
+        "Right"
+      ],
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Options_Traffic_Close_Click"
+        }
+      ]
+    },
+    {
+      "name": "ss_Main",
+      "kind": "StatusStrip",
+      "parent": "$this",
+      "index": 0,
+      "text": "statusStrip1",
+      "location": [
+        0,
+        547
+      ],
+      "size": [
+        832,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Main",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 0,
+      "text": "Press Show to start calculation.",
+      "location": null,
+      "size": [
+        170,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "groupBox2",
+      "index": 3,
+      "text": "From:",
+      "location": [
+        14,
+        22
+      ],
+      "size": [
+        33,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label2",
+      "kind": "Label",
+      "parent": "groupBox2",
+      "index": 2,
+      "text": "To:",
+      "location": [
+        226,
+        22
+      ],
+      "size": [
+        23,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label3",
+      "kind": "Label",
+      "parent": "groupBox2",
+      "index": 1,
+      "text": "Opacity[%]:",
+      "location": [
+        415,
+        22
+      ],
+      "size": [
+        60,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ud_Opacity",
+      "kind": "NumericUpDown",
+      "parent": "groupBox2",
+      "index": 0,
+      "text": null,
+      "location": [
+        481,
+        18
+      ],
+      "size": [
+        53,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 7,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

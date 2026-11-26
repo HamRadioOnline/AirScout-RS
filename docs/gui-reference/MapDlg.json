@@ -1,0 +1,3439 @@
+{
+  "window": "MapDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "AirScout - Aircraft Scatter Prediction (c) 2013 by DL2ALF",
+  "client_size": [
+    1008,
+    730
+  ],
+  "controls": [
+    {
+      "name": "sc_Map",
+      "kind": "SplitContainer",
+      "parent": "sc_Main.Panel1",
+      "index": 0,
+      "text": null,
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        852,
+        706
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 20,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": 342,
+      "orientation": "Horizontal",
+      "items": [],
+      "events": [
+        {
+          "event": "SplitterMoved",
+          "handler": "sc_Map_SplitterMoved"
+        }
+      ]
+    },
+    {
+      "name": "tc_Map",
+      "kind": "TabControl",
+      "parent": "sc_Map.Panel1",
+      "index": 0,
+      "text": null,
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        852,
+        342
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 14,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Selecting",
+          "handler": "tc_Map_Selecting"
+        }
+      ]
+    },
+    {
+      "name": "tp_Map",
+      "kind": "TabPage",
+      "parent": "tc_Map",
+      "index": 0,
+      "text": "Map",
+      "location": [
+        4,
+        22
+      ],
+      "size": [
+        844,
+        316
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "tp_Map_Enter"
+        }
+      ]
+    },
+    {
+      "name": "pa_Rig",
+      "kind": "Panel",
+      "parent": "tp_Map",
+      "index": 0,
+      "text": null,
+      "location": [
+        489,
+        182
+      ],
+      "size": [
+        349,
+        80
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 30,
+      "visible": false,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ag_Azimuth",
+      "kind": "AquaGauge",
+      "parent": "tp_Map",
+      "index": 1,
+      "text": null,
+      "location": [
+        489,
+        272
+      ],
+      "size": [
+        175,
+        175
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 27,
+      "visible": false,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ag_Elevation",
+      "kind": "AquaGauge",
+      "parent": "tp_Map",
+      "index": 2,
+      "text": null,
+      "location": [
+        670,
+        273
+      ],
+      "size": [
+        175,
+        175
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 28,
+      "visible": false,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gm_Main",
+      "kind": "GMapControl",
+      "parent": "tp_Map",
+      "index": 3,
+      "text": null,
+      "location": [
+        3,
+        3
+      ],
+      "size": [
+        838,
+        310
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "OnMarkerClick",
+          "handler": "gm_Main_OnMarkerClick"
+        },
+        {
+          "event": "OnMarkerEnter",
+          "handler": "gm_Main_OnMarkerEnter"
+        },
+        {
+          "event": "OnMarkerLeave",
+          "handler": "gm_Main_OnMarkerLeave"
+        },
+        {
+          "event": "OnPositionChanged",
+          "handler": "gm_Main_OnPositionChanged"
+        },
+        {
+          "event": "OnTileLoadComplete",
+          "handler": "gm_Main_OnTileLoadComplete"
+        },
+        {
+          "event": "OnMapDrag",
+          "handler": "gm_Main_OnMapDrag"
+        },
+        {
+          "event": "OnMapZoomChanged",
+          "handler": "gm_Main_OnMapZoomChanged"
+        },
+        {
+          "event": "SizeChanged",
+          "handler": "gm_Main_SizeChanged"
+        },
+        {
+          "event": "Paint",
+          "handler": "gm_Main_Paint"
+        },
+        {
+          "event": "MouseDown",
+          "handler": "gm_Main_MouseDown"
+        },
+        {
+          "event": "MouseMove",
+          "handler": "gm_Main_MouseMove"
+        },
+        {
+          "event": "MouseUp",
+          "handler": "gm_Main_MouseUp"
+        }
+      ]
+    },
+    {
+      "name": "gm_Cache",
+      "kind": "GMapControl",
+      "parent": "tp_Map",
+      "index": 4,
+      "text": null,
+      "location": [
+        3,
+        3
+      ],
+      "size": [
+        838,
+        310
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 29,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tp_News",
+      "kind": "TabPage",
+      "parent": "tc_Map",
+      "index": 1,
+      "text": "Latest News",
+      "location": [
+        4,
+        22
+      ],
+      "size": [
+        844,
+        316
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "tp_News_Enter"
+        }
+      ]
+    },
+    {
+      "name": "tc_Main",
+      "kind": "TabControl",
+      "parent": "sc_Map.Panel2",
+      "index": 0,
+      "text": null,
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        852,
+        359
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "DrawItem",
+          "handler": "tc_Main_DrawItem"
+        },
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "tc_Main_SelectedIndexChanged"
+        },
+        {
+          "event": "Selecting",
+          "handler": "tc_Main_Selecting"
+        }
+      ]
+    },
+    {
+      "name": "tp_Elevation",
+      "kind": "TabPage",
+      "parent": "tc_Main",
+      "index": 0,
+      "text": "Path Profile",
+      "location": [
+        4,
+        22
+      ],
+      "size": [
+        844,
+        333
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "tp_Elevation_Enter"
+        },
+        {
+          "event": "Resize",
+          "handler": "tp_Elevation_Resize"
+        }
+      ]
+    },
+    {
+      "name": "tp_Spectrum",
+      "kind": "TabPage",
+      "parent": "tc_Main",
+      "index": 1,
+      "text": "Spectrum",
+      "location": [
+        4,
+        22
+      ],
+      "size": [
+        844,
+        333
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "tp_Spectrum_Enter"
+        },
+        {
+          "event": "Resize",
+          "handler": "tp_Spectrum_Resize"
+        }
+      ]
+    },
+    {
+      "name": "gb_Spectrum_NearestInfo",
+      "kind": "GroupBox",
+      "parent": "tp_Spectrum",
+      "index": 0,
+      "text": "Nearest Plane Info",
+      "location": [
+        489,
+        54
+      ],
+      "size": [
+        175,
+        270
+      ],
+      "dock": null,
+      "anchor": [
+        "Top",
+        "Bottom",
+        "Right"
+      ],
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "lbl_Nearest_Dist",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 0,
+      "text": "0",
+      "location": [
+        82,
+        114
+      ],
+      "size": [
+        14,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 11,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label22",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 1,
+      "text": "Distance:",
+      "location": [
+        6,
+        114
+      ],
+      "size": [
+        52,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 10,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "lbl_Nearest_Call",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 2,
+      "text": "0",
+      "location": [
+        82,
+        26
+      ],
+      "size": [
+        14,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 9,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label21",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 3,
+      "text": "Call:",
+      "location": [
+        6,
+        26
+      ],
+      "size": [
+        27,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "lbl_Nearest_Angle",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 4,
+      "text": "0",
+      "location": [
+        82,
+        97
+      ],
+      "size": [
+        14,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 7,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label7",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 5,
+      "text": "Angle:",
+      "location": [
+        6,
+        97
+      ],
+      "size": [
+        37,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "lbl_Nearest_Alt",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 6,
+      "text": "0",
+      "location": [
+        82,
+        79
+      ],
+      "size": [
+        14,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label4",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 7,
+      "text": "Altitude:",
+      "location": [
+        6,
+        79
+      ],
+      "size": [
+        45,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "lbl_Nearest_Cat",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 8,
+      "text": "0",
+      "location": [
+        82,
+        60
+      ],
+      "size": [
+        14,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label5",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 9,
+      "text": "Category:",
+      "location": [
+        6,
+        60
+      ],
+      "size": [
+        52,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "lbl_Nearest_Type",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 10,
+      "text": "0",
+      "location": [
+        82,
+        44
+      ],
+      "size": [
+        14,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label2",
+      "kind": "Label",
+      "parent": "gb_Spectrum_NearestInfo",
+      "index": 11,
+      "text": "Type:",
+      "location": [
+        6,
+        44
+      ],
+      "size": [
+        34,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gb_Spectrum_Status",
+      "kind": "GroupBox",
+      "parent": "tp_Spectrum",
+      "index": 1,
+      "text": "Status",
+      "location": [
+        8,
+        6
+      ],
+      "size": [
+        830,
+        40
+      ],
+      "dock": null,
+      "anchor": [
+        "Top",
+        "Left",
+        "Right"
+      ],
+      "tab_index": 7,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Spectrum_Status",
+      "kind": "TextBox",
+      "parent": "gb_Spectrum_Status",
+      "index": 0,
+      "text": null,
+      "location": [
+        6,
+        14
+      ],
+      "size": [
+        129,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gb_NearestPlaneMap",
+      "kind": "GroupBox",
+      "parent": "tp_Spectrum",
+      "index": 2,
+      "text": "Nearest Plane Map",
+      "location": [
+        670,
+        54
+      ],
+      "size": [
+        168,
+        273
+      ],
+      "dock": null,
+      "anchor": [
+        "Top",
+        "Bottom",
+        "Right"
+      ],
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gm_Nearest",
+      "kind": "GMapControl",
+      "parent": "gb_NearestPlaneMap",
+      "index": 0,
+      "text": null,
+      "location": [
+        3,
+        16
+      ],
+      "size": [
+        162,
+        254
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gb_Spectrum",
+      "kind": "GroupBox",
+      "parent": "tp_Spectrum",
+      "index": 3,
+      "text": "Spectrum",
+      "location": [
+        8,
+        54
+      ],
+      "size": [
+        475,
+        273
+      ],
+      "dock": null,
+      "anchor": [
+        "Top",
+        "Bottom",
+        "Left",
+        "Right"
+      ],
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tp_Analysis",
+      "kind": "TabPage",
+      "parent": "tc_Main",
+      "index": 2,
+      "text": "Analysis",
+      "location": [
+        4,
+        22
+      ],
+      "size": [
+        844,
+        333
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "tp_Analysis_Enter"
+        },
+        {
+          "event": "Leave",
+          "handler": "tp_Analysis_Leave"
+        }
+      ]
+    },
+    {
+      "name": "panel2",
+      "kind": "Panel",
+      "parent": "tp_Analysis",
+      "index": 0,
+      "text": null,
+      "location": [
+        0,
+        137
+      ],
+      "size": [
+        844,
+        196
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gb_Analysis_Player",
+      "kind": "GroupBox",
+      "parent": "panel2",
+      "index": 0,
+      "text": "Player",
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        591,
+        196
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "SizeChanged",
+          "handler": "gb_Analysis_Player_SizeChanged"
+        }
+      ]
+    },
+    {
+      "name": "dtp_Analysis_MaxValue",
+      "kind": "DateTimePicker",
+      "parent": "gb_Analysis_Player",
+      "index": 0,
+      "text": null,
+      "location": [
+        463,
+        160
+      ],
+      "size": [
+        122,
+        20
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Right"
+      ],
+      "tab_index": 25,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "ValueChanged",
+          "handler": "dtp_Analysis_MaxValue_ValueChanged"
+        }
+      ]
+    },
+    {
+      "name": "dtp_Analysis_MinValue",
+      "kind": "DateTimePicker",
+      "parent": "gb_Analysis_Player",
+      "index": 1,
+      "text": null,
+      "location": [
+        6,
+        160
+      ],
+      "size": [
+        123,
+        20
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Left"
+      ],
+      "tab_index": 24,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "ValueChanged",
+          "handler": "dtp_Analysis_MinValue_ValueChanged"
+        }
+      ]
+    },
+    {
+      "name": "sb_Analysis_Play",
+      "kind": "ScrollBarEx",
+      "parent": "gb_Analysis_Player",
+      "index": 2,
+      "text": null,
+      "location": [
+        146,
+        160
+      ],
+      "size": [
+        289,
+        19
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom"
+      ],
+      "tab_index": 22,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": "Horizontal",
+      "items": [],
+      "events": [
+        {
+          "event": "Scroll",
+          "handler": "sb_Analysis_Play_Scroll"
+        },
+        {
+          "event": "SizeChanged",
+          "handler": "sb_Analysis_Play_SizeChanged"
+        }
+      ]
+    },
+    {
+      "name": "gb_Analysis_Controls",
+      "kind": "GroupBox",
+      "parent": "panel2",
+      "index": 1,
+      "text": "Controls",
+      "location": [
+        591,
+        0
+      ],
+      "size": [
+        253,
+        196
+      ],
+      "dock": "Right",
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Analysis_FastForward",
+      "kind": "Button",
+      "parent": "gb_Analysis_Controls",
+      "index": 0,
+      "text": null,
+      "location": [
+        202,
+        153
+      ],
+      "size": [
+        47,
+        29
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Left"
+      ],
+      "tab_index": 20,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_FastForward_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_Forward",
+      "kind": "Button",
+      "parent": "gb_Analysis_Controls",
+      "index": 1,
+      "text": null,
+      "location": [
+        153,
+        153
+      ],
+      "size": [
+        47,
+        29
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Left"
+      ],
+      "tab_index": 19,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Forward_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_Pause",
+      "kind": "Button",
+      "parent": "gb_Analysis_Controls",
+      "index": 2,
+      "text": null,
+      "location": [
+        104,
+        153
+      ],
+      "size": [
+        47,
+        29
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Left"
+      ],
+      "tab_index": 18,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Pause_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_Back",
+      "kind": "Button",
+      "parent": "gb_Analysis_Controls",
+      "index": 3,
+      "text": null,
+      "location": [
+        55,
+        153
+      ],
+      "size": [
+        47,
+        29
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Left"
+      ],
+      "tab_index": 17,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Back_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_Rewind",
+      "kind": "Button",
+      "parent": "gb_Analysis_Controls",
+      "index": 4,
+      "text": null,
+      "location": [
+        6,
+        153
+      ],
+      "size": [
+        47,
+        29
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Left"
+      ],
+      "tab_index": 16,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Rewind_Click"
+        }
+      ]
+    },
+    {
+      "name": "panel1",
+      "kind": "Panel",
+      "parent": "tp_Analysis",
+      "index": 1,
+      "text": null,
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        844,
+        137
+      ],
+      "dock": "Top",
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gb_Analysis_Functions",
+      "kind": "GroupBox",
+      "parent": "panel1",
+      "index": 0,
+      "text": "Functions",
+      "location": [
+        358,
+        0
+      ],
+      "size": [
+        233,
+        137
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Analysis_Plane_History",
+      "kind": "Button",
+      "parent": "gb_Analysis_Functions",
+      "index": 0,
+      "text": "Export Plane History",
+      "location": [
+        6,
+        108
+      ],
+      "size": [
+        113,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 40,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Plane_History_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_CrossingHistory",
+      "kind": "Button",
+      "parent": "gb_Analysis_Functions",
+      "index": 1,
+      "text": "Crossing History",
+      "location": [
+        6,
+        79
+      ],
+      "size": [
+        113,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 39,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_CrossingHistory_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_Path_SaveToFile",
+      "kind": "Button",
+      "parent": "gb_Analysis_Functions",
+      "index": 2,
+      "text": "Export Path",
+      "location": [
+        6,
+        50
+      ],
+      "size": [
+        113,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 38,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Path_SaveToFile_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_Planes_ShowTraffic",
+      "kind": "Button",
+      "parent": "gb_Analysis_Functions",
+      "index": 3,
+      "text": "Show All Traffic",
+      "location": [
+        6,
+        21
+      ],
+      "size": [
+        113,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 37,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Planes_ShowTraffic_Click"
+        }
+      ]
+    },
+    {
+      "name": "gb_Analysis_Database",
+      "kind": "GroupBox",
+      "parent": "panel1",
+      "index": 1,
+      "text": "Database",
+      "location": [
+        78,
+        0
+      ],
+      "size": [
+        280,
+        137
+      ],
+      "dock": "Left",
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Analysis_Status",
+      "kind": "TextBox",
+      "parent": "gb_Analysis_Database",
+      "index": 0,
+      "text": null,
+      "location": [
+        8,
+        111
+      ],
+      "size": [
+        262,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 38,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Analysis_Planes_History",
+      "kind": "Button",
+      "parent": "gb_Analysis_Database",
+      "index": 1,
+      "text": "Load History from URL",
+      "location": [
+        142,
+        21
+      ],
+      "size": [
+        128,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 36,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Planes_History_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_Planes_Clear",
+      "kind": "Button",
+      "parent": "gb_Analysis_Database",
+      "index": 2,
+      "text": "Clear Positions",
+      "location": [
+        8,
+        79
+      ],
+      "size": [
+        128,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 34,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Planes_Clear_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_Planes_Save",
+      "kind": "Button",
+      "parent": "gb_Analysis_Database",
+      "index": 3,
+      "text": "Save Positions to File",
+      "location": [
+        8,
+        50
+      ],
+      "size": [
+        128,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 33,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Planes_Save_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_Planes_Load",
+      "kind": "Button",
+      "parent": "gb_Analysis_Database",
+      "index": 4,
+      "text": "Load Positions from File",
+      "location": [
+        8,
+        21
+      ],
+      "size": [
+        128,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 32,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_Planes_Load_Click"
+        }
+      ]
+    },
+    {
+      "name": "gb_Analysis_Mode",
+      "kind": "GroupBox",
+      "parent": "panel1",
+      "index": 2,
+      "text": "Analysis",
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        78,
+        137
+      ],
+      "dock": "Left",
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Analysis_OFF",
+      "kind": "Button",
+      "parent": "gb_Analysis_Mode",
+      "index": 0,
+      "text": "OFF",
+      "location": [
+        8,
+        76
+      ],
+      "size": [
+        64,
+        52
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_OFF_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Analysis_ON",
+      "kind": "Button",
+      "parent": "gb_Analysis_Mode",
+      "index": 1,
+      "text": "ON",
+      "location": [
+        8,
+        20
+      ],
+      "size": [
+        64,
+        52
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": false,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Analysis_ON_Click"
+        }
+      ]
+    },
+    {
+      "name": "gb_Analysis_Time",
+      "kind": "GroupBox",
+      "parent": "panel1",
+      "index": 3,
+      "text": "Time",
+      "location": [
+        591,
+        0
+      ],
+      "size": [
+        253,
+        137
+      ],
+      "dock": "Right",
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label15",
+      "kind": "Label",
+      "parent": "gb_Analysis_Time",
+      "index": 0,
+      "text": "sec.",
+      "location": [
+        210,
+        85
+      ],
+      "size": [
+        27,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label14",
+      "kind": "Label",
+      "parent": "gb_Analysis_Time",
+      "index": 1,
+      "text": "Stepwidth:",
+      "location": [
+        7,
+        84
+      ],
+      "size": [
+        57,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Analysis_Stepwidth",
+      "kind": "TextBox",
+      "parent": "gb_Analysis_Time",
+      "index": 2,
+      "text": null,
+      "location": [
+        84,
+        82
+      ],
+      "size": [
+        96,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Analysis_Time",
+      "kind": "TextBox",
+      "parent": "gb_Analysis_Time",
+      "index": 3,
+      "text": null,
+      "location": [
+        6,
+        27
+      ],
+      "size": [
+        242,
+        35
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ss_Main",
+      "kind": "StatusStrip",
+      "parent": "$this",
+      "index": 1,
+      "text": "ss_Main",
+      "location": [
+        0,
+        706
+      ],
+      "size": [
+        1008,
+        24
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 22,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Status",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 0,
+      "text": "No Messages.",
+      "location": null,
+      "size": [
+        592,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Dummy",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 1,
+      "text": null,
+      "location": null,
+      "size": [
+        0,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Calculations",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 2,
+      "text": "Calculations.",
+      "location": null,
+      "size": [
+        79,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Database",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 3,
+      "text": "Database status.",
+      "location": null,
+      "size": [
+        96,
+        19
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Database_LED_Aircraft",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 4,
+      "text": "Aircraft database status LED",
+      "location": null,
+      "size": [
+        12,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Database_LED_Stations",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 5,
+      "text": " Station database status LED",
+      "location": null,
+      "size": [
+        12,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Database_LED_Rig",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 6,
+      "text": "Rig database status LED",
+      "location": null,
+      "size": [
+        12,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Database_LED_GLOBE",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 7,
+      "text": " GLOBE database status LED",
+      "location": null,
+      "size": [
+        12,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Database_LED_SRTM3",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 8,
+      "text": " SRTM3 database status LED",
+      "location": null,
+      "size": [
+        12,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Database_LED_SRTM1",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 9,
+      "text": " SRTM3 database status LED",
+      "location": null,
+      "size": [
+        12,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Database_LED_ASTER3",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 10,
+      "text": " ASTER3 database status LED",
+      "location": null,
+      "size": [
+        12,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Database_LED_ASTER1",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 11,
+      "text": "ASTER1 database status LED",
+      "location": null,
+      "size": [
+        12,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Track",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 12,
+      "text": "TRK",
+      "location": null,
+      "size": [
+        32,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Rot",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 13,
+      "text": "ROT",
+      "location": null,
+      "size": [
+        32,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_CAT",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 14,
+      "text": "CAT",
+      "location": null,
+      "size": [
+        32,
+        14
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Map_PlayPause",
+      "kind": "Button",
+      "parent": "gb_Map_Buttons",
+      "index": 0,
+      "text": null,
+      "location": [
+        20,
+        88
+      ],
+      "size": [
+        114,
+        29
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Left"
+      ],
+      "tab_index": 15,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Map_PlayPause_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Map_Save",
+      "kind": "Button",
+      "parent": "gb_Map_Buttons",
+      "index": 1,
+      "text": "&Save",
+      "location": [
+        19,
+        53
+      ],
+      "size": [
+        114,
+        29
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Left"
+      ],
+      "tab_index": 14,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Map_Save_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Options",
+      "kind": "Button",
+      "parent": "gb_Map_Buttons",
+      "index": 2,
+      "text": "&Options",
+      "location": [
+        19,
+        18
+      ],
+      "size": [
+        114,
+        29
+      ],
+      "dock": null,
+      "anchor": [
+        "Bottom",
+        "Left"
+      ],
+      "tab_index": 16,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Options_Click"
+        }
+      ]
+    },
+    {
+      "name": "cb_Band",
+      "kind": "ComboBox",
+      "parent": "pa_CommonInfo",
+      "index": 3,
+      "text": null,
+      "location": [
+        8,
+        60
+      ],
+      "size": [
+        130,
+        24
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 16,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "cb_Band_SelectedIndexChanged"
+        }
+      ]
+    },
+    {
+      "name": "tb_QTF",
+      "kind": "TextBox",
+      "parent": "gb_Map_Info",
+      "index": 4,
+      "text": null,
+      "location": [
+        3,
+        242
+      ],
+      "size": [
+        133,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 11,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_QRB",
+      "kind": "TextBox",
+      "parent": "gb_Map_Info",
+      "index": 6,
+      "text": null,
+      "location": [
+        3,
+        198
+      ],
+      "size": [
+        133,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 9,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gb_Map_Alarms",
+      "kind": "GroupBox",
+      "parent": "tp_Control_Options",
+      "index": 0,
+      "text": "Alarms",
+      "location": [
+        0,
+        110
+      ],
+      "size": [
+        143,
+        47
+      ],
+      "dock": "Top",
+      "anchor": null,
+      "tab_index": 62,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_Alarms_Activate",
+      "kind": "CheckBox",
+      "parent": "gb_Map_Alarms",
+      "index": 0,
+      "text": "Activate Alarms",
+      "location": [
+        14,
+        19
+      ],
+      "size": [
+        99,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CheckedChanged",
+          "handler": "cb_Alarms_Activate_CheckedChanged"
+        }
+      ]
+    },
+    {
+      "name": "gb_Map_Zoom",
+      "kind": "GroupBox",
+      "parent": "sc_Main.Panel2",
+      "index": 1,
+      "text": "Map Zoom",
+      "location": [
+        0,
+        504
+      ],
+      "size": [
+        152,
+        79
+      ],
+      "dock": "Bottom",
+      "anchor": null,
+      "tab_index": 60,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "pa_Map_Zoom",
+      "kind": "Panel",
+      "parent": "gb_Map_Zoom",
+      "index": 0,
+      "text": null,
+      "location": [
+        3,
+        16
+      ],
+      "size": [
+        146,
+        60
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_AutoCenter",
+      "kind": "CheckBox",
+      "parent": "pa_Map_Zoom",
+      "index": 0,
+      "text": "Auto Center",
+      "location": [
+        20,
+        37
+      ],
+      "size": [
+        93,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 24,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Zoom",
+      "kind": "TextBox",
+      "parent": "pa_Map_Zoom",
+      "index": 1,
+      "text": null,
+      "location": [
+        53,
+        9
+      ],
+      "size": [
+        41,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 23,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Zoom_Out",
+      "kind": "Button",
+      "parent": "pa_Map_Zoom",
+      "index": 2,
+      "text": "-",
+      "location": [
+        100,
+        8
+      ],
+      "size": [
+        30,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 22,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Zoom_Out_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Zoom_In",
+      "kind": "Button",
+      "parent": "pa_Map_Zoom",
+      "index": 3,
+      "text": "+",
+      "location": [
+        17,
+        8
+      ],
+      "size": [
+        30,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 21,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Zoom_In_Click"
+        }
+      ]
+    },
+    {
+      "name": "gb_Map_Filter",
+      "kind": "GroupBox",
+      "parent": "tp_Control_Options",
+      "index": 1,
+      "text": "Planes Filter",
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        143,
+        110
+      ],
+      "dock": "Top",
+      "anchor": null,
+      "tab_index": 61,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "pa_Planes_Filter",
+      "kind": "Panel",
+      "parent": "gb_Map_Filter",
+      "index": 0,
+      "text": null,
+      "location": [
+        3,
+        16
+      ],
+      "size": [
+        146,
+        91
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Planes_Filter_Min_Alt",
+      "kind": "Int32TextBox",
+      "parent": "pa_Planes_Filter",
+      "index": 0,
+      "text": null,
+      "location": [
+        59,
+        34
+      ],
+      "size": [
+        57,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 33,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Planes_Filter_Max_Circumcircle",
+      "kind": "Int32TextBox",
+      "parent": "pa_Planes_Filter",
+      "index": 1,
+      "text": null,
+      "location": [
+        59,
+        8
+      ],
+      "size": [
+        57,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 32,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label12",
+      "kind": "Label",
+      "parent": "pa_Planes_Filter",
+      "index": 2,
+      "text": "km",
+      "location": [
+        121,
+        11
+      ],
+      "size": [
+        21,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 31,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label13",
+      "kind": "Label",
+      "parent": "pa_Planes_Filter",
+      "index": 3,
+      "text": "Max. Circ.:",
+      "location": [
+        5,
+        11
+      ],
+      "size": [
+        57,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 30,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_Planes_Filter_Min_Cat",
+      "kind": "ComboBox",
+      "parent": "pa_Planes_Filter",
+      "index": 4,
+      "text": null,
+      "location": [
+        59,
+        60
+      ],
+      "size": [
+        77,
+        24
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 28,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "cb_Planes_Filter_Min_Category_SelectedIndexChanged"
+        }
+      ]
+    },
+    {
+      "name": "label11",
+      "kind": "Label",
+      "parent": "pa_Planes_Filter",
+      "index": 5,
+      "text": "Min. Cat:",
+      "location": [
+        4,
+        64
+      ],
+      "size": [
+        49,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 27,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label10",
+      "kind": "Label",
+      "parent": "pa_Planes_Filter",
+      "index": 6,
+      "text": "m",
+      "location": [
+        119,
+        37
+      ],
+      "size": [
+        15,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 26,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label9",
+      "kind": "Label",
+      "parent": "pa_Planes_Filter",
+      "index": 7,
+      "text": "Min. Alt.:",
+      "location": [
+        3,
+        37
+      ],
+      "size": [
+        48,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 25,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "sc_Main",
+      "kind": "SplitContainer",
+      "parent": "$this",
+      "index": 0,
+      "text": null,
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        1008,
+        706
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 24,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": 852,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "SplitterMoved",
+          "handler": "sc_Main_SplitterMoved"
+        }
+      ]
+    },
+    {
+      "name": "tc_Control",
+      "kind": "TabControl",
+      "parent": "sc_Main.Panel2",
+      "index": 0,
+      "text": null,
+      "location": [
+        0,
+        100
+      ],
+      "size": [
+        152,
+        404
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 60,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "DrawItem",
+          "handler": "tc_Control_DrawItem"
+        },
+        {
+          "event": "Selecting",
+          "handler": "tc_Control_Selecting"
+        }
+      ]
+    },
+    {
+      "name": "tp_Control_Single",
+      "kind": "TabPage",
+      "parent": "tc_Control",
+      "index": 0,
+      "text": "Single",
+      "location": [
+        4,
+        22
+      ],
+      "size": [
+        144,
+        378
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "tp_Control_Single_Enter"
+        }
+      ]
+    },
+    {
+      "name": "gb_Map_Info",
+      "kind": "GroupBox",
+      "parent": "tp_Control_Single",
+      "index": 0,
+      "text": "Info",
+      "location": [
+        3,
+        3
+      ],
+      "size": [
+        138,
+        275
+      ],
+      "dock": "Top",
+      "anchor": null,
+      "tab_index": 58,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_DXCall",
+      "kind": "CallsignComboBox",
+      "parent": "gb_Map_Info",
+      "index": 0,
+      "text": null,
+      "location": [
+        3,
+        113
+      ],
+      "size": [
+        133,
+        24
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 24,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "DropDown",
+          "handler": "cb_DXCall_DropDown"
+        },
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "cb_DXCall_SelectedIndexChanged"
+        },
+        {
+          "event": "TextChanged",
+          "handler": "cb_DXCall_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "cb_DXLoc",
+      "kind": "LocatorComboBox",
+      "parent": "gb_Map_Info",
+      "index": 1,
+      "text": null,
+      "location": [
+        3,
+        154
+      ],
+      "size": [
+        133,
+        24
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 23,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "DropDown",
+          "handler": "cb_DXLoc_DropDown"
+        },
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "cb_DXLoc_SelectedIndexChanged"
+        },
+        {
+          "event": "SelectionChangeCommitted",
+          "handler": "cb_DXLoc_SelectionChangeCommittedWithNoUpdate"
+        },
+        {
+          "event": "TextChanged",
+          "handler": "cb_DXLoc_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "cb_MyLoc",
+      "kind": "LocatorComboBox",
+      "parent": "gb_Map_Info",
+      "index": 2,
+      "text": null,
+      "location": [
+        3,
+        71
+      ],
+      "size": [
+        133,
+        24
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 22,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "DropDown",
+          "handler": "cb_MyLoc_DropDown"
+        },
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "cb_MyLoc_SelectedIndexChanged"
+        },
+        {
+          "event": "SelectionChangeCommitted",
+          "handler": "cb_MyLoc_SelectionChangeCommittedWithNoUpdate"
+        },
+        {
+          "event": "TextChanged",
+          "handler": "cb_MyLoc_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "cb_MyCall",
+      "kind": "CallsignComboBox",
+      "parent": "gb_Map_Info",
+      "index": 3,
+      "text": null,
+      "location": [
+        3,
+        34
+      ],
+      "size": [
+        133,
+        24
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 21,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "DropDown",
+          "handler": "cb_MyCall_DropDown"
+        },
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "cb_MyCall_SelectedIndexChanged"
+        },
+        {
+          "event": "TextChanged",
+          "handler": "cb_MyCall_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "label6",
+      "kind": "Label",
+      "parent": "gb_Map_Info",
+      "index": 5,
+      "text": "QTF",
+      "location": [
+        3,
+        226
+      ],
+      "size": [
+        28,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 10,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label16",
+      "kind": "Label",
+      "parent": "gb_Map_Info",
+      "index": 7,
+      "text": "QRB",
+      "location": [
+        2,
+        181
+      ],
+      "size": [
+        30,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label17",
+      "kind": "Label",
+      "parent": "gb_Map_Info",
+      "index": 8,
+      "text": "DX Loc",
+      "location": [
+        3,
+        139
+      ],
+      "size": [
+        43,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label18",
+      "kind": "Label",
+      "parent": "gb_Map_Info",
+      "index": 9,
+      "text": "DX Call",
+      "location": [
+        2,
+        97
+      ],
+      "size": [
+        42,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label19",
+      "kind": "Label",
+      "parent": "gb_Map_Info",
+      "index": 10,
+      "text": "My Loc",
+      "location": [
+        2,
+        58
+      ],
+      "size": [
+        42,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label20",
+      "kind": "Label",
+      "parent": "gb_Map_Info",
+      "index": 11,
+      "text": "My Call",
+      "location": [
+        3,
+        18
+      ],
+      "size": [
+        41,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tp_Control_Multi",
+      "kind": "TabPage",
+      "parent": "tc_Control",
+      "index": 1,
+      "text": "Multi",
+      "location": [
+        4,
+        22
+      ],
+      "size": [
+        143,
+        378
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "tp_Control_Multi_Enter"
+        }
+      ]
+    },
+    {
+      "name": "lv_Control_Watchlist",
+      "kind": "ListView",
+      "parent": "tp_Control_Multi",
+      "index": 0,
+      "text": null,
+      "location": [
+        3,
+        3
+      ],
+      "size": [
+        137,
+        349
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "ColumnClick",
+          "handler": "lv_Control_Watchlist_ColumnClick"
+        },
+        {
+          "event": "ColumnWidthChanged",
+          "handler": "lv_Control_Watchlist_ColumnWidthChanged"
+        },
+        {
+          "event": "DrawColumnHeader",
+          "handler": "lv_Control_Watchlist_DrawColumnHeader"
+        },
+        {
+          "event": "DrawItem",
+          "handler": "lv_Control_Watchlist_DrawItem"
+        },
+        {
+          "event": "DrawSubItem",
+          "handler": "lv_Control_Watchlist_DrawSubItem"
+        },
+        {
+          "event": "ItemCheck",
+          "handler": "lv_Control_Watchlist_ItemCheck"
+        },
+        {
+          "event": "ItemChecked",
+          "handler": "lv_Control_Watchlist_ItemChecked"
+        },
+        {
+          "event": "ItemMouseHover",
+          "handler": "lv_Control_Watchlist_ItemMouseHover"
+        },
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "lv_Control_Watchlist_SelectedIndexChanged"
+        },
+        {
+          "event": "MouseMove",
+          "handler": "lv_Control_Watchlist_MouseMove"
+        },
+        {
+          "event": "Resize",
+          "handler": "lv_Control_Watchlist_Resize"
+        }
+      ]
+    },
+    {
+      "name": "ch_Control_Watchlist_Call",
+      "kind": "ColumnHeader",
+      "parent": "lv_Control_Watchlist",
+      "index": 0,
+      "text": "   Call",
+      "location": null,
+      "size": null,
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ch_Control_Watchlist_Loc",
+      "kind": "ColumnHeader",
+      "parent": "lv_Control_Watchlist",
+      "index": 1,
+      "text": "Loc",
+      "location": null,
+      "size": null,
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Control_Manage_Watchlist",
+      "kind": "Button",
+      "parent": "tp_Control_Multi",
+      "index": 1,
+      "text": "Manage Watchlist",
+      "location": [
+        3,
+        352
+      ],
+      "size": [
+        137,
+        23
+      ],
+      "dock": "Bottom",
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Control_Manage_Watchlist_Click"
+        }
+      ]
+    },
+    {
+      "name": "tp_Control_Options",
+      "kind": "TabPage",
+      "parent": "tc_Control",
+      "index": 2,
+      "text": "Opt",
+      "location": [
+        4,
+        22
+      ],
+      "size": [
+        143,
+        378
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Enter",
+          "handler": "tp_Control_Options_Enter"
+        }
+      ]
+    },
+    {
+      "name": "pa_CommonInfo",
+      "kind": "Panel",
+      "parent": "sc_Main.Panel2",
+      "index": 2,
+      "text": null,
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        152,
+        100
+      ],
+      "dock": "Top",
+      "anchor": null,
+      "tab_index": 59,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "pa_CommonInfo",
+      "index": 0,
+      "text": "UTC",
+      "location": [
+        4,
+        3
+      ],
+      "size": [
+        29,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 17,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_UTC",
+      "kind": "TextBox",
+      "parent": "pa_CommonInfo",
+      "index": 1,
+      "text": null,
+      "location": [
+        4,
+        19
+      ],
+      "size": [
+        133,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 13,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label8",
+      "kind": "Label",
+      "parent": "pa_CommonInfo",
+      "index": 2,
+      "text": "Band",
+      "location": [
+        4,
+        44
+      ],
+      "size": [
+        32,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 14,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gb_Map_Buttons",
+      "kind": "GroupBox",
+      "parent": "sc_Main.Panel2",
+      "index": 3,
+      "text": "Control",
+      "location": [
+        0,
+        583
+      ],
+      "size": [
+        152,
+        123
+      ],
+      "dock": "Bottom",
+      "anchor": null,
+      "tab_index": 57,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}
