@@ -1,0 +1,40 @@
+# Stage 6 area 3 implementation plan
+
+**Goal** — Implement the 44 approved fixes in feeds, database and time, verify the 13 keep decisions, and record evidence for later C# pull requests.
+
+**Architecture** — Share guarded SQLite initialization across database owners. Use the same private staging contract for settings and downloads. Preserve legacy settings through versioned resolution. Separate transport bounds, row decoding, and source-time admission. Commit station import state alongside the rows it describes.
+
+**Tech stack** — Rust workspace, SQLite via rusqlite, C# reference at fbadef0f, immutable C# JSON fixtures and synthetic localhost tests.
+
+**Spec** — [Stage 6 design](../specs/2026-11-25-stage6-logic-fixes-design.md), [area 3 list review response](2026-11-25-stage6-area3-review.md#area-3-list-review-response) and [approved area 3 rows](../../logic-fixes.md#area-3-feeds-database-and-time).
+
+## Global Constraints
+
+- Start each row with a regression and observe failure before applying the fix. Before each implementation commit run workspace format, locked tests and locked all-target Clippy with warnings denied for the touched crates. Commit once per task with `git commit -S` and `SSH_AUTH_SOCK=~/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock`. Verify signature status `G`.
+- Keep `tests/golden/`, `upstream_commit` and `Cargo.lock` unchanged. Record independently derived semantic fixture changes in `docs/logic-fixes-area3/golden-deltas.tsv`. Consume every entry through `as_golden::deltas::DeltaManifest::load_from` and compare composites with recursive tolerance. Leave unaffected cases asserting C# values.
+- Mark finished findings **Fixed in stage 6** and approved keep rows **Kept**, with approval-list pointers. Record the C# location at fbadef0f, equivalent C# fix and proving Rust test per fixed row. Maintain the [recovery ledger](../ledgers/2026-11-25-stage6-area3-fixes.md) after each task. Record any approved behavior that proves impossible as blocked and continue.
+- Stay on `stage6-area3-feeds-db` from `470a3d7`. No delegation, merges, pushes, Docker, new dependencies, or host installs. Prefix every Cargo command with `CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0` and use `--locked` where supported. Check target size and use only `cargo clean --profile dev` if it exceeds 40 GB.
+- Use synthetic test data and localhost. Join finite localhost senders before stopping feeds. Keep URLs, payloads and credentials out of diagnostics.
+- Verify persisted changes on fresh, legacy and repeated load/save paths. Bump algorithm versions whenever an existing computed cache key would otherwise serve a changed result.
+
+## Review Focus
+
+Trace checked UTC and monotonic clocks independently. Exercise equal and out-of-order reports across all publication sinks, and concurrent migrations and saves at their lock boundaries. Compare legacy and fresh settings in both hosts. Verify validity and byte limits from transport through decompression and row mapping. Confirm local feed rejection after redirects. Preserve import conflict rules and calculator timestamps across partial failures. Preserve all 13 keep decisions.
+
+## Tasks
+
+1. **Callsigns (#14, as-stations).** Verify normalization, single-slash short bases, multiple-slash behavior and exact callsign golden deltas. Commit `fix(as-stations): normalize and split portable callsigns`.
+2. **VRS timing (#58, as-feeds).** Assert 1.200 s and 0.900 s contribute 1200 ms and 900 ms and the shorter cumulative endpoint is chosen. Commit `fix(as-feeds): count full VRS polling durations`.
+3. **Versioned startup (#372, as-db and database owners).** Verify typed schema-ahead errors before mutation, locked rechecks against concurrent same and ahead versions, fresh in-memory setup and journal preservation. Commit `fix(as-db): guard schema versions before database setup`.
+4. **Signal parsing and merge (#79, #81, #379, as-signals and desktop).** Verify full last bin, declared count, finite levels, checked epoch, and strongest finite level per UTC second. Migrate invalid baselines and verify duplicate and repair semantics. Coordinate HTTP size enforcement with task 6. Commit `fix(as-signals): parse full spectra and retain second maxima`.
+5. **Private publication (#381, #305, as-settings, as-net and updater callers).** Use exclusive private staging, sync before replacement and isolate concurrent failures. Check caller-specific limits and 304 behavior, with validator provenance in task 12. Commit `fix(as-net): bound downloads and publish complete private files`.
+6. **Diagnostic and transport boundaries (#374, #375, as-feeds, as-net, as-settings and desktop).** Assert secret-free Debug, Display, source chains and worker diagnostics. Check compressed, decoded, window, Spectrum Lab and FlexJSON ceilings. Commit `fix(as-feeds): bound transport and sanitize diagnostics`.
+7. **Settings and feed endpoints (#329, #340, #371, #373, as-settings, as-feeds and both hosts).** Verify host defaults, implicit legacy bands and URL migration, exact custom bytes, self-feed and redirect rejection, and repeated normal/editor saves. Use the approved fresh k-factor and legacy band policy. Commit `fix(as-settings): resolve versioned profiles and feed endpoints`.
+8. **JSON adapters and type enrichment (#48, #51, #52, #54, #55, #59, #60, #65, #66, #67, #378, #380, as-feeds).** Test both emitter mappings and canonical type precedence, registration, mixed-invalid batches, empty envelopes, 64-bit epochs, fractional timestamps and ADSBSupport source time. Reconcile feed JSON and companion assertions. Commit `fix(as-feeds): preserve valid JSON observations and metadata`.
+9. **OpenSky request coverage (#64, as-feeds).** Check template expansion and the stock coverage box on both auth paths while retaining custom raw encodings. Commit `fix(as-feeds): apply OpenSky request coverage`.
+10. **Checked observation ages and BinCraft (#61, #384, as-feeds).** Verify negative and overflowing ages across age-based adapters and both packed layouts. Check valid-neighbor recovery, truncated trailing slots, validity bits, and independent wire-field golden expectations. Commit `fix(as-feeds): decode checked position ages and BinCraft records`.
+11. **FlexJSON (#70–#75, #77, as-feeds).** Exercise named and explicitly indexed fields, units and fractional values, null isolation, checked epoch precedence, finite statistics and ambiguous unnamed columns under option A. Verify runtime inference lifecycle and independent UTF-16 cap. Commit `fix(as-feeds): resolve FlexJSON fields and clocks safely`.
+12. **Station imports (#377, #382, #383, as-stations and as-net).** Migrate legacy invalid keys and import markers. Verify scoped repair and generation invalidation, archive and validator provenance, decoded size limits, and independent archive transactions. Commit `fix(as-stations): track scoped imports and repair invalid locations`.
+13. **QRV resolution (#13, as-stations and desktop callers).** Verify full locator validation, trusted/derived exact lookup, coarse band defaults and Win-Test, desktop and web parity. Commit `fix(as-stations): resolve equipment for coarse locators`.
+14. **Live admission and retries (#47, #49, #50, #376, as-feeds and as-aircraft).** Test shortest bearing difference, minimum retry interval, atomic winner/event ordering, separate history eligibility, all four sinks, inclusive 10 s cutoff, startup and failed poll promotion, and both approved pending limits. Commit `fix(as-feeds): serialize live admission and bound pending observations`.
+15. **Audit, full gates and ledger.** Verify all 57 row dispositions, upstream records, regressions, migrations, cache versions, and consumed golden deltas. Check `git diff --stat 470a3d7..HEAD -- tests/golden Cargo.lock`. Run workspace fmt, locked all-target workspace Clippy and locked workspace tests with `--no-fail-fast`, the hamlib all-target Clippy gate for as-cat/airscout/catcheck, and featureless as-cat all-target Clippy. Record counts and concerns and commit `docs: stage 6 area 3 fix ledger`.

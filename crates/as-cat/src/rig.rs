@@ -63,7 +63,7 @@ impl<B: Backend> Rig for CatRig<B> {
         }
         match self.backend.get_freq() {
             Ok(_) => {
-                if s == Doppler::A {
+                if s.is_active() {
                     match self.backend.get_split() {
                         Ok(_) => {}
                         Err(BackendError::Lost(t)) => {
@@ -261,6 +261,10 @@ impl DopplerSession {
         if v.tx_hz > 0 {
             rig.set_tx_frequency(v.tx_hz);
         }
-        rig.set_simplex_mode(v.rx_hz, v.mode);
+        if v.split == RigSplit::SplitOn && v.tx_hz > 0 {
+            rig.set_split_mode(v.rx_hz, v.tx_hz, v.mode);
+        } else {
+            rig.set_simplex_mode(v.rx_hz, v.mode);
+        }
     }
 }

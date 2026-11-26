@@ -4,10 +4,11 @@
 //! port writes only the members the shipped page reads (the scripts of
 //! `wwwroot/resources/js` and the inline script of `wwwroot/dist/index.html`), with the
 //! C# names and types, in the `Settings.Designer.cs` declaration order. Nothing is saved.
-//! No credential is written: `KST_Websocket` loses its userinfo, and `Map_Providers`
-//! leaves out the Thunderforest entry, whose `APIKey` is a key (`MapProvider.cs:30-36`).
+//! No credential is written: `KST_Websocket` loses its userinfo and its query string, and
+//! `Map_Providers` leaves out the Thunderforest entry, whose `APIKey` is a key
+//! (`MapProvider.cs:30-36`).
 
-use crate::web_api::{feed_web_name, strip_userinfo};
+use crate::web_api::{feed_web_name, scrub_public_url_without_query};
 use as_settings::{Settings, LOCATOR_AUTO_LENGTH, LOCATOR_MAX_LENGTH};
 use as_web::dto::BandSettingJson;
 use as_web::json::{to_indented, Num};
@@ -288,7 +289,7 @@ pub fn settings_json(s: &Settings) -> String {
         my_calls: &s.gui.my_calls,
         map_small_markers: s.web.map_small_markers,
         map_providers: &MAP_PROVIDERS,
-        kst_websocket: strip_userinfo(&s.web.kst_websocket),
+        kst_websocket: scrub_public_url_without_query(&s.web.kst_websocket),
         kst_websocket_timeout: Num(s.web.kst_websocket_timeout_s),
     };
     to_indented(&j)

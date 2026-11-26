@@ -337,16 +337,15 @@ pub struct AircraftDb {
 impl AircraftDb {
     /// Open (and migrate) `<dir>/aircrafts.db3`.
     pub fn open(dir: &Path) -> Result<Self, AircraftError> {
-        Self::init(as_db::open(&dir.join("aircrafts.db3"))?)
+        Self::from_conn(as_db::open_versioned(&dir.join("aircrafts.db3"), SCHEMA)?)
     }
 
     /// In-memory database (tests, temporary use).
     pub fn open_in_memory() -> Result<Self, AircraftError> {
-        Self::init(as_db::open_in_memory()?)
+        Self::from_conn(as_db::open_in_memory_versioned(SCHEMA)?)
     }
 
-    fn init(conn: Connection) -> Result<Self, AircraftError> {
-        as_db::migrate(&conn, SCHEMA)?;
+    fn from_conn(conn: Connection) -> Result<Self, AircraftError> {
         let db = Self {
             conn: Mutex::new(conn),
             reg_min_len: AtomicUsize::new(0),
@@ -503,7 +502,18 @@ impl AircraftDb {
         &self,
         icao: &str,
     ) -> Result<Option<AircraftType>, AircraftError> {
-        self.find("ICAO = ?1", &[icao])
+        let sql = format!(
+            "SELECT {} FROM {} WHERE ICAO = ?1
+             ORDER BY CASE WHEN IATA <> '' THEN 1 ELSE 0 END DESC, LastUpdated DESC
+             LIMIT 1",
+            AircraftType::COLS.join(", "),
+            AircraftType::TABLE
+        );
+        Ok(self
+            .conn()
+            .prepare_cached(&sql)?
+            .query_row(params![icao], AircraftType::from_row)
+            .optional()?)
     }
     /// `AircraftTypeFindByIATA` (newest row).
     pub fn aircraft_type_find_by_iata(

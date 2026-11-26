@@ -64,10 +64,28 @@ fn modulo(a: f64, b: f64) -> f64 {
     ((a % b) + b) % b
 }
 
+fn normalize_lon(lon: f64) -> f64 {
+    let wrapped = modulo(lon + 180.0, 360.0) - 180.0;
+    if wrapped == -180.0 {
+        180.0
+    } else {
+        wrapped
+    }
+}
+
+fn circular_lon_delta(a: f64, b: f64) -> f64 {
+    (modulo(a - b + 180.0, 360.0) - 180.0).abs()
+}
+
 /// `getGlobalPosition` from an even and an odd message; `newer_is_odd` says which one is
 /// `this` in C# (its zone count picks the longitude). Returns (lat, lon). The result is not
 /// range-checked: a bad pair can give a latitude above 90° (logic-findings #36).
 pub fn global<T: CprMsg>(even: &T, odd: &T, newer_is_odd: bool) -> Result<(f64, f64), AdsbError> {
+    if T::ZONE == 90.0 {
+        return Err(AdsbError::MissingInformation(
+            "Surface global CPR requires a trusted reference position.".into(),
+        ));
+    }
     let (newer, other) = if newer_is_odd {
         (odd, even)
     } else {
@@ -116,6 +134,11 @@ pub fn global<T: CprMsg>(even: &T, odd: &T, newer_is_odd: bool) -> Result<(f64, 
     if (-360.0..=-270.0).contains(&rlat1) {
         rlat1 += 360.0;
     }
+    if !(-90.0..=90.0).contains(&rlat0) || !(-90.0..=90.0).contains(&rlat1) {
+        return Err(AdsbError::BadFormat(format!(
+            "invalid global latitude: {rlat0:.6}/{rlat1:.6}"
+        )));
+    }
     if nl_f(rlat0) != nl_f(rlat1) {
         return Err(AdsbError::PositionStraddle);
     }
@@ -139,16 +162,117 @@ pub fn global<T: CprMsg>(even: &T, odd: &T, newer_is_odd: bool) -> Result<(f64, 
         rlon1 -= 360.0;
     }
     Ok(if newer_is_odd {
-        (rlat1, rlon1)
+        (rlat1, normalize_lon(rlon1))
     } else {
-        (rlat0, rlon0)
+        (rlat0, normalize_lon(rlon0))
     })
+}
+
+/// Surface global CPR with a trusted nearby reference to select the correct hemisphere and
+/// longitude quadrant.
+pub fn global_surface(
+    even: &SurfacePosition,
+    odd: &SurfacePosition,
+    newer_is_odd: bool,
+    ref_lat: f64,
+    ref_lon: f64,
+) -> Result<(f64, f64), AdsbError> {
+    if !ref_lat.is_finite()
+        || !ref_lon.is_finite()
+        || !(-90.0..=90.0).contains(&ref_lat)
+        || !(-180.0..=180.0).contains(&ref_lon)
+    {
+        return Err(AdsbError::IllegalArgument(format!(
+            "invalid surface reference ({ref_lat}, {ref_lon})"
+        )));
+    }
+    let (lat_base, lon_base) = {
+        let (newer, other) = if newer_is_odd {
+            (odd, even)
+        } else {
+            (even, odd)
+        };
+        if other.icao24() != newer.icao24() {
+            return Err(AdsbError::IllegalArgument(format!(
+                "Transmitter of other message ({:06X}) not equal to this ({:06X})",
+                other.icao24(),
+                newer.icao24()
+            )));
+        }
+        if other.odd() == newer.odd() {
+            return Err(AdsbError::BadFormat(format!(
+                "Expected {} message format",
+                if newer.odd() { "even" } else { "odd" }
+            )));
+        }
+        if !newer.has_position() {
+            return Err(AdsbError::MissingInformation(
+                "No position information available!".into(),
+            ));
+        }
+        if !other.has_position() {
+            return Err(AdsbError::MissingInformation(
+                "Other message has no position information.".into(),
+            ));
+        }
+        let z = SurfacePosition::ZONE;
+        let (elat, elon) = (f64::from(even.cpr_lat()), f64::from(even.cpr_lon()));
+        let (olat, olon) = (f64::from(odd.cpr_lat()), f64::from(odd.cpr_lon()));
+        let dlat0 = z / 60.0;
+        let dlat1 = z / 59.0;
+        let j = ((59.0 * elat - 60.0 * olat) / CPR_SCALE + 0.5).floor();
+        let rlat0 = dlat0 * (modulo(j, 60.0) + elat / CPR_SCALE);
+        let rlat1 = dlat1 * (modulo(j, 59.0) + olat / CPR_SCALE);
+        if nl_f(rlat0) != nl_f(rlat1) {
+            return Err(AdsbError::PositionStraddle);
+        }
+        let dlon0 = z / nl_f(rlat0).max(1.0);
+        let dlon1 = z / (nl_f(rlat1) - 1.0).max(1.0);
+        let nl_helper = nl_f(if newer_is_odd { rlat1 } else { rlat0 });
+        let m = ((elon * (nl_helper - 1.0) - olon * nl_helper) / CPR_SCALE + 0.5).floor();
+        let rlon0 = dlon0 * (modulo(m, nl_f(rlat0).max(1.0)) + elon / CPR_SCALE);
+        let rlon1 = dlon1 * (modulo(m, (nl_f(rlat1) - 1.0).max(1.0)) + olon / CPR_SCALE);
+        if newer_is_odd {
+            (rlat1, rlon1)
+        } else {
+            (rlat0, rlon0)
+        }
+    };
+
+    let lat_candidates = [lat_base, lat_base - 90.0]
+        .into_iter()
+        .filter(|lat| (-90.0..=90.0).contains(lat))
+        .collect::<Vec<_>>();
+    let lat = lat_candidates
+        .into_iter()
+        .min_by(|a, b| (a - ref_lat).abs().total_cmp(&(b - ref_lat).abs()))
+        .ok_or_else(|| {
+            AdsbError::BadFormat(format!("invalid surface latitude candidate: {lat_base:.6}"))
+        })?;
+
+    let lon = (-4..=4)
+        .map(|k| normalize_lon(lon_base + 90.0 * f64::from(k)))
+        .min_by(|a, b| circular_lon_delta(*a, ref_lon).total_cmp(&circular_lon_delta(*b, ref_lon)))
+        .ok_or_else(|| {
+            AdsbError::BadFormat("unable to resolve surface longitude quadrant".into())
+        })?;
+
+    Ok((lat, lon))
 }
 
 /// `getLocalPosition` relative to a reference position. C# casts the CPR longitude to `float`
 /// in one term; a 17-bit integer is exact in `float`, so the cast changes nothing
 /// (logic-findings #37).
 pub fn local<T: CprMsg>(msg: &T, ref_lat: f64, ref_lon: f64) -> Result<(f64, f64), AdsbError> {
+    if !ref_lat.is_finite()
+        || !ref_lon.is_finite()
+        || !(-90.0..=90.0).contains(&ref_lat)
+        || !(-180.0..=180.0).contains(&ref_lon)
+    {
+        return Err(AdsbError::IllegalArgument(format!(
+            "invalid local CPR reference ({ref_lat}, {ref_lon})"
+        )));
+    }
     if !msg.has_position() {
         return Err(AdsbError::MissingInformation(
             "No position information available!".into(),
@@ -160,9 +284,14 @@ pub fn local<T: CprMsg>(msg: &T, ref_lat: f64, ref_lon: f64) -> Result<(f64, f64
     let j =
         (ref_lat / dlat).floor() + (0.5 + modulo(ref_lat, dlat) / dlat - clat / CPR_SCALE).floor();
     let rlat = dlat * (j + clat / CPR_SCALE);
+    if !(-90.0..=90.0).contains(&rlat) {
+        return Err(AdsbError::BadFormat(format!(
+            "invalid local latitude: {rlat:.6}"
+        )));
+    }
     let dlon = z / (nl_f(rlat) - if msg.odd() { 1.0 } else { 0.0 }).max(1.0);
     let m = (ref_lon / dlon).floor()
         + (0.5 + modulo(ref_lon, dlon) / dlon - f64::from(clon as f32) / CPR_SCALE).floor();
-    let rlon = dlon * (m + clon / CPR_SCALE);
+    let rlon = normalize_lon(dlon * (m + clon / CPR_SCALE));
     Ok((rlat, rlon))
 }

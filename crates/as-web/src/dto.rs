@@ -240,6 +240,10 @@ pub struct PlaneInfoJson {
     pub to: String,
     #[serde(rename = "VSpeed")]
     pub v_speed: i32,
+    #[serde(rename = "AltitudeEstimate", skip_serializing_if = "Option::is_none")]
+    pub altitude_estimate: Option<bool>,
+    #[serde(rename = "AltitudeProvenance", skip_serializing_if = "Option::is_none")]
+    pub altitude_provenance: Option<String>,
 }
 
 /// `AirportDesignator` (`AirScout.Aircrafts/Airport.cs:34-40`).

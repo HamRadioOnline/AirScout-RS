@@ -23,11 +23,14 @@ enum UpdateMode {
 }
 
 /// `enabled` is false while playing or while a job runs: the buttons that act are disabled then.
+/// `waiting` is the number of background workers still stopping; it is shown so the user sees why
+/// the destructive buttons are disabled (#155).
 pub fn show(
     ui: &mut Ui,
     s: &mut Settings,
     sizes: &[(DbId, String, f64)],
     enabled: bool,
+    waiting: Option<usize>,
 ) -> Option<MaintAction> {
     let b = &mut s.background;
     let mut mode = if b.update_periodically {
@@ -51,13 +54,28 @@ pub fn show(
     ui.separator();
     ui.checkbox(&mut b.calculations_enable, "Background calculations");
     ui.separator();
-    maintenance(ui, sizes, enabled)
+    maintenance(ui, sizes, enabled, waiting)
 }
 
 /// Database files, sizes and the buttons of the maintenance (`tab_Options_Database_Enter`,
 /// `OptionsDlg.cs:296-420`). A size is shown in MB with no decimals.
-fn maintenance(ui: &mut Ui, sizes: &[(DbId, String, f64)], enabled: bool) -> Option<MaintAction> {
+fn maintenance(
+    ui: &mut Ui,
+    sizes: &[(DbId, String, f64)],
+    enabled: bool,
+    waiting: Option<usize>,
+) -> Option<MaintAction> {
     let mut action = None;
+    if let Some(n) = waiting {
+        ui.colored_label(
+            ui.visuals().warn_fg_color,
+            if n == 1 {
+                "waiting for 1 background worker to stop".to_owned()
+            } else {
+                format!("waiting for {n} background workers to stop")
+            },
+        );
+    }
     ui.horizontal_wrapped(|ui| {
         for (text, a) in [
             (

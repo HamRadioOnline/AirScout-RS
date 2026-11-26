@@ -8,6 +8,7 @@ mod band_settings;
 pub mod cat;
 mod gui;
 mod network;
+mod profile;
 mod secret;
 mod track;
 mod watchlist;
@@ -20,6 +21,7 @@ pub use gui::{
     Area, GuiSettings, InfoWin, LOCATOR_AUTO_LENGTH, LOCATOR_MAX_LENGTH, MAP_PRELOADER_MAX_ZOOM,
 };
 pub use network::Server;
+pub use profile::{canonicalize_feed_table, format_profile, SettingsHost, SettingsVersion};
 pub use secret::Secret;
 pub use track::{Doppler, DopplerStrategy, Track, TrackDde, TrackFile, TrackSerial, TrackUdp};
 pub use watchlist::{Watchlist, WatchlistItem};
@@ -53,36 +55,50 @@ pub enum SettingsError {
     Serialize(#[from] toml::ser::Error),
 }
 
-/// Write `text` to `path` atomically: `<path>.tmp` (created owner-only, mode 0600, on Unix, as
-/// the file can hold feed credentials), `sync_all`, then rename. A stale `<path>.tmp` is
-/// replaced; the temp file is removed if the rename fails. Creates the parent directory.
+/// Write `text` through an exclusive staging file beside `path`, syncing before
+/// replacement. The staging file is owner-only on Unix.
 pub fn write_private_atomic(path: &Path, text: &str) -> std::io::Result<()> {
     use std::io::Write;
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir)?;
-    }
-    let mut tmp = path.as_os_str().to_owned();
-    tmp.push(".tmp");
-    let tmp = PathBuf::from(tmp);
-    // a stale file keeps its old mode when reopened, so remove it first
-    match std::fs::remove_file(&tmp) {
-        Ok(()) => {}
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-        Err(e) => return Err(e),
-    }
-    let mut opts = std::fs::OpenOptions::new();
-    opts.write(true).create(true).truncate(true);
+    write_private_atomic_with(path, |file| file.write_all(text.as_bytes()))
+}
+
+fn write_private_atomic_with(
+    path: &Path,
+    write: impl FnOnce(&mut std::fs::File) -> std::io::Result<()>,
+) -> std::io::Result<()> {
+    use std::fs;
+    use std::io;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static NEXT_ID: AtomicU64 = AtomicU64::new(0);
+    let parent = path
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    fs::create_dir_all(parent)?;
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create_new(true);
     #[cfg(unix)]
-    std::os::unix::fs::OpenOptionsExt::mode(&mut opts, 0o600);
-    let written = opts.open(&tmp).and_then(|mut f| {
-        f.write_all(text.as_bytes())?;
-        f.sync_all()
-    });
-    if let Err(e) = written.and_then(|()| std::fs::rename(&tmp, path)) {
-        let _ = std::fs::remove_file(&tmp);
-        return Err(e);
+    std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
+    let (staging, mut file) = loop {
+        let serial = NEXT_ID.fetch_add(1, Ordering::Relaxed);
+        let staging = parent.join(format!(
+            ".airscout-settings.{}.{serial}.tmp",
+            std::process::id()
+        ));
+        match options.open(&staging) {
+            Ok(file) => break (staging, file),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error),
+        }
+    };
+    let written = write(&mut file).and_then(|()| file.sync_all());
+    drop(file);
+    let result = written.and_then(|()| fs::rename(&staging, path));
+    if result.is_err() {
+        let _ = fs::remove_file(staging);
     }
-    Ok(())
+    result
 }
 
 /// 1-based line and column (in characters) of byte `offset` in `text`. An offset past the end
@@ -173,7 +189,7 @@ impl ElevationEnabled {
 }
 
 /// Background workers (database updates, calculations).
-#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct Background {
     pub update_on_startup: bool,
@@ -186,6 +202,17 @@ pub struct Background {
     /// Base URL of the map tile mirror the preloader reads (`<url><z>/<x>/<y>.png`, OpenStreetMap
     /// tiles only); not shown in the Options, like `stations_url`.
     pub map_mirror_url: String,
+}
+
+impl std::fmt::Debug for Background {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Background")
+            .field("update_on_startup", &self.update_on_startup)
+            .field("update_periodically", &self.update_periodically)
+            .field("update_period_min", &self.update_period_min)
+            .field("calculations_enable", &self.calculations_enable)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Default for Background {
@@ -203,7 +230,7 @@ impl Default for Background {
 }
 
 /// SpecLab (spectrum) integration.
-#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct SpecLab {
     pub enabled: bool,
@@ -213,6 +240,17 @@ pub struct SpecLab {
     pub f2: u32,
     /// Update interval [s].
     pub update_s: u64,
+}
+
+impl std::fmt::Debug for SpecLab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SpecLab")
+            .field("enabled", &self.enabled)
+            .field("f1", &self.f1)
+            .field("f2", &self.f2)
+            .field("update_s", &self.update_s)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Default for SpecLab {
@@ -245,7 +283,7 @@ impl Default for TimeSettings {
     }
 }
 
-/// Per-feed settings tables. They hold feed credentials, so `Debug` prints only the feed names.
+/// Per-feed settings tables. `Debug` omits arbitrary keys and values.
 /// Serialized exactly like a plain TOML table.
 #[derive(Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
@@ -253,7 +291,9 @@ pub struct FeedSettings(pub toml::Table);
 
 impl std::fmt::Debug for FeedSettings {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_list().entries(self.0.keys()).finish()
+        f.debug_struct("FeedSettings")
+            .field("count", &self.0.len())
+            .finish_non_exhaustive()
     }
 }
 
@@ -374,7 +414,7 @@ impl Default for Settings {
             planes_max_error_dist: 30.0,
             planes_max_delta_m: 1000.0,
             band_settings: default_band_table(),
-            feed_settings: FeedSettings::default(),
+            feed_settings: FeedSettings::for_host(SettingsHost::Desktop),
             gui: GuiSettings::default(),
             area: Area::default(),
             elevation_enabled: ElevationEnabled::default(),
@@ -445,16 +485,30 @@ impl Settings {
         if !raw.contains_key("elevation_enabled") {
             settings.elevation_enabled = ElevationEnabled::only(settings.elevation_model);
         }
+        let version = SettingsVersion::read(&raw).ok_or_else(|| SettingsError::Parse {
+            path: path.into(),
+            line: 0,
+            column: 0,
+        })?;
+        if version == SettingsVersion::Legacy && !raw.contains_key("band_settings") {
+            settings.band_settings = band_settings::legacy_band_table();
+        }
+        if !raw.contains_key("feed_settings") {
+            settings.feed_settings = FeedSettings::default();
+        }
+        settings
+            .feed_settings
+            .resolve(SettingsHost::Desktop, version);
         Ok(settings)
     }
 
-    /// Save atomically: write `<path>.tmp`, then rename over `path`.
+    /// Resolve and save the versioned profile through a private atomic replacement.
     pub fn save(&self, path: &Path) -> Result<(), SettingsError> {
         let io = |source| SettingsError::Io {
             path: path.into(),
             source,
         };
-        let text = toml::to_string_pretty(self)?;
+        let text = format_profile(self, SettingsHost::Desktop)?;
         write_private_atomic(path, &text).map_err(io)
     }
 
@@ -483,5 +537,51 @@ impl Settings {
         maidenhead::loc_from_lat_lon(self.dx_lat, self.dx_lon, false, 3, true)
             .ok()
             .flatten()
+    }
+}
+
+#[cfg(test)]
+mod private_save_tests {
+    use super::*;
+    use std::fs;
+    use std::io::{self, Write};
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    #[test]
+    fn finding_381_paused_writer_retains_its_exclusive_staging_file() {
+        for fail in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("settings.toml");
+            let (staged, staged_rx) = mpsc::channel();
+            let (finish, finish_rx) = mpsc::channel();
+
+            let writer_path = path.clone();
+            let writer = std::thread::spawn(move || {
+                write_private_atomic_with(&writer_path, |file| {
+                    file.write_all(b"value = 1\n")?;
+                    staged.send(()).unwrap();
+                    finish_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                    Ok(())
+                })
+            });
+
+            staged_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+            let second = write_private_atomic_with(&path, |file| {
+                file.write_all(b"value = 2\n")?;
+                if fail {
+                    return Err(io::Error::other("synthetic interruption"));
+                }
+                Ok(())
+            });
+            assert_eq!(second.is_err(), fail);
+            if !fail {
+                assert_eq!(fs::read_to_string(&path).unwrap(), "value = 2\n");
+            }
+            finish.send(()).unwrap();
+            writer.join().unwrap().unwrap();
+            assert_eq!(fs::read_to_string(&path).unwrap(), "value = 1\n");
+            assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+        }
     }
 }

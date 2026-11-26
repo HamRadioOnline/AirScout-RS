@@ -44,7 +44,7 @@ fn series_lengths_match_info_points() {
         assert_eq!(len, n);
     }
     for (i, pt) in s.elevation.iter().enumerate() {
-        assert_eq!(pt[0], i as f64);
+        assert_eq!(pt[0], (i as f64).min(p.distance()), "#352");
     }
     // mismatch returns empty series, no panic
     let e = profile(&p, &terrain(n - 1), 12000.0);
@@ -92,7 +92,7 @@ fn los_line_ends_at_antenna_heights() {
     let (bx, by) = ((R + 0.25) * a.sin(), (R + 0.25) * a.cos());
     let (vx, vy) = (bx - ax, by - ay);
     for (i, pt) in s.los.iter().enumerate() {
-        let al = i as f64 / R;
+        let al = (i as f64).min(d) / R;
         let (dx, dy) = (al.sin(), al.cos());
         let t = (ax * vy - ay * vx) / (dx * vy - dy * vx);
         let want_m = (t - R) * 1000.0;
@@ -102,11 +102,9 @@ fn los_line_ends_at_antenna_heights() {
             pt[1]
         );
     }
-    // at x = d the line is at h2: interpolate between last two points
-    let k = d as usize;
-    let f = d - k as f64;
-    let at_d = s.los[k][1] + (s.los[k + 1][1] - s.los[k][1]) * f;
-    assert!((at_d - 250.0).abs() < 0.5, "at_d={at_d}");
+    let end = s.los.last().unwrap();
+    assert_eq!(end[0], d);
+    assert!((end[1] - 250.0).abs() < 1e-3);
 }
 
 #[test]

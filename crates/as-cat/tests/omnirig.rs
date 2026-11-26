@@ -34,12 +34,13 @@ fn status_mapping() {
         (2, RigStatus::NoPort),
         (3, RigStatus::Offline),
         (4, RigStatus::Online),
-        (7, RigStatus::Online),
+        (7, RigStatus::Offline),
+        (-1, RigStatus::Offline),
     ] {
         let mut fake = FakeOmni::new(2);
         fake.status = st;
         assert_eq!(
-            rig_with(&fake, 1).get_status(Doppler::B),
+            rig_with(&fake, 1).get_status(Doppler::None),
             want,
             "status {st}"
         );
@@ -47,15 +48,21 @@ fn status_mapping() {
 }
 
 #[test]
-fn strategy_a_needs_split_and_vfoequal() {
+fn every_active_doppler_strategy_needs_split_and_vfoequal() {
     let mut fake = FakeOmni::new(2);
     fake.readable.extend([PM_SPLITOFF, PM_SPLITON]);
     writeable(&mut fake, &[PM_SPLITOFF, PM_SPLITON]);
-    let mut rig = rig_with(&fake, 1);
-    assert_eq!(rig.get_status(Doppler::A), RigStatus::NotSuitable);
-    assert_eq!(rig.get_status(Doppler::B), RigStatus::Online);
+    for s in [Doppler::A, Doppler::B, Doppler::C, Doppler::D] {
+        assert_eq!(
+            rig_with(&fake, 1).get_status(s),
+            RigStatus::NotSuitable,
+            "{s:?}"
+        );
+    }
     fake.writeable.insert(PM_VFOEQUAL);
-    assert_eq!(rig_with(&fake, 1).get_status(Doppler::A), RigStatus::Online);
+    for s in [Doppler::A, Doppler::B, Doppler::C, Doppler::D] {
+        assert_eq!(rig_with(&fake, 1).get_status(s), RigStatus::Online, "{s:?}");
+    }
 }
 
 #[test]
@@ -140,9 +147,21 @@ fn getters_follow_csharp() {
 }
 
 #[test]
-fn set_frequency_never_writes() {
+fn set_frequency_writes_when_writeable() {
     let mut fake = FakeOmni::new(2);
     writeable(&mut fake, &[PM_FREQ, PM_FREQA, PM_FREQB]);
+    let mut rig = rig_with(&fake, 1);
+    rig.get_status(Doppler::None);
+    assert!(rig.set_rx_frequency(F));
+    assert_eq!(fake.log(), ["Freq=144300000"]);
+    fake.clear_log();
+    assert!(rig.set_tx_frequency(F));
+    assert_eq!(fake.log(), ["Freq=144300000"]);
+}
+
+#[test]
+fn set_frequency_false_when_not_writeable() {
+    let fake = FakeOmni::new(2);
     let mut rig = rig_with(&fake, 1);
     rig.get_status(Doppler::None);
     assert!(!rig.set_rx_frequency(F));
@@ -250,6 +269,8 @@ fn golden_doppler_session_ic746() {
             "Mode=PM_SSB_U",
             "Split=PM_SPLITOFF",
             "Rit=PM_RITOFF",
+            "Freq=144300000",
+            "Freq=144300000",
             "Freq=144300000",
             "Vfo=PM_VFOEQUAL",
             "Split=PM_SPLITOFF",

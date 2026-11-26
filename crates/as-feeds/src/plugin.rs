@@ -1,10 +1,10 @@
 //! The plugin contract: `IPlaneFeedPlugin`, `PlaneFeedPluginArgs`, `PlaneFeedPluginPlaneInfo`.
 
+use as_aircraft::AltitudeProvenance;
 use chrono::{DateTime, Utc};
 use std::path::PathBuf;
 
-/// Errors of a feed. The `Display` text never contains credentials: feeds put only status
-/// codes, hosts and parser messages into it.
+/// Errors of a feed. HTTP, parsing and configuration boundaries report safe categories.
 #[derive(thiserror::Error, Debug)]
 pub enum FeedError {
     #[error("HTTP error: {0}")]
@@ -13,6 +13,8 @@ pub enum FeedError {
     Timeout,
     #[error("cannot parse feed data: {0}")]
     Parse(String),
+    #[error("feed body exceeds {limit} bytes")]
+    TooLarge { limit: u64 },
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
     #[error("configuration error: {0}")]
@@ -42,6 +44,8 @@ pub struct FeedArgs {
     pub dx_lat: f64,
     pub dx_lon: f64,
     pub keep_history: bool,
+    /// Address of the host process’s own aircraft HTTP listener, if enabled.
+    pub airscout_listener: Option<std::net::SocketAddr>,
 }
 
 /// `PlaneFeedPluginPlaneInfo`: one aircraft as a feed reports it. Altitude in ft, speed in
@@ -49,12 +53,14 @@ pub struct FeedArgs {
 #[derive(Debug, Clone, PartialEq)]
 pub struct FeedPlane {
     pub time: Option<DateTime<Utc>>,
+    pub components_valid_until: Option<DateTime<Utc>>,
     pub hex: String,
     pub call: String,
     pub reg: String,
     pub lat: f64,
     pub lon: f64,
     pub alt_ft: f64,
+    pub altitude_provenance: AltitudeProvenance,
     pub track: f64,
     pub speed_kts: f64,
     pub type_code: String,
@@ -72,12 +78,14 @@ impl Default for FeedPlane {
     fn default() -> Self {
         Self {
             time: None,
+            components_valid_until: None,
             hex: String::new(),
             call: String::new(),
             reg: String::new(),
             lat: f64::MIN,
             lon: f64::MIN,
             alt_ft: f64::MIN,
+            altitude_provenance: AltitudeProvenance::Unknown,
             track: f64::MIN,
             speed_kts: f64::MIN,
             type_code: String::new(),
@@ -91,6 +99,14 @@ impl Default for FeedPlane {
             ground: false,
         }
     }
+}
+
+/// Mapped observations and count-only diagnostics for one successful request.
+#[derive(Debug, Default)]
+pub struct FeedBatch {
+    pub planes: Vec<FeedPlane>,
+    pub decoded: usize,
+    pub rejected: usize,
 }
 
 /// `IPlaneFeedPlugin`. Feeds run on the feed worker thread and use blocking I/O.
@@ -112,10 +128,23 @@ pub trait PlaneFeed: Send {
     }
     /// Load settings; missing keys keep their defaults.
     fn load_settings(&mut self, t: &toml::Table) -> Result<(), FeedError>;
+    /// Height policy for a feed that reports individual component deadlines.
+    fn component_feed_geometric_only(&self) -> Option<bool> {
+        None
+    }
     /// Called once before the first `get_planes`.
     fn start(&mut self, args: &FeedArgs) -> Result<(), FeedError>;
     /// One request: the aircraft currently reported.
     fn get_planes(&mut self, args: &FeedArgs) -> Result<Vec<FeedPlane>, FeedError>;
+    /// One request with count-only diagnostics from adapters that can isolate bad records.
+    fn get_batch(&mut self, args: &FeedArgs) -> Result<FeedBatch, FeedError> {
+        let planes = self.get_planes(args)?;
+        Ok(FeedBatch {
+            decoded: planes.len(),
+            planes,
+            rejected: 0,
+        })
+    }
     /// Called once when the worker stops.
     fn stop(&mut self, args: &FeedArgs) -> Result<(), FeedError>;
 }

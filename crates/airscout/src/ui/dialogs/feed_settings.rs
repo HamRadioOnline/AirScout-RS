@@ -2,6 +2,7 @@
 //! original are not ported (no file dialogs).
 
 use as_feeds::registry::feed_by_name;
+use as_settings::{FeedSettings, SettingsHost};
 use eframe::egui::{self, DragValue, TextEdit};
 use toml::{Table, Value};
 
@@ -34,16 +35,25 @@ impl std::fmt::Debug for FeedSettingsResult {
     }
 }
 
+fn desktop_default_feed(name: &str) -> Option<Box<dyn as_feeds::PlaneFeed>> {
+    let mut feed = feed_by_name(name)?;
+    if name == "AirScoutServer" {
+        let defaults = FeedSettings::for_host(SettingsHost::Desktop);
+        feed.load_settings(defaults.get(name)?.as_table()?).ok()?;
+    }
+    Some(feed)
+}
+
 impl FeedSettingsDlg {
     /// Editor for `feed`, starting from `stored` (missing keys show the feed's defaults).
     pub fn new(feed: &str, stored: Option<&Table>) -> Option<Self> {
-        let mut f = feed_by_name(feed)?;
+        let mut f = desktop_default_feed(feed)?;
         let mut error = None;
         if let Some(t) = stored {
             // an unusable stored table falls back to the defaults; say so, because OK would
             // overwrite it (the message is credential-free by the as-feeds contract)
             if let Err(e) = f.load_settings(t) {
-                f = feed_by_name(feed)?;
+                f = desktop_default_feed(feed)?;
                 error = Some(format!(
                     "Stored settings are invalid and replaced by defaults: {e}"
                 ));
@@ -60,7 +70,7 @@ impl FeedSettingsDlg {
 
     /// "Default": the feed's own defaults.
     pub fn restore_defaults(&mut self) {
-        if let Some(f) = feed_by_name(&self.feed) {
+        if let Some(f) = desktop_default_feed(&self.feed) {
             self.table = f.settings();
         }
         self.error = None;
@@ -75,7 +85,9 @@ impl FeedSettingsDlg {
         match f.load_settings(&self.table) {
             Ok(()) => {
                 self.error = None;
-                Some(self.table.clone())
+                let mut table = self.table.clone();
+                as_settings::canonicalize_feed_table(&self.feed, &mut table);
+                Some(table)
             }
             Err(e) => {
                 self.error = Some(e.to_string());
@@ -115,6 +127,11 @@ impl FeedSettingsDlg {
                             }
                         });
                 });
+            ui.label(
+                "The web server serves this feed's URL with its username, password and query \
+                 string removed. A credential placed in the URL path is served as configured and \
+                 still reaches the network: do not put a token in the path.",
+            );
             if !self.secret_keys.is_empty() {
                 ui.checkbox(&mut self.show_secrets, "Show credentials");
             }

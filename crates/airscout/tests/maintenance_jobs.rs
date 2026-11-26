@@ -19,7 +19,7 @@ fn delete_paths_all_five_models() {
             .store
             .with_conn(m, |c| {
                 c.execute(
-                    "INSERT INTO ElevationPath VALUES (50.0, 8.0, 50.1, 8.1, 100.0, 1, x'0100', 1)",
+                    "INSERT INTO ElevationPath VALUES (50.0, 8.0, 50.1, 8.1, 100.0, 1, x'0100', 1, 1)",
                     [],
                 )
                 .map_err(Into::into)
@@ -29,7 +29,7 @@ fn delete_paths_all_five_models() {
             .engine
             .with_conn(m, |c| {
                 c.execute(
-                    "INSERT INTO PropagationPath VALUES (50.0, 8.0, 10.0, 50.1, 8.1, 10.0, 10368.0, 8500.0, 0.6, 100.0, 0.0, 0.0, 1)",
+                    "INSERT INTO PropagationPath VALUES (50.0, 8.0, 10.0, 50.1, 8.1, 10.0, 10368.0, 8500.0, 0.6, 100.0, 100.0, 0.0, 0.0, 1, 1)",
                     [],
                 )
                 .unwrap();
@@ -235,6 +235,54 @@ fn tables_job_lists_descriptions_and_counts() {
     let l = t.iter().find(|r| r.0 == "Location").unwrap();
     assert_eq!((l.1.as_str(), l.2), ("Holds location information.", 1));
     assert!(t.iter().any(|r| r.0 == "QRV" && r.2 == 0));
+}
+
+/// #385: the station-import bookkeeping tables are internal: hidden from the table list and
+/// refused a clear, so the dialog shows only the user tables and cannot wipe the import state.
+#[test]
+fn tables_job_hides_internal_import_tables() {
+    let dir = tempfile::tempdir().unwrap();
+    let paths = open_data(dir.path()).unwrap();
+    paths
+        .stations
+        .location_bulk_insert_or_update_if_newer(&[loc("TE1ST", "JO00AA")])
+        .unwrap();
+    let ev = run_job(&paths, MaintenanceJob::Tables(DbId::Stations));
+    let [JobEvent::Tables(DbId::Stations, t)] = &ev[..] else {
+        panic!("{ev:?}")
+    };
+    let names: Vec<&str> = t.iter().map(|r| r.0.as_str()).collect();
+    for hidden in [
+        "StationImportState",
+        "StationArchiveValidators",
+        "StationImport",
+    ] {
+        assert!(!names.contains(&hidden), "{hidden} must be hidden");
+    }
+    // only the user station tables remain
+    assert_eq!(names, ["Location", "QRV", "Table_last_updated"]);
+}
+
+#[test]
+fn clear_internal_table_is_refused() {
+    let dir = tempfile::tempdir().unwrap();
+    let paths = open_data(dir.path()).unwrap();
+    paths
+        .stations
+        .location_bulk_insert_or_update_if_newer(&[loc("TE1ST", "JO00AA")])
+        .unwrap();
+    for table in [
+        "StationImportState",
+        "StationArchiveValidators",
+        "StationImport",
+    ] {
+        let ev = run_job(
+            &paths,
+            MaintenanceJob::ClearTable(DbId::Stations, table.into()),
+        );
+        assert!(failed(&ev).is_some(), "{table}: {ev:?}");
+    }
+    assert_eq!(paths.stations.location_count().unwrap(), 1);
 }
 
 #[test]

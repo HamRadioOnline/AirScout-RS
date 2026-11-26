@@ -220,12 +220,18 @@ impl PlaneServerApp {
         let draft = with_slots(draft);
         let feeds = as_feeds::registry::all_feeds()
             .into_iter()
-            .map(|f| FeedInfo {
-                name: f.name(),
-                disclaimer: f.disclaimer(),
-                needs_disclaimer: feed_needs_disclaimer(f.as_ref()),
-                secret_keys: f.secret_keys(),
-                defaults: f.settings(),
+            .map(|f| {
+                let mut defaults = f.settings();
+                if f.name() == "AirScoutServer" {
+                    defaults.insert("url".into(), "".into());
+                }
+                FeedInfo {
+                    name: f.name(),
+                    disclaimer: f.disclaimer(),
+                    needs_disclaimer: feed_needs_disclaimer(f.as_ref()),
+                    secret_keys: f.secret_keys(),
+                    defaults,
+                }
             })
             .collect();
         let service = factory(&cfg);
@@ -567,6 +573,7 @@ impl PlaneServerApp {
                 }
             });
         if table != before {
+            as_settings::canonicalize_feed_table(name, &mut table);
             self.draft
                 .feed_settings
                 .insert(name.to_owned(), Value::Table(table));

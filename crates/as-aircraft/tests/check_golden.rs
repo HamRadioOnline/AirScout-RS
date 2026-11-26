@@ -3,6 +3,7 @@
 use as_aircraft::check::{self, find_reg_prefix, Lookup};
 use as_aircraft::convert;
 use as_aircraft::{PlaneCategory, PlaneInfo};
+use as_golden::deltas::DeltaManifest;
 use chrono::{DateTime, TimeZone, Utc};
 use serde_json::{json, Value};
 
@@ -52,12 +53,39 @@ fn utc(t: Option<DateTime<Utc>>) -> Value {
     }))
 }
 
+fn norm_input(s: &str) -> String {
+    s.replace('"', "").to_uppercase().trim().to_string()
+}
+
+fn row_finding(index: usize) -> Option<&'static str> {
+    match index {
+        281 | 292 | 301 | 312 | 321 | 332 | 702 => Some("#19"),
+        1071 | 1111 | 1171 => Some("#21"),
+        2123 => Some("#367"),
+        _ => None,
+    }
+}
+
+fn row_reference(index: usize, c: &as_golden::Case) -> Option<Value> {
+    Some(match index {
+        281 | 301 | 321 => Value::Bool(true),
+        292 | 312 | 332 => Value::String(norm_input(&c.s("s"))),
+        702 => Value::Bool(false),
+        1071 | 1171 => Value::String(norm_input(&c.s("s"))),
+        1111 => Value::Null,
+        2123 => Value::Bool(false),
+        _ => return None,
+    })
+}
+
 #[test]
 fn checker_and_converter_match_csharp() {
     let g = as_golden::load("plane_checker.json");
+    let mut deltas =
+        DeltaManifest::load_from("docs/logic-fixes-area2/golden-deltas.tsv", "plane_checker");
     let l = StaticLookup;
     let mut n = 0;
-    for c in &g.cases {
+    for (index, c) in g.cases.iter().enumerate() {
         let got: Value = match c.func.as_str() {
             "check_lat" | "check_lon" | "check_alt" | "check_track" | "check_speed" => {
                 let v = c.f("v");
@@ -119,7 +147,10 @@ fn checker_and_converter_match_csharp() {
                 }
             }
         };
-        let want = &c.result;
+        let reference = row_reference(index, c).unwrap_or_else(|| c.result.clone());
+        let finding = row_finding(index).unwrap_or("");
+        let expected = deltas.expected(index, "result", &c.result, reference, 0.0, finding);
+        let want = &expected;
         let same = match (got.as_f64(), want.as_f64()) {
             (Some(a), Some(b)) => a == b,
             _ => &got == want,
@@ -127,5 +158,6 @@ fn checker_and_converter_match_csharp() {
         assert!(same, "{} {:?}: rust {got} != c# {want}", c.func, c.args);
         n += 1;
     }
+    deltas.finish();
     assert!(n > 2000, "{n}");
 }

@@ -3,10 +3,13 @@
 use as_feeds::feeds::bincraft_parse::{parse_bincraft, parse_public};
 use as_feeds::registry::feed_by_name;
 use as_feeds::{FeedArgs, FeedError, FeedPlane, PlaneFeed};
-use as_golden::{load, num, Case};
+use as_golden::{
+    deltas::{equivalent, DeltaManifest},
+    load, num, Case,
+};
 use chrono::{DateTime, Duration, Utc};
 use mockito::Server;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 fn b64(s: &str) -> Vec<u8> {
     let val = |c: u8| -> u32 {
@@ -62,36 +65,72 @@ fn before(t: DateTime<Utc>, s: f64) -> DateTime<Utc> {
 #[test]
 fn parse_bincraft_golden() {
     let g = load("bincraft.json");
+    let mut deltas =
+        DeltaManifest::load_from("docs/logic-fixes-area3/golden-deltas.tsv", "bincraft");
     let mut n = 0;
-    for c in g.by_fn("bincraft") {
-        let r = parse_bincraft(&data(c));
+    for (index, c) in g
+        .cases
+        .iter()
+        .enumerate()
+        .filter(|(_, c)| c.func == "bincraft")
+    {
+        let result = parse_bincraft(&data(c));
         if c.is_error() {
             assert!(
-                matches!(r, Err(FeedError::Parse(_))),
-                "{}: {r:?}",
+                matches!(result, Err(FeedError::Parse(_))),
+                "{}: {result:?}",
                 c.args["name"]
             );
             continue;
         }
-        let planes = r.unwrap_or_else(|e| panic!("{}: {e}", c.args["name"]));
-        let acs = c.result["aircraft"].as_array().unwrap();
-        assert_eq!(planes.len(), acs.len());
-        let now = DateTime::from_timestamp_millis((f(&c.result["now"]) * 1000.0) as i64).unwrap();
-        for (p, e) in planes.iter().zip(acs) {
-            assert_eq!(p.hex, e["hex"].as_str().unwrap());
-            assert_eq!(p.lat, f(&e["lat"]));
-            assert_eq!(p.lon, f(&e["lon"]));
-            assert_eq!(p.alt_ft, f(&e["alt_baro"]));
-            // suspect offsets reproduced: track @24, gs @26, seen_pos @54
-            assert_eq!(p.track, f(&e["track"]));
-            assert_eq!(p.speed_kts, f(&e["gs"]));
-            assert_eq!(p.time, Some(before(now, f(&e["seen_pos"]))));
-            assert_eq!(p.call, "");
-            assert!(!p.ground);
-            n += 1;
-        }
+        // The independent PublicBinCraft fixture uses the producer's actual field offsets.
+        let wire_ref = &g.cases[index + 1].result;
+        assert_eq!(g.cases[index + 1].args["name"], c.args["name"]);
+        let old_now =
+            DateTime::from_timestamp_millis((f(&c.result["now"]) * 1000.0) as i64).unwrap();
+        let wire_now_ms = wire_ref["now_ms"].as_i64().unwrap();
+        let wire_now = DateTime::from_timestamp_millis(wire_now_ms).unwrap();
+        let old = c.result["aircraft"].as_array().unwrap().iter().map(|row| json!({
+            "hex": row["hex"], "lat": row["lat"], "lon": row["lon"], "alt_ft": row["alt_baro"],
+            "track": row["track"], "speed_kts": row["gs"], "age_s": row["seen_pos"],
+            "time_ms": before(old_now, f(&row["seen_pos"])).timestamp_millis(), "ground": false
+        })).collect::<Vec<_>>();
+        let reference = wire_ref["aircraft"].as_array().unwrap().iter().filter(|row| row["lat"].is_number()).map(|row| json!({
+            "hex": row["hex"], "lat": row["lat"], "lon": row["lon"], "alt_ft": row["baro_alt"],
+            "track": row["track"], "speed_kts": row["gs"], "age_s": row["seen_pos"],
+            "time_ms": before(wire_now, f(&row["seen_pos"])).timestamp_millis(), "ground": row["air_ground"] == 1
+        })).collect::<Vec<_>>();
+
+        let planes = result.unwrap_or_else(|e| panic!("{}: {e}", c.args["name"]));
+        let actual = planes
+            .iter()
+            .map(|plane| {
+                let time_ms = plane.time.unwrap().timestamp_millis();
+                assert!(plane.call.is_empty());
+                json!({
+                    "hex": plane.hex, "lat": plane.lat, "lon": plane.lon, "alt_ft": plane.alt_ft,
+                    "track": plane.track, "speed_kts": plane.speed_kts, "time_ms": time_ms,
+                    "age_s": (wire_now_ms - time_ms) as f64 / 1000.0, "ground": plane.ground
+                })
+            })
+            .collect::<Vec<_>>();
+        let expected = deltas.expected(
+            index,
+            "aircraft",
+            &json!(old),
+            json!(reference),
+            1e-9,
+            "#61",
+        );
+        let actual = json!(actual);
+        assert!(
+            equivalent(&actual, &expected, 1e-9),
+            "case {index}: {actual} vs {expected}"
+        );
+        n += planes.len();
     }
-    assert_eq!(n, 5); // three_records + partial_tail
+    deltas.finish();
+    assert_eq!(n, 4);
 }
 
 #[test]
@@ -204,7 +243,7 @@ fn zstd_roundtrip_through_feed() {
     );
     let planes = get("BinCraft", &s).unwrap();
     m1.assert();
-    assert_eq!(planes.len(), 3);
+    assert_eq!(planes.len(), 2);
     assert_eq!(planes[0].hex, "3C6589");
 
     // the box comes from the covered area, the path is fixed
@@ -228,7 +267,7 @@ fn uncompressed_setting() {
         .with_body(three_records())
         .create();
     let s = format!("url = \"{}/raw\"\ncompressed = false", server.url());
-    assert_eq!(get("BinCraft", &s).unwrap().len(), 3);
+    assert_eq!(get("BinCraft", &s).unwrap().len(), 2);
 }
 
 #[test]
@@ -330,5 +369,81 @@ fn publicbincraft_default_host_nothing_listening_is_err() {
             !text.contains("password") && !text.contains("token"),
             "{text}"
         );
+    }
+}
+
+fn bin_record(hex: u32, age_ds: i32) -> [u8; 112] {
+    let mut record = [0; 112];
+    record[..4].copy_from_slice(&hex.to_le_bytes());
+    record[8..12].copy_from_slice(&10_000_000_i32.to_le_bytes());
+    record[12..16].copy_from_slice(&50_000_000_i32.to_le_bytes());
+    record[20..22].copy_from_slice(&800_i16.to_le_bytes());
+    record[22..24].copy_from_slice(&900_i16.to_le_bytes());
+    record[24..26].copy_from_slice(&100_i16.to_le_bytes());
+    record[26..28].copy_from_slice(&200_i16.to_le_bytes());
+    record[34..36].copy_from_slice(&4000_i16.to_le_bytes());
+    record[40..42].copy_from_slice(&8100_i16.to_le_bytes());
+    record[73] = 0xf0;
+    record[74] = 0x08;
+    record[108..112].copy_from_slice(&age_ds.to_le_bytes());
+    record
+}
+
+fn bin_header(version: u32) -> Vec<u8> {
+    let mut header = vec![0; 112];
+    header[..8].copy_from_slice(&100_500_i64.to_le_bytes());
+    header[8..12].copy_from_slice(&112_u32.to_le_bytes());
+    header[40..44].copy_from_slice(&version.to_le_bytes());
+    header
+}
+
+#[test]
+fn finding_61_checks_layout_and_maps_validity_per_record() {
+    for parse in [parse_bincraft, parse_public] {
+        for version in [20240218, 20250403] {
+            let mut bytes = bin_header(version);
+            let mut pressure = bin_record(0x3c0001, 2);
+            pressure[68] = 1;
+            let mut invalid_position = bin_record(0x3c0002, 2);
+            invalid_position[73] &= !0x40;
+            let mut geometric = bin_record(0x3c0003, 3);
+            geometric[73] &= !(0x10 | 0x80);
+            geometric[74] = 0;
+            bytes.extend(pressure);
+            bytes.extend(invalid_position);
+            bytes.extend(geometric);
+            bytes.extend([0; 17]);
+            let planes = parse(&bytes).unwrap();
+            assert_eq!(planes.len(), 2);
+            assert_eq!(planes[0].time.unwrap().timestamp_millis(), 100_300);
+            assert_eq!((planes[0].track, planes[0].speed_kts), (90.0, 400.0));
+            assert_eq!(planes[0].alt_ft, 20000.0);
+            assert!(planes[0].ground);
+            assert_eq!(planes[1].hex, "3C0003");
+            assert_eq!(planes[1].alt_ft, 22500.0);
+            assert_eq!(
+                planes[1].altitude_provenance,
+                as_aircraft::AltitudeProvenance::Geometric
+            );
+            assert_eq!((planes[1].track, planes[1].speed_kts), (f64::MIN, f64::MIN));
+        }
+        assert!(parse(&bin_header(20250403)[..80]).is_err());
+        assert!(parse(&bin_header(20250404)).is_err());
+        let mut stride = bin_header(20250403);
+        stride[8..12].copy_from_slice(&116_u32.to_le_bytes());
+        assert!(parse(&stride).is_err());
+    }
+}
+
+#[test]
+fn finding_384_signed_binary_age_discards_only_the_invalid_record() {
+    for parse in [parse_bincraft, parse_public] {
+        let mut bytes = bin_header(20250403);
+        bytes.extend(bin_record(0x3c0001, 2));
+        bytes.extend(bin_record(0x3c0002, -1));
+        bytes.extend(bin_record(0x3c0003, 3));
+        let planes = parse(&bytes).unwrap();
+        let keys: Vec<_> = planes.iter().map(|plane| plane.hex.as_str()).collect();
+        assert_eq!(keys, ["3C0001", "3C0003"]);
     }
 }

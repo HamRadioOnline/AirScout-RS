@@ -38,6 +38,11 @@ pub fn show(ui: &mut Ui, s: &mut Settings, web: &WebState) {
              or encryption. Anyone on your network can open it and read your call, position, DX \
              station and watchlist.",
         );
+        ui.label(
+            "The served plane feed URL and KST websocket URL have their username, password and \
+             query string removed. A credential placed in the URL path is served as configured \
+             and still reaches the network: do not put a token in the path.",
+        );
         ui.label(format!(
             "Open http://localhost:{}/ in a browser on this computer.",
             s.web.port

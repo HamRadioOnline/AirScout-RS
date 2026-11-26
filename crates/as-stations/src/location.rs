@@ -83,15 +83,20 @@ struct LocationJson {
 /// as they are (no call normalisation).
 pub fn locations_from_json(json: &str) -> Result<Vec<Location>, serde_json::Error> {
     let v: Vec<LocationJson> = serde_json::from_str(json)?;
-    Ok(v.into_iter()
-        .map(|l| Location {
-            call: l.call,
-            loc: l.loc,
-            lat: l.lat,
-            lon: l.lon,
-            source: GeoSource::from_i32(l.source),
-            hits: l.hits,
-            last_updated: l.last_updated,
+    v.into_iter()
+        .map(|l| {
+            if !as_geo::maidenhead::check_lat_lon(l.lat, l.lon) {
+                return Err(serde::de::Error::custom("invalid station coordinates"));
+            }
+            Ok(Location {
+                call: l.call,
+                loc: l.loc,
+                lat: l.lat,
+                lon: l.lon,
+                source: GeoSource::from_i32(l.source),
+                hits: l.hits,
+                last_updated: l.last_updated,
+            })
         })
-        .collect())
+        .collect()
 }

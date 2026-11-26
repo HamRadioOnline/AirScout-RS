@@ -1,7 +1,7 @@
 use as_elevation::LocalObstruction;
 
 #[test]
-fn obstruction_truncates_bearing_index() {
+fn finding_8_obstruction_uses_centred_sectors() {
     let mut d = [0.0; 360];
     let mut h = [0.0; 360];
     d[359] = 100.0;
@@ -9,25 +9,30 @@ fn obstruction_truncates_bearing_index() {
     d[0] = 100.0;
     h[0] = 1000.0;
     let o = LocalObstruction::new(50.0, 10.0, Some(d), Some(h));
-    // (int)359.6 == 359 (finding #8), not 0
-    let eps = o.obstruction(10.0, 359.6);
-    assert!((eps - (50.0f64 / 100.0).atan()).abs() < 1e-15, "{eps}");
+    for (bearing, ratio) in [
+        (359.6, 9.9_f64),
+        (359.5, 9.9),
+        (-0.5, 9.9),
+        (359.4, 0.5),
+        (0.4, 9.9),
+    ] {
+        assert!((o.obstruction(10.0, bearing) - ratio.atan()).abs() < 1e-15);
+    }
 }
 
 #[test]
-fn obstruction_zero_distance_is_inf_like_csharp() {
-    let o = LocalObstruction::new(50.0, 10.0, None, None);
-    // atan((0 - 10) / 0) = atan(-inf) = -pi/2
-    assert_eq!(o.obstruction(10.0, 45.0), -std::f64::consts::FRAC_PI_2);
-    // atan(0/0) = NaN
-    assert!(o.obstruction(0.0, 45.0).is_nan());
+fn finding_8_zero_distance_has_no_obstruction() {
+    for height in [None, Some([5000.0; 360])] {
+        let o = LocalObstruction::new(50.0, 10.0, None, height);
+        for antenna in [0.0, 10.0] {
+            assert_eq!(o.obstruction(antenna, 45.0), f64::MIN);
+        }
+    }
 }
 
 #[test]
-fn missing_height_wipes_given_distances_like_csharp() {
-    // finding #4: with height == null the C# loop zeroes Distance instead of Height
-    let d = [5.0; 360];
-    let o = LocalObstruction::new(50.0, 10.0, Some(d), None);
-    assert!(o.distance.iter().all(|v| *v == 0.0));
-    assert!(o.height.iter().all(|v| *v == 0.0));
+fn finding_4_missing_height_keeps_distances() {
+    let o = LocalObstruction::new(50.0, 10.0, Some([5.0; 360]), None);
+    assert_eq!(o.distance, [5.0; 360]);
+    assert_eq!(o.height, [0.0; 360]);
 }

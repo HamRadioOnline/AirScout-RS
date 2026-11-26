@@ -43,13 +43,21 @@ const PATH_DEFAULT_MAX_DISTANCE: f64 = 10.0;
 const PATH_DEFAULT_MAX_SQUINT: f64 = 0.0;
 const PATH_DEFAULT_MAX_ELEVATION: f64 = 0.0;
 
-/// `BandSettings.GenerateDefault`: one row per real band, with the V1.3.0.4 adjustments for the
-/// lower bands.
+/// One row per real band, using the standard-gradient k-factor.
 pub fn default_band_table() -> BTreeMap<Band, BandSettings> {
+    band_table(false)
+}
+
+/// The generated table inherited by unversioned profiles with no band table.
+pub(crate) fn legacy_band_table() -> BTreeMap<Band, BandSettings> {
+    band_table(true)
+}
+
+fn band_table(legacy: bool) -> BTreeMap<Band, BandSettings> {
     Band::all_except_none_and_all()
         .iter()
         .map(|&b| {
-            let (k_factor, f1_clearance) = match b {
+            let (legacy_k, f1_clearance) = match b {
                 Band::B50M | Band::B70M => (1.6, 0.1),
                 Band::B144M => (1.5, 0.2),
                 Band::B432M => (1.4, 0.4),
@@ -58,7 +66,11 @@ pub fn default_band_table() -> BTreeMap<Band, BandSettings> {
             (
                 b,
                 BandSettings {
-                    k_factor,
+                    k_factor: if legacy {
+                        legacy_k
+                    } else {
+                        PATH_DEFAULT_K_FACTOR
+                    },
                     f1_clearance,
                     ground_clearance: PATH_DEFAULT_GROUND_CLEARANCE,
                     max_distance: PATH_DEFAULT_MAX_DISTANCE,

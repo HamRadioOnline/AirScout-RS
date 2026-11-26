@@ -6,6 +6,10 @@ fn zip_of(name: &str) -> Vec<u8> {
     let body =
         std::fs::read(as_golden::repo_root().join(format!("tests/fixtures/aircraft/{name}.json")))
             .unwrap();
+    zip_body(name, &body)
+}
+
+fn zip_body(name: &str, body: &[u8]) -> Vec<u8> {
     let mut buf = std::io::Cursor::new(Vec::new());
     {
         let mut z = zip::ZipWriter::new(&mut buf);
@@ -14,7 +18,7 @@ fn zip_of(name: &str) -> Vec<u8> {
             zip::write::SimpleFileOptions::default(),
         )
         .unwrap();
-        z.write_all(&body).unwrap();
+        z.write_all(body).unwrap();
         z.finish().unwrap();
     }
     buf.into_inner()
@@ -148,4 +152,31 @@ fn live_update() {
     .unwrap();
     assert!(s.aircrafts > 100_000, "{s:?}");
     assert!(s.aircraft_types > 1000, "{s:?}");
+}
+
+#[test]
+fn finding_374_malformed_archive_does_not_echo_aircraft_fields() {
+    let mut server = mockito::Server::new();
+    let mock = server
+        .mock("GET", "/AircraftTypes.zip")
+        .with_body(zip_body("AircraftTypes", br#"["SyntheticCredential"]"#))
+        .create();
+    let cache = tempfile::tempdir().unwrap();
+    let db = AircraftDb::open_in_memory().unwrap();
+    let error = update_aircraft_db(
+        &client(),
+        &format!("{}/", server.url()),
+        cache.path(),
+        &db,
+        None,
+        &mut |_| {},
+    )
+    .unwrap_err();
+    mock.assert();
+    assert!(matches!(
+        error,
+        as_aircraft::AircraftError::ArchiveData { .. }
+    ));
+    assert!(!format!("{error} {error:?}").contains("SyntheticCredential"));
+    assert!(std::error::Error::source(&error).is_none());
 }

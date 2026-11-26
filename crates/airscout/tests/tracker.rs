@@ -153,6 +153,44 @@ fn old_dropped_for_another_plane() {
 }
 
 #[test]
+fn finding_189_pause_and_gaps_reset_doppler_baseline() {
+    let (mut t, c) = (Tracker::default(), cache());
+    let i = input(TrackMode::Track, Some("A1B2C3"));
+    let doppler = |t: &mut Tracker, s: i64| {
+        let (_, shown) = t.step(&i, t0() + Duration::seconds(s), &c).unwrap();
+        shown.values.map(|v| v.my_doppler).unwrap_or_default()
+    };
+    assert_eq!(doppler(&mut t, 0), 0.0);
+    assert!(doppler(&mut t, 1).abs() > 0.0);
+    // Discontinuity: non-adjacent elapsed time.
+    assert_eq!(doppler(&mut t, 3), 0.0);
+    assert!(doppler(&mut t, 4).abs() > 0.0);
+
+    // Pause clears baseline; first sample after resume is zero again.
+    let mut paused = i.clone();
+    paused.life = false;
+    assert!(t.step(&paused, t0() + Duration::seconds(5), &c).is_none());
+    assert_eq!(doppler(&mut t, 6), 0.0);
+    assert!(doppler(&mut t, 7).abs() > 0.0);
+}
+
+#[test]
+fn finding_189_geometry_change_resets_doppler_baseline() {
+    let (mut t, c) = (Tracker::default(), cache());
+    let i = input(TrackMode::Track, Some("A1B2C3"));
+    let mut changed = i.clone();
+    changed.params.as_mut().unwrap().my_lat += 0.1;
+    let d = |t: &mut Tracker, input: &TrackInput, s: i64| {
+        let (_, shown) = t.step(input, t0() + Duration::seconds(s), &c).unwrap();
+        shown.values.map(|v| v.my_doppler).unwrap_or_default()
+    };
+    assert_eq!(d(&mut t, &i, 0), 0.0);
+    assert!(d(&mut t, &i, 1).abs() > 0.0);
+    assert_eq!(d(&mut t, &changed, 2), 0.0);
+    assert!(d(&mut t, &changed, 3).abs() > 0.0);
+}
+
+#[test]
 fn shown_carries_input_rev() {
     let (mut t, c) = (Tracker::default(), cache());
     for (rev, mode) in [(7, TrackMode::Track), (9, TrackMode::None)] {

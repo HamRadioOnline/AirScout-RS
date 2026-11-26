@@ -1,17 +1,19 @@
 //! Port of `StationDatabase.cs`: locations and QRV info in SQLite.
 
 use crate::location::normalise_call;
-use crate::qrv::normalise_qrv_loc;
+use crate::qrv::{normalise_qrv_loc, qrv_key_from_position, qrv_lookup_key};
+use crate::updater::{ArchiveId, ArchiveKind};
 use crate::{
     default_antenna_gain, default_antenna_height, default_power, from_ns, to_ns, GeoSource,
     Location, Qrv, StationError,
 };
 use as_geo::band::Band;
-use as_geo::latlon::GRect;
-use as_geo::maidenhead::{gpoint_from_loc, PositionInRectangle};
+use as_geo::latlon::{GPoint, GRect};
+use as_geo::maidenhead::{check_lat_lon, gpoint_from_loc, PositionInRectangle};
 use chrono::{DateTime, Utc};
-use rusqlite::{params, Connection, OptionalExtension, Row};
+use rusqlite::{params, Connection, OptionalExtension, Row, Transaction, TransactionBehavior};
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
 /// `Table_last_updated` key for the user's own QRV edits (Options, Stations tab). Kept apart from
@@ -19,7 +21,17 @@ use std::sync::{Mutex, MutexGuard};
 /// make the updater skip the server's `qrv.zip`.
 pub const QRV_USER_EDIT_MARKER: &str = "QRV_UserEdit";
 
-const SCHEMA: &[&str] = &["CREATE TABLE IF NOT EXISTS Location (
+/// The station-import bookkeeping tables the port creates for itself (#385). They are internal to
+/// the import: the maintenance Tables dialog hides them and [`StationDb::clear_table`] refuses to
+/// clear them, so the import state cannot be wiped by mistake.
+pub const INTERNAL_TABLES: [&str; 3] = [
+    "StationImportState",
+    "StationArchiveValidators",
+    "StationImport",
+];
+
+const SCHEMA: &[&str] = &[
+    "CREATE TABLE IF NOT EXISTS Location (
         Call TEXT NOT NULL DEFAULT '', Loc TEXT NOT NULL DEFAULT '', Lat REAL, Lon REAL,
         Source INTEGER, Hits INTEGER, LastUpdated INTEGER NOT NULL, PRIMARY KEY (Call, Loc));
     CREATE TABLE IF NOT EXISTS QRV (
@@ -27,17 +39,57 @@ const SCHEMA: &[&str] = &["CREATE TABLE IF NOT EXISTS Location (
         AntennaHeight REAL, AntennaGain REAL, Power REAL, LastUpdated INTEGER NOT NULL,
         PRIMARY KEY (Call, Loc, Band));
     CREATE TABLE IF NOT EXISTS Table_last_updated (
-        TableName TEXT PRIMARY KEY NOT NULL, LastUpdated INTEGER NOT NULL DEFAULT 0)"];
+        TableName TEXT PRIMARY KEY NOT NULL, LastUpdated INTEGER NOT NULL DEFAULT 0)",
+    "ALTER TABLE Location ADD COLUMN Usable INTEGER NOT NULL DEFAULT 1;
+     UPDATE Location SET Usable = 0 WHERE
+         typeof(Lat) NOT IN ('integer','real') OR typeof(Lon) NOT IN ('integer','real')
+         OR Lat NOT BETWEEN -90 AND 90 OR Lon NOT BETWEEN -180 AND 180;
+     CREATE TABLE StationImportState (
+         Id INTEGER NOT NULL PRIMARY KEY CHECK (Id = 1),
+         LocationGeneration INTEGER NOT NULL,
+         CacheSalt BLOB NOT NULL);
+     INSERT INTO StationImportState VALUES (1, 0, randomblob(32));
+     CREATE TABLE StationArchiveValidators (
+         Source TEXT NOT NULL, Fingerprint TEXT NOT NULL, Etag BLOB, LastModified BLOB,
+         PRIMARY KEY (Source, Fingerprint));
+     CREATE TABLE StationImport (
+         Kind TEXT NOT NULL, Source TEXT NOT NULL, Fingerprint TEXT NOT NULL,
+         Scope TEXT NOT NULL, LocationGeneration INTEGER NOT NULL,
+         PRIMARY KEY (Kind, Source, Fingerprint, Scope, LocationGeneration));
+     CREATE TRIGGER StationLocationInsert AFTER INSERT ON Location
+         BEGIN UPDATE StationImportState SET LocationGeneration = LocationGeneration + 1; END;
+     CREATE TRIGGER StationLocationUpdate AFTER UPDATE ON Location
+         BEGIN UPDATE StationImportState SET LocationGeneration = LocationGeneration + 1; END;
+     CREATE TRIGGER StationLocationDelete AFTER DELETE ON Location
+         BEGIN
+           UPDATE StationImportState SET LocationGeneration = LocationGeneration + 1;
+           DELETE FROM StationImport WHERE Kind = 'Location';
+         END;
+     CREATE TRIGGER StationQrvDelete AFTER DELETE ON QRV
+         BEGIN DELETE FROM StationImport WHERE Kind = 'QRV'; END;
+     CREATE TRIGGER StationLocationValidateInsert BEFORE INSERT ON Location
+         WHEN typeof(NEW.Lat) NOT IN ('integer','real') OR typeof(NEW.Lon) NOT IN ('integer','real')
+              OR NEW.Lat NOT BETWEEN -90 AND 90 OR NEW.Lon NOT BETWEEN -180 AND 180
+         BEGIN SELECT RAISE(ABORT, 'invalid station coordinates'); END;
+     CREATE TRIGGER StationLocationValidateUpdate BEFORE UPDATE OF Lat, Lon ON Location
+         WHEN typeof(NEW.Lat) NOT IN ('integer','real') OR typeof(NEW.Lon) NOT IN ('integer','real')
+              OR NEW.Lat NOT BETWEEN -90 AND 90 OR NEW.Lon NOT BETWEEN -180 AND 180
+         BEGIN SELECT RAISE(ABORT, 'invalid station coordinates'); END;",
+];
 
 const LOCATION_COLS: &str = "Call, Loc, Lat, Lon, Source, Hits, LastUpdated";
 const QRV_COLS: &str = "Call, Loc, Band, AntennaHeight, AntennaGain, Power, LastUpdated";
+
+/// Raw `StationArchiveValidators` row: optional Etag and Last-Modified bytes.
+type StoredValidators = (Option<Vec<u8>>, Option<Vec<u8>>);
 
 const LOCATION_UPSERT: &str =
     "INSERT INTO Location (Call, Loc, Lat, Lon, Source, Hits, LastUpdated)
     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
     ON CONFLICT (Call, Loc) DO UPDATE SET Lat = excluded.Lat, Lon = excluded.Lon,
-      Source = excluded.Source, Hits = excluded.Hits, LastUpdated = excluded.LastUpdated
-    WHERE excluded.LastUpdated > Location.LastUpdated";
+      Source = excluded.Source, Hits = excluded.Hits, LastUpdated = excluded.LastUpdated,
+      Usable = 1
+    WHERE Location.Usable = 0 OR excluded.LastUpdated > Location.LastUpdated";
 
 const QRV_UPSERT: &str =
     "INSERT INTO QRV (Call, Loc, Band, AntennaHeight, AntennaGain, Power, LastUpdated)
@@ -50,8 +102,8 @@ fn location_from_row(r: &Row) -> rusqlite::Result<Location> {
     Ok(Location {
         call: r.get(0)?,
         loc: r.get(1)?,
-        lat: r.get::<_, Option<f64>>(2)?.unwrap_or(0.0),
-        lon: r.get::<_, Option<f64>>(3)?.unwrap_or(0.0),
+        lat: r.get(2)?,
+        lon: r.get(3)?,
         source: GeoSource::from_i32(r.get::<_, Option<i32>>(4)?.unwrap_or(0)),
         hits: r.get::<_, Option<i32>>(5)?.unwrap_or(0),
         last_updated: from_ns(r.get(6)?),
@@ -79,16 +131,15 @@ pub struct StationDb {
 impl StationDb {
     /// Open (and migrate) the database file.
     pub fn open(path: &Path) -> Result<Self, StationError> {
-        Self::init(as_db::open(path)?)
+        let conn = as_db::open_versioned(path, SCHEMA)?;
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// In-memory database (tests, temporary use).
     pub fn open_in_memory() -> Result<Self, StationError> {
-        Self::init(as_db::open_in_memory()?)
-    }
-
-    fn init(conn: Connection) -> Result<Self, StationError> {
-        as_db::migrate(&conn, SCHEMA)?;
+        let conn = as_db::open_in_memory_versioned(SCHEMA)?;
         Ok(Self {
             conn: Mutex::new(conn),
         })
@@ -107,8 +158,9 @@ impl StationDb {
     pub fn location_count(&self) -> Result<u64, StationError> {
         Ok(self
             .conn()
-            .query_row("SELECT COUNT(*) FROM Location", [], |r| r.get::<_, i64>(0))?
-            as u64)
+            .query_row("SELECT COUNT(*) FROM Location WHERE Usable = 1", [], |r| {
+                r.get::<_, i64>(0)
+            })? as u64)
     }
 
     /// `LocationInsertOrUpdateIfNewer`. Returns `true` if a row was written.
@@ -147,14 +199,14 @@ impl StationDb {
             Some("") => None,
             Some(loc) => conn
                 .query_row(
-                    &format!("SELECT {LOCATION_COLS} FROM Location WHERE Call = ?1 AND Loc = ?2"),
+                    &format!("SELECT {LOCATION_COLS} FROM Location WHERE Usable = 1 AND Call = ?1 AND Loc = ?2"),
                     params![call, loc],
                     location_from_row,
                 )
                 .optional()?,
             None => conn
                 .query_row(
-                    &format!("SELECT {LOCATION_COLS} FROM Location WHERE Call = ?1 ORDER BY LastUpdated DESC LIMIT 1"),
+                    &format!("SELECT {LOCATION_COLS} FROM Location WHERE Usable = 1 AND Call = ?1 ORDER BY LastUpdated DESC LIMIT 1"),
                     params![call],
                     location_from_row,
                 )
@@ -188,8 +240,44 @@ impl StationDb {
             0,
             Utc::now(),
         );
-        self.location_insert_or_update_if_newer(&l)?;
+        let conn = self.conn();
+        // A locator fallback should leave a flagged key available for a precise repair.
+        let flagged: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM Location WHERE Call=?1 AND Loc=?2 AND Usable=0)",
+            params![l.call, l.loc],
+            |row| row.get(0),
+        )?;
+        if !flagged {
+            upsert_location(&conn, &l)?;
+        }
         Ok(Some(l))
+    }
+
+    /// `LocationFind` with an in-memory locator-centre fallback that is never stored (read-only
+    /// remote lookups, #265): the stored location of `call`/`loc`, else a new one at the centre of
+    /// the locator square (`FromLoc`). `None` for an empty call or locator.
+    pub fn location_find_or_locator(
+        &self,
+        call: &str,
+        loc: &str,
+    ) -> Result<Option<Location>, StationError> {
+        if call.is_empty() || loc.is_empty() {
+            return Ok(None);
+        }
+        if let Some(l) = self.location_find(call, Some(loc))? {
+            return Ok(Some(l));
+        }
+        let centre = gpoint_from_loc(loc, PositionInRectangle::MiddleMiddle)
+            .map_err(|_| StationError::InvalidLocator(loc.to_string()))?;
+        Ok(Some(Location::new(
+            call,
+            loc,
+            centre.lat,
+            centre.lon,
+            GeoSource::FromLoc,
+            0,
+            Utc::now(),
+        )))
     }
 
     /// `LocationFindAll(call)`: all locations of a call, most recent first.
@@ -197,7 +285,7 @@ impl StationDb {
         let call = normalise_call(call);
         let conn = self.conn();
         let mut st = conn.prepare(&format!(
-            "SELECT {LOCATION_COLS} FROM Location WHERE Call = ?1 ORDER BY LastUpdated DESC"
+            "SELECT {LOCATION_COLS} FROM Location WHERE Usable = 1 AND Call = ?1 ORDER BY LastUpdated DESC"
         ))?;
         let v = st
             .query_map(params![call], location_from_row)?
@@ -212,13 +300,13 @@ impl StationDb {
         let v = match rect {
             None => conn
                 .prepare(&format!(
-                    "SELECT {LOCATION_COLS} FROM Location ORDER BY Call ASC"
+                    "SELECT {LOCATION_COLS} FROM Location WHERE Usable = 1 ORDER BY Call ASC"
                 ))?
                 .query_map([], location_from_row)?
                 .collect::<rusqlite::Result<Vec<_>>>()?,
             Some(r) => conn
                 .prepare(&format!(
-                    "SELECT {LOCATION_COLS} FROM Location WHERE Lat >= ?1 AND Lat <= ?2 \
+                    "SELECT {LOCATION_COLS} FROM Location WHERE Usable = 1 AND Lat >= ?1 AND Lat <= ?2 \
                      AND Lon >= ?3 AND Lon <= ?4 ORDER BY Call ASC"
                 ))?
                 .query_map(
@@ -236,7 +324,7 @@ impl StationDb {
         let conn = self.conn();
         let v = conn
             .prepare(&format!(
-                "SELECT {LOCATION_COLS} FROM Location WHERE Call LIKE ?1 ORDER BY Call ASC"
+                "SELECT {LOCATION_COLS} FROM Location WHERE Usable = 1 AND Call LIKE ?1 ORDER BY Call ASC"
             ))?
             .query_map(params![pattern], location_from_row)?
             .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -303,10 +391,23 @@ impl StationDb {
         Ok(n)
     }
 
-    /// `QRVFind(call, loc, band)`. The locator is normalised like `QRVDesignator` (error if
-    /// shorter than 6 characters).
+    /// `QRVFind(call, loc, band)`. The locator is resolved to its six-character key; a valid
+    /// coarse locator (2 or 4 characters) can never match a stored key and gives `None` (no
+    /// error), while malformed text is an error.
     pub fn qrv_find(&self, call: &str, loc: &str, band: Band) -> Result<Option<Qrv>, StationError> {
-        let loc = normalise_qrv_loc(loc)?;
+        let Some(loc) = qrv_lookup_key(loc)? else {
+            return Ok(None);
+        };
+        self.qrv_find_by_key(call, &loc, band)
+    }
+
+    /// Exact `QRVFind` on a resolved six-character key.
+    fn qrv_find_by_key(
+        &self,
+        call: &str,
+        loc: &str,
+        band: Band,
+    ) -> Result<Option<Qrv>, StationError> {
         Ok(self
             .conn()
             .query_row(
@@ -317,30 +418,43 @@ impl StationDb {
             .optional()?)
     }
 
-    /// `QRVFindOrCreateDefault`: the stored entry or one with the per-band defaults (not stored).
+    /// `QRVFindOrCreateDefault`: the stored entry, or one with the per-band defaults (not stored).
+    /// For a coarse locator, a trusted position inside its cell derives the six-character key for
+    /// an exact lookup; without one the band defaults are returned and the coarse locator is kept
+    /// as given (no six-character key is fabricated).
     pub fn qrv_find_or_create_default(
         &self,
         call: &str,
         loc: &str,
         band: Band,
+        trusted: Option<GPoint>,
     ) -> Result<Qrv, StationError> {
-        if let Some(q) = self.qrv_find(call, loc, band)? {
-            return Ok(q);
+        let key = match qrv_lookup_key(loc)? {
+            Some(key) => Some(key),
+            None => trusted.and_then(|p| qrv_key_from_position(loc, p)),
+        };
+        if let Some(key) = &key {
+            if let Some(q) = self.qrv_find_by_key(call, key, band)? {
+                return Ok(q);
+            }
         }
-        Qrv::new(
-            call,
+        let loc = key.unwrap_or_else(|| loc.trim().to_ascii_uppercase());
+        Ok(Qrv {
+            call: normalise_call(call),
             loc,
             band,
-            default_antenna_height(band),
-            default_antenna_gain(band),
-            default_power(band),
-            Utc::now(),
-        )
+            antenna_height: default_antenna_height(band),
+            antenna_gain: default_antenna_gain(band),
+            power: default_power(band),
+            last_updated: Utc::now(),
+        })
     }
 
-    /// `QRVFind(call, loc)`: all bands of a station.
+    /// `QRVFind(call, loc)`: all bands of a station. A valid coarse locator gives no rows.
     pub fn qrv_get_all(&self, call: &str, loc: &str) -> Result<Vec<Qrv>, StationError> {
-        let loc = normalise_qrv_loc(loc)?;
+        let Some(loc) = qrv_lookup_key(loc)? else {
+            return Ok(Vec::new());
+        };
         let conn = self.conn();
         let mut st = conn.prepare(&format!(
             "SELECT {QRV_COLS} FROM QRV WHERE Call = ?1 AND Loc = ?2"
@@ -349,6 +463,163 @@ impl StationDb {
             .query_map(params![normalise_call(call), loc], qrv_from_row)?
             .collect::<rusqlite::Result<Vec<_>>>()?;
         Ok(v)
+    }
+
+    pub(crate) fn archive_salt(&self) -> Result<Vec<u8>, StationError> {
+        Ok(self.conn().query_row(
+            "SELECT CacheSalt FROM StationImportState WHERE Id = 1",
+            [],
+            |row| row.get(0),
+        )?)
+    }
+
+    pub(crate) fn archive_validators(
+        &self,
+        id: &ArchiveId,
+    ) -> Result<Option<as_net::Validators>, StationError> {
+        let row: Option<StoredValidators> = self.conn().query_row(
+            "SELECT Etag, LastModified FROM StationArchiveValidators WHERE Source=?1 AND Fingerprint=?2",
+            params![id.source, id.fingerprint],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        ).optional()?;
+        let Some((etag, modified)) = row else {
+            return Ok(None);
+        };
+        let etag = etag.and_then(|value| String::from_utf8(value).ok());
+        let last_modified = modified.and_then(|value| String::from_utf8(value).ok());
+        Ok(
+            (etag.is_some() || last_modified.is_some()).then_some(as_net::Validators {
+                etag,
+                last_modified,
+            }),
+        )
+    }
+
+    pub(crate) fn save_archive_validators(
+        &self,
+        id: &ArchiveId,
+        validators: &as_net::Validators,
+    ) -> Result<(), StationError> {
+        self.conn().execute(
+            "INSERT INTO StationArchiveValidators (Source, Fingerprint, Etag, LastModified)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT (Source, Fingerprint) DO UPDATE SET
+                Etag=excluded.Etag, LastModified=excluded.LastModified",
+            params![
+                id.source,
+                id.fingerprint,
+                validators.etag.as_deref().map(str::as_bytes),
+                validators.last_modified.as_deref().map(str::as_bytes)
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub(crate) fn import_archive(
+        &self,
+        kind: ArchiveKind,
+        id: &ArchiveId,
+        area: Option<GRect>,
+        cancel: Option<&AtomicBool>,
+        load: impl FnOnce() -> Result<String, StationError>,
+    ) -> Result<usize, StationError> {
+        let scope = import_scope(area);
+        let conn = self.conn();
+        let tx = Transaction::new_unchecked(&conn, TransactionBehavior::Immediate)?;
+        let generation = match (kind, area) {
+            (ArchiveKind::Qrv, Some(_)) => tx.query_row(
+                "SELECT LocationGeneration FROM StationImportState WHERE Id=1",
+                [],
+                |row| row.get(0),
+            )?,
+            _ => 0_i64,
+        };
+        let keys = params![kind.table(), id.source, id.fingerprint, scope, generation];
+        let known: bool = tx.query_row(
+            "SELECT EXISTS(SELECT 1 FROM StationImport WHERE Kind=?1 AND Source=?2 AND Fingerprint=?3 AND Scope=?4 AND LocationGeneration=?5)",
+            keys,
+            |row| row.get(0),
+        )?;
+        check_cancel(cancel)?;
+        if known {
+            return Ok(0);
+        }
+        let json = load()?;
+        let mut count = 0;
+        match kind {
+            ArchiveKind::Location => {
+                let locations = crate::locations_from_json(&json).map_err(archive_data_error)?;
+                for location in locations {
+                    check_cancel(cancel)?;
+                    if area
+                        .as_ref()
+                        .is_none_or(|area| in_scope(area, location.lat, location.lon))
+                    {
+                        count += upsert_location(&tx, &location)?;
+                    }
+                }
+            }
+            ArchiveKind::Qrv => {
+                let qrvs = crate::qrvs_from_json(&json).map_err(archive_data_error)?;
+                let mut location = tx.prepare_cached(
+                    "SELECT EXISTS(SELECT 1 FROM Location WHERE Usable=1 AND Call=?1 AND Loc=?2
+                         AND Lat BETWEEN ?3 AND ?4 AND Lon BETWEEN ?5 AND ?6)",
+                )?;
+                for qrv in qrvs {
+                    check_cancel(cancel)?;
+                    let in_area = if let Some(area) = area {
+                        location.query_row(
+                            params![
+                                qrv.call,
+                                qrv.loc,
+                                area.min_lat,
+                                area.max_lat,
+                                area.min_lon,
+                                area.max_lon
+                            ],
+                            |row| row.get(0),
+                        )?
+                    } else {
+                        true
+                    };
+                    if in_area {
+                        count += upsert_qrv(&tx, &qrv)?;
+                    }
+                }
+            }
+        }
+        check_cancel(cancel)?;
+        tx.execute(
+            "INSERT INTO StationImport (Kind, Source, Fingerprint, Scope, LocationGeneration) VALUES (?1, ?2, ?3, ?4, ?5)",
+            keys,
+        )?;
+        mark_timestamp(&tx, kind.table(), Utc::now())?;
+        tx.commit()?;
+        Ok(count)
+    }
+
+    /// Clear a station table and invalidate its completed imports in the same transaction.
+    /// The internal import tables ([`INTERNAL_TABLES`]) are refused (#385).
+    pub fn clear_table(&self, table: &str) -> Result<usize, StationError> {
+        if INTERNAL_TABLES.contains(&table) {
+            return Err(StationError::InternalTable(table.to_string()));
+        }
+        let conn = self.conn();
+        if !matches!(table, "Location" | "QRV") {
+            return Ok(as_db::clear_table(&conn, table)?);
+        }
+        let tx = Transaction::new_unchecked(&conn, TransactionBehavior::Immediate)?;
+        let count = tx.execute(&format!("DELETE FROM {table}"), [])?;
+        if table == "Location" {
+            // A clear of an already-empty table still invalidates its import markers.
+            tx.execute(
+                "UPDATE StationImportState SET LocationGeneration=LocationGeneration+1",
+                [],
+            )?;
+        }
+        tx.execute("DELETE FROM StationImport WHERE Kind=?1", [table])?;
+        tx.commit()?;
+        Ok(count)
     }
 
     /// `GetTableLastUpdatedTimeStamp`; `None` if never set.
@@ -366,16 +637,67 @@ impl StationDb {
 
     /// `SetTableLastUpdatedTimeStamp`.
     pub fn set_table_timestamp(&self, table: &str, t: DateTime<Utc>) -> Result<(), StationError> {
-        self.conn().execute(
-            "INSERT INTO Table_last_updated (TableName, LastUpdated) VALUES (?1, ?2)
-             ON CONFLICT (TableName) DO UPDATE SET LastUpdated = excluded.LastUpdated",
-            params![table, to_ns(t)],
-        )?;
-        Ok(())
+        mark_timestamp(&self.conn(), table, t)
     }
 }
 
+fn mark_timestamp(conn: &Connection, table: &str, time: DateTime<Utc>) -> Result<(), StationError> {
+    conn.execute(
+        "INSERT INTO Table_last_updated (TableName, LastUpdated) VALUES (?1, ?2)
+         ON CONFLICT (TableName) DO UPDATE SET LastUpdated = excluded.LastUpdated",
+        params![table, to_ns(time)],
+    )?;
+    Ok(())
+}
+
+pub(crate) fn check_cancel(cancel: Option<&AtomicBool>) -> Result<(), StationError> {
+    if cancel.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
+        return Err(StationError::Cancelled);
+    }
+    Ok(())
+}
+
+fn archive_data_error(error: serde_json::Error) -> StationError {
+    StationError::ArchiveData {
+        line: error.line(),
+        column: error.column(),
+    }
+}
+
+fn in_scope(area: &GRect, lat: f64, lon: f64) -> bool {
+    (area.min_lat..=area.max_lat).contains(&lat) && (area.min_lon..=area.max_lon).contains(&lon)
+}
+
+fn import_scope(area: Option<GRect>) -> String {
+    let Some(area) = area else {
+        return "all".into();
+    };
+    let min_lat = area.min_lat.max(-90.0);
+    let max_lat = area.max_lat.min(90.0);
+    let min_lon = area.min_lon.max(-180.0);
+    let max_lon = area.max_lon.min(180.0);
+    let normalized = |value: f64| if value == 0.0 { 0 } else { value.to_bits() };
+    if [area.min_lat, area.max_lat, area.min_lon, area.max_lon]
+        .iter()
+        .any(|value| value.is_nan())
+        || min_lat > max_lat
+        || min_lon > max_lon
+    {
+        return "empty".into();
+    }
+    format!(
+        "{:016x}:{:016x}:{:016x}:{:016x}",
+        normalized(min_lat),
+        normalized(max_lat),
+        normalized(min_lon),
+        normalized(max_lon)
+    )
+}
+
 fn upsert_location(conn: &Connection, l: &Location) -> Result<usize, StationError> {
+    if !check_lat_lon(l.lat, l.lon) {
+        return Err(StationError::InvalidCoordinates);
+    }
     Ok(conn.prepare_cached(LOCATION_UPSERT)?.execute(params![
         l.call,
         l.loc,
@@ -397,4 +719,48 @@ fn upsert_qrv(conn: &Connection, q: &Qrv) -> Result<usize, StationError> {
         q.power,
         to_ns(q.last_updated)
     ])?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn finding_383_legacy_invalid_keys_are_unusable_until_repaired_once() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("stations.db3");
+        let raw = rusqlite::Connection::open(&path).unwrap();
+        as_db::migrate(&raw, &SCHEMA[..1]).unwrap();
+        raw.execute_batch(
+            "INSERT INTO Location VALUES
+                ('TE1ST','JO50AA',NULL,10,2,0,2000000000),
+                ('TE2ST','JJ00AA',0,0,2,0,2000000000);
+             INSERT INTO QRV VALUES ('TE1ST','JO50AA',144,22,11,10,2000000000);",
+        )
+        .unwrap();
+        drop(raw);
+        let db = StationDb::open(&path).unwrap();
+        assert!(db.location_find("TE1ST", Some("JO50AA")).unwrap().is_none());
+        let zero = db.location_find("TE2ST", Some("JJ00AA")).unwrap().unwrap();
+        assert_eq!((zero.lat, zero.lon), (0.0, 0.0));
+        assert_eq!(db.location_get_all(None).unwrap().len(), 1);
+        assert_eq!(db.qrv_count().unwrap(), 1);
+        let repair = Location::new(
+            "TE1ST",
+            "JO50AA",
+            50.01,
+            10.01,
+            GeoSource::FromUser,
+            0,
+            from_ns(1_000_000_000),
+        );
+        assert!(db.location_insert_or_update_if_newer(&repair).unwrap());
+        assert!(!db.location_insert_or_update_if_newer(&repair).unwrap());
+        drop(db);
+        let db = StationDb::open(&path).unwrap();
+        assert_eq!(
+            db.location_find("TE1ST", Some("JO50AA")).unwrap(),
+            Some(repair)
+        );
+    }
 }

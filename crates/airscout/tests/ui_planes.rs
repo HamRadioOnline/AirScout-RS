@@ -71,7 +71,7 @@ fn rows_sorted_by_potential_then_distance() {
     assert_eq!(hexes, ["c", "b", "a"]);
     assert_eq!(rows[0].cat, "H");
     assert_eq!(rows[0].alt_m, 9143); // 30000 ft, truncated like the map tooltip
-    assert_eq!(rows[0].minutes, 1); // 20 km at 400 kts = 1.6 min, truncated
+    assert_eq!(rows[0].minutes, None);
 }
 
 #[test]

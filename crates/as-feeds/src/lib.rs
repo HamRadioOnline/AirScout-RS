@@ -10,4 +10,4 @@ pub mod vars;
 pub mod wake;
 pub mod worker;
 
-pub use plugin::{FeedArgs, FeedError, FeedPlane, PlaneFeed};
+pub use plugin::{FeedArgs, FeedBatch, FeedError, FeedPlane, PlaneFeed};

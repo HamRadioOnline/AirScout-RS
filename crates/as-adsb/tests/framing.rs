@@ -12,6 +12,22 @@ fn frame(kind: u8, payload: &[u8]) -> Vec<u8> {
     v
 }
 
+fn stuffed(kind: u8, timestamp: [u8; 6], signal: u8, payload: &[u8]) -> Vec<u8> {
+    let mut frame = vec![0x1A, kind];
+    for b in timestamp
+        .into_iter()
+        .chain(std::iter::once(signal))
+        .chain(payload.iter().copied())
+    {
+        if b == 0x1A {
+            frame.extend([0x1A, 0x1A]);
+        } else {
+            frame.push(b);
+        }
+    }
+    frame
+}
+
 fn three_frames() -> Vec<u8> {
     let mut v = frame(0x33, &LONG);
     v.extend(frame(0x32, &SHORT));
@@ -65,18 +81,23 @@ fn beast_garbage_between_frames() {
 }
 
 #[test]
-fn beast_escape_reproduces_csharp() {
-    // A real escaped 0x1A in the frame arrives doubled. C# does not unescape, so the frame
-    // keeps both bytes and loses its last byte to the next read (#40).
+fn finding_40_beast_unstuffs_escaped_markers_across_chunks() {
     let mut payload = LONG.to_vec();
     payload[4] = 0x1A;
-    payload.insert(4, 0x1A);
-    let mut v = frame(0x33, &payload);
+    let mut v = stuffed(0x33, [1, 0x1A, 3, 0x1A, 5, 6], 0x1A, &payload);
     v.extend(frame(0x32, &SHORT));
-    let out = BeastReader::default().push(&v);
-    assert_eq!(out[0], "*8D4840D61A1A2CC371C32CE05760;");
-    // the leftover 0x98 is no escape; the next frame decodes normally
-    assert_eq!(out[1], "*5D484FDEA248F5;");
+
+    let mut expected = vec!["*8D4840D61A2CC371C32CE0576098;".to_string()];
+    expected.push("*5D484FDEA248F5;".to_string());
+
+    let whole = BeastReader::default().push(&v);
+    assert_eq!(whole, expected);
+    for cut in 0..=v.len() {
+        let mut r = BeastReader::default();
+        let mut out = r.push(&v[..cut]);
+        out.extend(r.push(&v[cut..]));
+        assert_eq!(out, expected, "cut at {cut}");
+    }
 }
 
 #[test]

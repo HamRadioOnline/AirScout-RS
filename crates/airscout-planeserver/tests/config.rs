@@ -19,7 +19,7 @@ fn defaults_match_csharp() {
     assert_eq!(c.lifetime_min, 5);
     assert_eq!(c.interval_s, 60);
     assert!(c.feeds.is_empty());
-    assert!(c.feed_settings.is_empty());
+    assert_eq!(c.feed_settings["AirScoutServer"]["url"].as_str(), Some(""));
     assert!(c.feeds_disclaimer_accepted.is_empty());
     assert!(c.extended_plausibility);
     assert_eq!(c.max_error_dist, 30.0);
@@ -122,7 +122,7 @@ fn debug_hides_secrets() {
     c.feed_settings.insert("ADSBSupport".into(), t.into());
     let s = format!("{c:?}");
     assert!(!s.contains("hunter2"), "{s}");
-    assert!(s.contains("ADSBSupport"));
+    assert!(!s.contains("ADSBSupport"));
 }
 
 #[test]
@@ -154,7 +154,7 @@ mod unix_perms {
     }
 
     #[test]
-    fn save_over_stale_tmp() {
+    fn save_leaves_unowned_tmp() {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("planeserver.toml");
         let tmp = dir.path().join("planeserver.toml.tmp");
@@ -167,7 +167,7 @@ mod unix_perms {
             std::fs::metadata(&p).unwrap().permissions().mode() & 0o777,
             0o600
         );
-        assert!(!tmp.exists());
+        assert_eq!(std::fs::read_to_string(tmp).unwrap(), "stale");
     }
 
     #[test]
@@ -178,4 +178,72 @@ mod unix_perms {
         assert!(PlaneServerConfig::default().save(&p).is_err());
         assert!(!dir.path().join("planeserver.toml.tmp").exists());
     }
+}
+
+#[test]
+fn finding_329_planeserver_requires_explicit_feed_in_fresh_profiles() {
+    use airscout_planeserver::service::make_feeds;
+    let mut config = PlaneServerConfig {
+        feeds: vec!["AirScoutServer".into()],
+        ..Default::default()
+    };
+    assert!(make_feeds(&config)[0].is_err());
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("planeserver.toml");
+    for (text, endpoint) in [
+        (
+            "feeds = [\"AirScoutServer\"]",
+            "http://localhost:9880/planes.json",
+        ),
+        (
+            "[feed_settings.AirScoutServer]\ntimeout_s = 10",
+            "http://localhost:9880/planes.json",
+        ),
+        ("[feed_settings.AirScoutServer]\nurl = \"\"", ""),
+        (
+            "[feed_settings.AirScoutServer]\nurl = \"http://localhost:1234/planes.json\"",
+            "http://localhost:1234/planes.json",
+        ),
+    ] {
+        std::fs::write(&path, text).unwrap();
+        config = PlaneServerConfig::load_or_default(&path).unwrap();
+        assert_eq!(
+            config.feed_settings["AirScoutServer"]["url"].as_str(),
+            Some(endpoint)
+        );
+        config.save(&path).unwrap();
+        assert_eq!(PlaneServerConfig::load_or_default(&path).unwrap(), config);
+    }
+}
+
+#[test]
+fn finding_340_planeserver_profiles_preserve_custom_url_bytes_on_reload() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("planeserver.toml");
+    let old = "https://api.opensky-network.org/api/%2F/states?lat=%MINLAT%";
+    let canonical = "https://opensky-network.org/api/%2F/states?lat=%MINLAT%";
+    std::fs::write(&path, format!("[feed_settings.OpenSky]\nurl = \"{old}\"\n")).unwrap();
+    let mut cfg = PlaneServerConfig::load_or_default(&path).unwrap();
+    assert_eq!(
+        cfg.feed_settings["OpenSky"]["url"].as_str(),
+        Some(canonical)
+    );
+    cfg.feed_settings.get_mut("OpenSky").unwrap()["url"] = old.into();
+    cfg.save(&path).unwrap();
+    let raw = std::fs::read_to_string(&path)
+        .unwrap()
+        .parse::<toml::Table>()
+        .unwrap();
+    assert_eq!(
+        raw["feed_settings"]["OpenSky"]["url"].as_str(),
+        Some(canonical)
+    );
+    assert_eq!(
+        PlaneServerConfig::load_or_default(&path)
+            .unwrap()
+            .feed_settings["OpenSky"]["url"]
+            .as_str(),
+        Some(canonical)
+    );
 }

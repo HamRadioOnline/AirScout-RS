@@ -115,14 +115,15 @@ fn path_csv_row_count_and_14_columns() {
     let lines: Vec<&str> = text.lines().collect();
     assert_eq!(lines[0], HEADER);
     let dist = entry().path.distance();
-    let count = (dist * 1000.0 / 1000.0) as usize + 1;
+    let step = ElevationModel::Globe.default_step_width_m();
+    let count = (dist * 1000.0 / step) as usize + 1;
     assert_eq!(lines.len() - 1, count);
     for l in &lines {
         assert_eq!(l.split(';').count(), 14, "{l}");
     }
     assert!(lines[1].ends_with(";GLOBE"));
     assert!(lines[1].starts_with("0;"));
-    assert!(lines[2].starts_with("1;"));
+    assert!(lines[2].starts_with("0.5;"));
     let ev = events(&rx);
     assert!(
         matches!(ev.last(), Some(JobEvent::Done(s)) if s.contains("Path Information DL_MY0AAA to DX0AAA.csv")),
@@ -291,16 +292,19 @@ fn plane_history_dist_and_av_speed() {
 }
 
 #[test]
-fn plane_history_same_second_writes_infinity() {
+fn plane_history_same_second_writes_zero_speed() {
     let rows = [
         row("AAAAAA", "DLH1", 50.0, 8.0, 0),
         row("AAAAAA", "DLH1", 50.0, 8.1, 0),
         row("AAAAAA", "DLH1", 50.0, 8.1, 0),
     ];
     let l = plane_csv(&rows);
-    assert!(l[2].ends_with(";Infinity"), "{}", l[2]);
-    // same place, same second: 0 / 0
-    assert!(l[3].ends_with(";0.00000000;NaN"), "{}", l[3]);
+    let f2: Vec<&str> = l[2].split(';').collect();
+    let f3: Vec<&str> = l[3].split(';').collect();
+    // a non-positive hour difference writes 0, not Infinity
+    assert_eq!(f2[9], "0.00000000", "{}", l[2]);
+    // same place, same second: 0 / 0 writes 0, not NaN
+    assert_eq!((f3[8], f3[9]), ("0.00000000", "0.00000000"), "{}", l[3]);
 }
 
 #[test]
@@ -331,9 +335,51 @@ fn plane_history_by_call_mixes_hexes() {
     let l: Vec<&str> = text.lines().collect();
     assert_eq!(l.len(), 3, "{l:?}");
     assert!(l[1].contains(";AAAAAA;") && l[2].contains(";BBBBBB;"));
-    // the distance runs between the two different hexes
-    let d = as_geo::latlon::distance(50.0, 8.0, 51.0, 9.0);
-    assert!(l[2].contains(&format!(";{d:.8};")), "{}", l[2]);
+    let b: Vec<&str> = l[2].split(';').collect();
+    // each hex's first row is zero: no cross-hex distance jump
+    assert_eq!((b[8], b[9]), ("0.00000000", "0.00000000"), "{}", l[2]);
+    assert!(matches!(events(&rx).last(), Some(JobEvent::Done(_))));
+}
+
+#[test]
+fn plane_history_by_call_differences_within_a_hex() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = PositionDb::open(dir.path()).unwrap();
+    db.bulk_insert(&[
+        row("AAAAAA", "DLH1", 50.0, 8.0, 0),
+        row("BBBBBB", "DLH1", 51.0, 9.0, 60),
+        row("AAAAAA", "DLH1", 50.0, 8.1, 120),
+    ])
+    .unwrap();
+    drop(db);
+    let (ctx, rx) = ctx();
+    analysis::run(
+        &ctx,
+        dir.path(),
+        AnalysisJob::ExportPlane {
+            key: HexOrCall::Call("DLH1".into()),
+            from: at(-10),
+            to: at(200),
+        },
+    );
+    let file = dir
+        .path()
+        .join(format!("Tmp/{}", plane_file_name("DLH1", at(-10), at(200))));
+    let text = std::fs::read_to_string(&file).unwrap();
+    let l: Vec<&str> = text.lines().collect();
+    assert_eq!(l.len(), 4, "{l:?}");
+    let a0: Vec<&str> = l[1].split(';').collect();
+    let b0: Vec<&str> = l[2].split(';').collect();
+    let a1: Vec<&str> = l[3].split(';').collect();
+    assert!(a0[1] == "AAAAAA" && b0[1] == "BBBBBB" && a1[1] == "AAAAAA");
+    // first row of each hex is zero
+    assert_eq!((a0[8], a0[9]), ("0.00000000", "0.00000000"));
+    assert_eq!((b0[8], b0[9]), ("0.00000000", "0.00000000"));
+    // the second AAAAAA row differences against the previous AAAAAA row, not BBBBBB
+    let d = as_geo::latlon::distance(50.0, 8.0, 50.0, 8.1);
+    assert_eq!(a1[8], format!("{d:.8}"));
+    // 120 s = 1/30 h
+    assert_eq!(a1[9], format!("{:.8}", d / (1.0 / 30.0)));
     assert!(matches!(events(&rx).last(), Some(JobEvent::Done(_))));
 }
 

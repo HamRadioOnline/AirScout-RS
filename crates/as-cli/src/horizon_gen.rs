@@ -1,9 +1,7 @@
 //! `airscout-cli horizon-gen`: port of the C# HorizonGenerator (`HorizonGenerator/MainDlg.cs:36-100`).
 //! It writes one CSV of radio horizons per station of `stations.db3`, for the 12 real bands.
 //!
-//! The maths is 1:1: one elevation path per bearing, shared by all bands, so a cut made by
-//! `EpsilonMaxFromPath` (`PropagationHorizon.cs:153-185`) shortens it for the next band
-//! (`MainDlg.cs:62`, `:71`). The tool layer is a new design (owner decision Q5): the 12 columns
+//! Each band evaluates the terrain of the full elevation path for its bearing. The 12 columns
 //! match the header (the C# loop also runs `BNONE` and `BALL`, `:64`), the header typo
 //! `eps[144M[deg]` (`:80`) is fixed, and each station gets its own file instead of one
 //! `Horizon.csv` (`:78`). It reads only local data: nothing is downloaded.
@@ -11,7 +9,7 @@
 use crate::{bbox, parse_model, Res};
 use as_elevation::{check_area, DbStatus, ElevationError, ElevationModel, ElevationStore};
 use as_geo::band::Band;
-use as_geo::latlon::{self, GPoint, GRect, EARTH_RADIUS_KM};
+use as_geo::latlon::{self, GPoint, EARTH_RADIUS_KM};
 use as_propagation::epsilon_max_from_path;
 use as_settings::default_band_table;
 use as_stations::{Location, StationDb};
@@ -111,10 +109,9 @@ pub fn horizon_rows(
             .create_path_from_bearing(model, lat, lon, f64::from(j), dist_km, step, false, None)?
             .ok_or(ElevationError::Cancelled)?;
         valid &= ep.valid;
-        // one buffer for all bands: a cut shortens it for the next band (1:1)
-        let mut elv = ep.path;
         let mut row = [0.0; BANDS];
         for (i, b) in Band::all_except_none_and_all().iter().enumerate() {
+            let mut elv = ep.path.clone();
             let hp =
                 epsilon_max_from_path(h1, &mut elv, dist_km, step, b.to_ghz(), f1[i], max_elv, re);
             // C# order of operations (`MainDlg.cs:86`)
@@ -165,29 +162,7 @@ fn unique_name(name: String, taken: &HashSet<String>) -> String {
         .unwrap_or(name)
 }
 
-/// One small rect inside each 4-character square (2° lon × 1° lat) that `r` touches.
-///
-/// `get_locs_from_rect` is a 1:1 port of C# `GetLocsFromRect` (`ElevationDatabase.cs:580-612`):
-/// it samples from the min corner in whole steps, so an area narrower than one step that crosses
-/// a square boundary yields only the square of its min corner. Each rect returned here lies inside
-/// one square and so yields exactly that square. Port deviation: the library stays 1:1.
-fn square_pieces(r: GRect) -> Vec<GRect> {
-    let mut v = Vec::new();
-    let mut lat = r.min_lat.floor();
-    while lat < r.max_lat {
-        let mut lon = -180.0 + 2.0 * ((r.min_lon + 180.0) / 2.0).floor();
-        while lon < r.max_lon {
-            v.push(GRect::new(lat, lon, lat + 0.5, lon + 1.0));
-            lon += 2.0;
-        }
-        lat += 1.0;
-    }
-    v
-}
-
-/// Check the elevation data of the station's horizon area without any download, and set the
-/// store's bounds and `COMPLETE` bit from it (what `prepare_area` does without a client). The
-/// area is checked square by square (see [`square_pieces`]).
+/// Check the station's horizon area and update the store's coverage without downloading.
 fn check_station_area(
     store: &ElevationStore,
     model: ElevationModel,
@@ -202,13 +177,9 @@ fn check_station_area(
         "{}-sea-squares.txt",
         model.dir_name().to_lowercase()
     ));
-    let mut complete = true;
-    for piece in square_pieces(rect) {
-        let st = check_area(store, model, piece, &sea, None, &mut |m| eprintln!("{m}"))?;
-        complete &= st.complete;
-    }
+    let status = check_area(store, model, rect, &sea, None, &mut |m| eprintln!("{m}"))?;
     store.set_bounds(rect);
-    if complete {
+    if status.complete {
         store.set_status_bit(model, DbStatus::COMPLETE);
     } else {
         store.reset_status_bit(model, DbStatus::COMPLETE);
@@ -306,28 +277,81 @@ pub fn run(a: &HorizonGenArgs) -> Res<Value> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use as_elevation::get_locs_from_rect;
+    use as_geo::latlon::GRect;
 
-    fn squares(r: GRect) -> Vec<String> {
-        let mut v: Vec<String> = square_pieces(r)
-            .into_iter()
-            .flat_map(|p| get_locs_from_rect(p, 2).unwrap())
-            .collect();
-        v.sort();
-        v
+    use super::*;
+    use as_elevation::ElevationTile;
+    use as_geo::propagation::epsilon_from_heights;
+
+    #[test]
+    fn finding_282_each_band_uses_the_full_terrain_profile() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = ElevationStore::open(dir.path()).unwrap();
+        let model = ElevationModel::Globe;
+        let mut terrain = vec![0; 50];
+        terrain[20..25].fill(100);
+        let tile = ElevationTile::new(
+            "JO51AA",
+            0,
+            51.01,
+            10.005,
+            100,
+            51.01,
+            10.032,
+            5,
+            10,
+            terrain,
+            chrono::DateTime::UNIX_EPOCH,
+        )
+        .unwrap();
+        store.insert_or_update_if_newer(model, &tile).unwrap();
+        let (lat, lon, h1, dist, re) = (51.01, 10.005, 10.0, 3.0, 8473.43);
+        let mut clearance = [0.0; BANDS];
+        clearance[0] = 10.0;
+        let (rows, _) =
+            horizon_rows(&store, model, lat, lon, h1, dist, 100.0, re, &clearance).unwrap();
+        let step = model.default_step_width_m() / 1000.0;
+        let ep = store
+            .create_path_from_bearing(model, lat, lon, 90.0, dist, step * 1000.0, false, None)
+            .unwrap()
+            .unwrap();
+        assert!(ep.path.contains(&100));
+        for (i, &band) in Band::all_except_none_and_all().iter().enumerate() {
+            let best = ep
+                .path
+                .iter()
+                .enumerate()
+                .skip(1)
+                .map(|(j, &elv)| {
+                    let d = j as f64 * step;
+                    let f1 = ((0.3 / band.to_ghz()) * 1000.0 * d * (1.0 - d / dist)).sqrt();
+                    epsilon_from_heights(h1, d, f64::from(elv) + clearance[i] * f1, re)
+                })
+                .fold(f64::MIN, f64::max)
+                .to_degrees();
+            assert!(
+                (rows[90][i] - best).abs() < 1e-9,
+                "band {band:?}: {} vs {best}",
+                rows[90][i]
+            );
+        }
     }
 
     #[test]
     fn area_across_both_boundaries_gives_four_squares() {
         let r = GRect::new(50.6, 11.6, 51.4, 12.4);
-        // the 1:1 library call sees only the min corner's square
-        assert_eq!(get_locs_from_rect(r, 2).unwrap(), ["JO50"]);
-        assert_eq!(squares(r), ["JO50", "JO51", "JO60", "JO61"]);
+        assert_eq!(
+            get_locs_from_rect(r, 2).unwrap(),
+            ["JO50", "JO60", "JO51", "JO61"]
+        );
     }
 
     #[test]
     fn area_inside_one_square_gives_one() {
-        assert_eq!(squares(GRect::new(50.2, 10.2, 50.8, 11.8)), ["JO50"]);
+        assert_eq!(
+            get_locs_from_rect(GRect::new(50.2, 10.2, 50.8, 11.8), 2).unwrap(),
+            ["JO50"]
+        );
     }
 }

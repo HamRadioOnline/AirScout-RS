@@ -76,7 +76,7 @@ fn debug_hides_history_url_credentials() {
         assert!(!text.contains("secret"), "{text}");
         assert!(!text.contains("u:"), "{text}");
         assert!(!text.contains("token"), "{text}");
-        assert!(text.contains("https://host.example/hist/"), "{text}");
+        assert!(!text.contains("host.example"), "{text}");
     }
     // a password with an unescaped `/` or `?` stays hidden too
     s.analysis.history_url = "https://u:pa/ss?x@host.example/".into();

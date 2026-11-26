@@ -1,15 +1,7 @@
-//! Flexible JSON feed (`AirScout.PlaneFeeds.Plugin.FlexJSON`): reads JSON of unknown layout
-//! and guesses which column holds which plane field.
-//!
-//! Faithful to `FlexJSON.cs`, including its quirks (see `docs/logic-findings.md`): column 0
-//! (the container key) is detected but never read, the detection compares the units with
-//! `"m "` / `"km/h "` (trailing space), altitude, track and speed parse integers only,
-//! objects drop fractional numbers, a JSON `null` anywhere fails the request, and
-//! `min_elements` / `min_planes` are never used. The C# number parsing is modelled with the
-//! invariant culture.
+//! Flexible JSON feeds support named fields, explicit columns and unambiguous inference.
 
-use super::{http_get, set_str, set_u64};
-use crate::vars::{self, format_double};
+use super::{http_get_bounded, set_str, set_u64, FLEX_JSON_BYTES};
+use crate::vars;
 use crate::{FeedArgs, FeedError, FeedPlane, PlaneFeed};
 use chrono::{DateTime, Datelike, NaiveDateTime, Utc};
 
@@ -20,15 +12,13 @@ const RECURSION_LIMIT: usize = 100;
 
 // ------------------------------------------------------------------ JSON (JavaScriptSerializer)
 
-/// A value as `JavaScriptSerializer.Deserialize<dynamic>` yields it, reduced to what
-/// FlexJSON can tell apart: `Text` is a string or a primitive (int, long, double, bool) as
-/// `ToString()` prints it, `Dec` a `decimal` (not a primitive).
 #[derive(Debug)]
 enum J {
     Obj(Vec<(String, J)>),
     Arr(Vec<J>),
     Text(String),
-    Dec(String),
+    Number(String),
+    Bool,
     Null,
 }
 
@@ -76,8 +66,8 @@ impl Parser<'_> {
             Some('{') => self.object(depth),
             Some('[') => self.array(depth),
             Some('"') => Ok(J::Text(self.string()?)),
-            Some('t') => self.eat("true").map(|()| J::Text("True".into())),
-            Some('f') => self.eat("false").map(|()| J::Text("False".into())),
+            Some('t') => self.eat("true").map(|()| J::Bool),
+            Some('f') => self.eat("false").map(|()| J::Bool),
             Some('n') => self.eat("null").map(|()| J::Null),
             Some(c) if c == '-' || c.is_ascii_digit() => self.number(),
             _ => Err(jerr("invalid JSON value", self.i)),
@@ -193,8 +183,7 @@ impl Parser<'_> {
         }
     }
 
-    /// JSON number grammar; classified like `JavaScriptObjectDeserializer`: without
-    /// exponent and point an `int`/`long`, else a `decimal` (no exponent), else a `double`.
+    /// Preserve the lexical number so time fields can distinguish integers from fractions.
     fn number(&mut self) -> Result<J, FeedError> {
         let start = self.i;
         let digits = |p: &mut Self| {
@@ -210,17 +199,13 @@ impl Parser<'_> {
         if !digits(self) {
             return Err(jerr("invalid number", start));
         }
-        let mut point = false;
         if self.peek() == Some('.') {
-            point = true;
             self.bump();
             if !digits(self) {
                 return Err(jerr("invalid number", start));
             }
         }
-        let mut exp = false;
         if matches!(self.peek(), Some('e' | 'E')) {
-            exp = true;
             self.bump();
             if matches!(self.peek(), Some('+' | '-')) {
                 self.bump();
@@ -229,32 +214,7 @@ impl Parser<'_> {
                 return Err(jerr("invalid number", start));
             }
         }
-        let t = &self.s[start..self.i];
-        let dbl = || {
-            t.parse::<f64>()
-                .map(|d| J::Text(format_double(d)))
-                .map_err(|_| jerr("invalid number", start))
-        };
-        if exp {
-            return dbl();
-        }
-        if !point {
-            if let Ok(l) = t.parse::<i64>() {
-                return Ok(J::Text(l.to_string()));
-            }
-        }
-        // decimal holds 28-29 significant digits; a longer integer part overflows it
-        let int_digits = t
-            .split('.')
-            .next()
-            .unwrap_or("")
-            .trim_start_matches('-')
-            .len();
-        if int_digits <= 28 {
-            Ok(J::Dec(t.to_string()))
-        } else {
-            dbl()
-        }
+        Ok(J::Number(self.s[start..self.i].to_owned()))
     }
 }
 
@@ -283,463 +243,478 @@ fn parse_json(s: &str) -> Result<J, FeedError> {
 
 // ------------------------------------------------------------------ flattening
 
-/// `AddElement` / `GetAllPlaneInfos`: every object and array with its key, and how often
-/// each length occurs (in order of first occurrence).
-struct Flat<'a> {
-    elems: Vec<(String, &'a J, usize)>,
-    lengths: Vec<(usize, usize)>,
-    guids: u64,
+const HEX: usize = 0;
+const UTC: usize = 1;
+const CALL: usize = 2;
+const TYPE: usize = 3;
+const LAT: usize = 4;
+const LON: usize = 5;
+const ALT: usize = 6;
+const TRACK: usize = 7;
+const SPEED: usize = 8;
+const REG: usize = 9;
+const REQUIRED: [usize; 6] = [HEX, LAT, LON, ALT, TRACK, SPEED];
+const OPTIONAL: [usize; 4] = [UTC, CALL, TYPE, REG];
+const FIELD_NAMES: [&[&str]; 10] = [
+    &["hex", "icao"],
+    &["utc", "time", "timestamp"],
+    &["call", "callsign", "flight"],
+    &["type", "typecode"],
+    &["lat", "latitude"],
+    &["lon", "longitude"],
+    &["alt", "altitude"],
+    &["track", "groundtrack"],
+    &["speed", "groundspeed"],
+    &["reg", "registration"],
+];
+
+#[derive(Clone, Copy)]
+enum Cell<'a> {
+    Missing,
+    Text(&'a str),
+    Number(&'a str),
+    Other,
 }
 
-impl<'a> Flat<'a> {
-    fn count(&mut self, len: usize) {
-        match self.lengths.iter_mut().find(|(l, _)| *l == len) {
-            Some(e) => e.1 += 1,
-            None => self.lengths.push((len, 1)),
+impl<'a> Cell<'a> {
+    fn from_value(value: &'a J) -> Self {
+        match value {
+            J::Null => Self::Missing,
+            J::Text(text) => Self::Text(text),
+            J::Number(number) => Self::Number(number),
+            _ => Self::Other,
         }
     }
 
-    /// Stands in for `Guid.NewGuid().ToString()`: same shape, and every FlexJSON check
-    /// treats it like a random GUID (only `IsReg` matches, because of the `-`).
-    fn guid(&mut self) -> String {
-        self.guids += 1;
-        format!("{:08x}-0000-4000-8000-{:012x}", self.guids, self.guids)
-    }
-
-    fn add(&mut self, key: String, el: &'a J) -> Result<(), FeedError> {
-        match el {
-            // `el.GetType()` on null throws
-            J::Null => Err(FeedError::Parse(
-                "null value in the JSON (FlexJSON cannot handle it)".into(),
-            )),
-            J::Obj(m) => {
-                self.count(m.len());
-                self.elems.push((key, el, m.len()));
-                for (k, v) in m {
-                    self.add(k.clone(), v)?;
-                }
-                Ok(())
-            }
-            J::Arr(a) => {
-                self.count(a.len());
-                self.elems.push((key, el, a.len()));
-                for v in a {
-                    let k = self.guid();
-                    self.add(k, v)?;
-                }
-                Ok(())
-            }
-            J::Text(_) | J::Dec(_) => Ok(()),
+    fn text(self) -> Option<&'a str> {
+        match self {
+            Self::Text(text) => Some(text.trim()),
+            _ => None,
         }
     }
-}
 
-/// `GetPlaneInfo`: `[key, v1, .., vn]`. Objects keep strings and primitives only (a
-/// `decimal` becomes `""`), arrays keep decimals too; nested containers become `""`.
-fn row(key: &str, el: &J) -> Vec<String> {
-    let mut r = vec![key.to_string()];
-    match el {
-        J::Obj(m) => r.extend(m.iter().map(|(_, v)| match v {
-            J::Text(s) => s.clone(),
-            _ => String::new(),
-        })),
-        J::Arr(a) => r.extend(a.iter().map(|v| match v {
-            J::Text(s) | J::Dec(s) => s.clone(),
-            _ => String::new(),
-        })),
-        _ => {}
-    }
-    r
-}
-
-/// The plane rows: containers of the most common length.
-fn plane_rows(root: &J) -> Result<(Vec<Vec<String>>, usize), FeedError> {
-    let mut f = Flat {
-        elems: Vec::new(),
-        lengths: Vec::new(),
-        guids: 0,
-    };
-    f.add(String::new(), root)?;
-    let (mut maxcount, mut maxkey) = (0, 0);
-    for &(len, n) in &f.lengths {
-        if n > maxcount {
-            maxcount = n;
-            maxkey = len;
+    fn number(self) -> Option<f64> {
+        match self {
+            Self::Number(text) | Self::Text(text) => text
+                .trim()
+                .parse::<f64>()
+                .ok()
+                .filter(|value| value.is_finite()),
+            _ => None,
         }
     }
-    let rows = f
-        .elems
-        .iter()
-        .filter(|(_, _, len)| *len == maxkey)
-        .map(|(k, el, _)| row(k, el))
-        .collect();
-    Ok((rows, maxkey + 1))
-}
 
-// ------------------------------------------------------------------ cell checks and converters
-
-/// `double.TryParse` (Float | AllowThousands, invariant culture).
-fn net_f64(s: &str) -> Option<f64> {
-    let s = s.trim();
-    match s {
-        "NaN" => return Some(f64::NAN),
-        "Infinity" | "+Infinity" => return Some(f64::INFINITY),
-        "-Infinity" => return Some(f64::NEG_INFINITY),
-        _ => {}
-    }
-    let b = s.as_bytes();
-    let mut i = 0;
-    if matches!(b.first(), Some(b'+' | b'-')) {
-        i = 1;
-    }
-    let mut num = String::from(&s[..i]);
-    let mut seen = false;
-    while i < b.len() && (b[i].is_ascii_digit() || (b[i] == b',' && seen)) {
-        if b[i] != b',' {
-            num.push(char::from(b[i]));
-            seen = true;
-        }
-        i += 1;
-    }
-    if i < b.len() && b[i] == b'.' {
-        num.push('.');
-        i += 1;
-        while i < b.len() && b[i].is_ascii_digit() {
-            num.push(char::from(b[i]));
-            seen = true;
-            i += 1;
-        }
-    }
-    if !seen {
-        return None;
-    }
-    if i < b.len() && (b[i] == b'e' || b[i] == b'E') {
-        num.push('e');
-        i += 1;
-        if i < b.len() && (b[i] == b'+' || b[i] == b'-') {
-            num.push(char::from(b[i]));
-            i += 1;
-        }
-        let d = i;
-        while i < b.len() && b[i].is_ascii_digit() {
-            num.push(char::from(b[i]));
-            i += 1;
-        }
-        if i == d {
-            return None;
-        }
-    }
-    if i != b.len() {
-        return None;
-    }
-    num.parse().ok()
-}
-
-fn to_double(s: &str) -> f64 {
-    net_f64(s).unwrap_or(f64::MIN)
-}
-
-/// `long.TryParse` / `Convert.ToInt64` (NumberStyles.Integer).
-fn net_i64(s: &str) -> Option<i64> {
-    s.trim().parse().ok()
-}
-
-fn utf16_len(s: &str) -> usize {
-    s.encode_utf16().count()
-}
-
-fn is_int(s: &str) -> bool {
-    let s = s.trim();
-    s.chars().all(|c| "-01234567890".contains(c)) && net_i64(s).is_some()
-}
-
-fn is_double(s: &str) -> bool {
-    let s = s.trim();
-    (s.contains('.') || s.contains(',')) && net_f64(s).is_some()
-}
-
-fn is_hex(s: &str) -> bool {
-    let s = s.trim();
-    utf16_len(s) == 6 && s.chars().all(|c| c.is_ascii_hexdigit())
-}
-
-/// `IsUTC`: only millisecond time stamps within 1000 s of now pass; a 10-digit value in
-/// seconds passes the first check and then fails the millisecond one.
-fn is_utc(s: &str, now: DateTime<Utc>) -> bool {
-    let now_int = now.timestamp() as i32;
-    let now_long = i64::from(now_int) * 1000;
-    let s = s.trim();
-    if utf16_len(s) < 10 {
-        return false;
-    }
-    if !is_int(s) && !s.chars().any(|c| "-_:".contains(c)) {
-        return false;
-    }
-    if utf16_len(s) < 13 {
-        match net_i64(s) {
-            Some(l) if i64::from(now_int).wrapping_sub(l).unsigned_abs() <= 1000 => {}
-            _ => return false,
-        }
-    }
-    match net_i64(s) {
-        Some(l) => now_long.wrapping_sub(l).unsigned_abs() <= 1_000_000,
-        None => false,
-    }
-}
-
-fn in_range(s: &str, lo: f64, hi: f64) -> bool {
-    let d = to_double(s.trim());
-    d >= lo && d <= hi
-}
-
-fn is_lat(s: &str) -> bool {
-    is_double(s) && in_range(s, -90.0, 90.0)
-}
-
-fn is_lon(s: &str) -> bool {
-    is_double(s) && in_range(s, -180.0, 180.0)
-}
-
-fn is_alt(s: &str, units_alt: &str) -> bool {
-    if !is_int(s) && !is_double(s) {
-        return false;
-    }
-    let d = to_double(s.trim());
-    // "m " with a trailing space: never true for the setting "m"
-    !(d < 0.0 || (units_alt.to_lowercase() == "m " && d > 30000.0) || d > 100_000.0)
-}
-
-fn is_track(s: &str) -> bool {
-    (is_int(s) || is_double(s)) && in_range(s, 0.0, 360.0)
-}
-
-fn is_speed(s: &str, units_speed: &str) -> bool {
-    if !is_int(s) && !is_double(s) {
-        return false;
-    }
-    let d = to_double(s.trim());
-    !(d < 0.0 || (units_speed.to_lowercase() == "km/h " && d > 1000.0) || d > 550.0)
-}
-
-fn is_reg(s: &str) -> bool {
-    let s = s.trim();
-    s.contains('-') || s.starts_with('N')
-}
-
-fn is_type(s: &str) -> bool {
-    let s = s.trim();
-    utf16_len(s) == 4 && s.chars().any(char::is_numeric)
-}
-
-fn clean(s: &str) -> String {
-    s.replace('"', "").trim().to_string()
-}
-
-fn to_hex(s: &str) -> Option<String> {
-    if s.is_empty() {
-        return None;
-    }
-    let s = s.replace('"', "").to_uppercase().trim().to_string();
-    is_hex(&s).then_some(s)
-}
-
-fn to_text(s: &str) -> Option<String> {
-    (!s.is_empty()).then(|| s.replace('"', "").to_uppercase().trim().to_string())
-}
-
-/// `new DateTime(1970,1,1).AddMilliseconds(ms)`; out of the DateTime range throws.
-fn from_ms(ms: i64) -> Option<DateTime<Utc>> {
-    DateTime::from_timestamp_millis(ms).filter(|t| (1..=9999).contains(&t.year()))
-}
-
-/// `To_UTC`; `None` stands for `DateTime.MinValue`.
-fn to_utc(s: &str) -> Option<DateTime<Utc>> {
-    if s.is_empty() {
-        return None;
-    }
-    let s = clean(s);
-    if utf16_len(&s) >= 10 && is_int(&s) {
-        if let Some(l) = net_i64(&s) {
-            let t = if utf16_len(&s) > 10 {
-                from_ms(l)
+    fn timestamp(self) -> Option<DateTime<Utc>> {
+        let raw = match self {
+            Self::Number(number) | Self::Text(number) => number.trim(),
+            _ => return None,
+        };
+        let digits = raw.strip_prefix(['+', '-']).unwrap_or(raw);
+        let time = if !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit()) {
+            let epoch: i64 = raw.parse().ok()?;
+            if epoch.unsigned_abs() < 10_000_000_000 {
+                DateTime::from_timestamp(epoch, 0)
             } else {
-                l.checked_mul(1000).and_then(from_ms)
-            };
-            if t.is_some() {
-                return t;
+                DateTime::from_timestamp_millis(epoch)
             }
-        }
+        } else if matches!(self, Self::Text(_)) {
+            DateTime::parse_from_rfc3339(raw)
+                .ok()
+                .map(|at| at.with_timezone(&Utc))
+                .or_else(|| {
+                    ["%Y-%m-%d %H:%M:%S%.f", "%Y-%m-%dT%H:%M:%S%.f"]
+                        .iter()
+                        .find_map(|format| NaiveDateTime::parse_from_str(raw, format).ok())
+                        .map(|at| at.and_utc())
+                })
+        } else {
+            None
+        }?;
+        (1..=9999).contains(&time.year()).then_some(time)
     }
-    // DateTime.TryParse: ISO forms, taken as UTC
-    DateTime::parse_from_rfc3339(&s)
-        .map(|t| t.with_timezone(&Utc))
-        .ok()
-        .or_else(|| {
-            ["%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"]
+
+    fn bounded(self, min: f64, max: f64) -> Option<f64> {
+        self.number().filter(|value| (min..=max).contains(value))
+    }
+
+    fn hex(self) -> Option<&'a str> {
+        self.text()
+            .filter(|text| text.len() == 6 && text.bytes().all(|c| c.is_ascii_hexdigit()))
+    }
+}
+
+#[derive(Clone, Copy)]
+struct Row<'a> {
+    parent: &'a J,
+    key: Option<&'a str>,
+    node: &'a J,
+    width: usize,
+}
+
+impl<'a> Row<'a> {
+    fn column(self, index: usize) -> Cell<'a> {
+        if index == 0 {
+            return self.key.map_or(Cell::Missing, Cell::Text);
+        }
+        let value = match self.node {
+            J::Obj(members) => members.get(index - 1).map(|(_, member)| member),
+            J::Arr(members) => members.get(index - 1),
+            _ => None,
+        };
+        value.map_or(Cell::Missing, Cell::from_value)
+    }
+
+    fn named(self, field: usize) -> Option<(usize, Cell<'a>)> {
+        let J::Obj(members) = self.node else {
+            return None;
+        };
+        FIELD_NAMES[field].iter().find_map(|alias| {
+            members
                 .iter()
-                .find_map(|f| NaiveDateTime::parse_from_str(&s, f).ok())
-                .map(|t| t.and_utc())
+                .enumerate()
+                .find_map(|(index, (name, value))| {
+                    name.eq_ignore_ascii_case(alias)
+                        .then(|| (index + 1, Cell::from_value(value)))
+                })
         })
-}
-
-fn to_latlon(s: &str, limit: f64) -> f64 {
-    let s = clean(s);
-    if utf16_len(&s) < 3 || !s.contains('.') {
-        return f64::MIN;
-    }
-    match net_f64(&s) {
-        Some(d) if d >= -limit && d <= limit => d,
-        _ => f64::MIN,
     }
 }
 
-fn to_alt(s: &str, units_alt: &str) -> i32 {
-    let Some(mut alt) = net_i64(&clean(s)) else {
-        return i32::MIN;
+fn collect_rows<'a>(node: &'a J, parent: &'a J, key: Option<&'a str>, rows: &mut Vec<Row<'a>>) {
+    let scalar = |member: &J| matches!(member, J::Text(_) | J::Number(_));
+    let (width, has_cells) = match node {
+        J::Obj(members) => (
+            members.len(),
+            members.iter().any(|(_, value)| scalar(value)),
+        ),
+        J::Arr(members) => (members.len(), members.iter().any(scalar)),
+        _ => return,
     };
-    if units_alt.to_lowercase() == "m" {
-        alt = i64::from((alt as f64 * 3.28084) as i32);
+    if has_cells {
+        rows.push(Row {
+            parent,
+            key,
+            node,
+            width: width + 1,
+        });
     }
-    if !(0..=100_000).contains(&alt) {
-        return i32::MIN;
-    }
-    alt as i32
-}
-
-fn to_track(s: &str) -> i32 {
-    match net_i64(&clean(s)) {
-        Some(t) if (0..=360).contains(&t) => t as i32,
-        _ => i32::MIN,
-    }
-}
-
-fn to_speed(s: &str, units_speed: &str) -> i32 {
-    let Some(speed) = net_i64(&clean(s)) else {
-        return i32::MIN;
-    };
-    if units_speed.to_lowercase() == "km/h" {
-        // no range check in this branch
-        return (speed as f64 / 1.852) as i32;
-    }
-    if !(0..=550).contains(&speed) {
-        return i32::MIN;
-    }
-    speed as i32
-}
-
-// ------------------------------------------------------------------ column detection
-
-/// Per-column statistics of `GetColumnInfo`.
-struct Columns {
-    max: Vec<f64>,
-    mean: Vec<f64>,
-    hex: Vec<usize>,
-    utc: Vec<usize>,
-    lat: Vec<usize>,
-    lon: Vec<usize>,
-    alt: Vec<usize>,
-    track: Vec<usize>,
-    speed: Vec<usize>,
-    typ: Vec<usize>,
-    reg: Vec<usize>,
-}
-
-fn column_info(
-    rows: &[Vec<String>],
-    n: usize,
-    units_alt: &str,
-    units_speed: &str,
-    now: DateTime<Utc>,
-) -> Columns {
-    let z = || vec![0usize; n];
-    let mut c = Columns {
-        max: vec![0.0; n],
-        mean: vec![0.0; n],
-        hex: z(),
-        utc: z(),
-        lat: z(),
-        lon: z(),
-        alt: z(),
-        track: z(),
-        speed: z(),
-        typ: z(),
-        reg: z(),
-    };
-    let mut min = vec![0.0; n];
-    let mut sum = vec![0.0; n];
-    for r in rows {
-        for (i, s) in r.iter().enumerate().take(n) {
-            let mut stat = |v: f64| {
-                // `if (v < min) .. else if (v > max)`
-                if v < min[i] {
-                    min[i] = v;
-                } else if v > c.max[i] {
-                    c.max[i] = v;
-                }
-            };
-            if is_double(s) {
-                let d = to_double(s);
-                if d != f64::MIN {
-                    stat(d);
-                }
-                sum[i] += d;
-            }
-            if is_int(s) {
-                if let Some(l) = net_i64(s) {
-                    if l != i64::MIN {
-                        stat(l as f64);
-                    }
-                    sum[i] += l as f64;
-                }
-            }
-            let tally = [
-                (&mut c.hex, is_hex(s)),
-                (&mut c.utc, is_utc(s, now)),
-                (&mut c.lat, is_lat(s)),
-                (&mut c.lon, is_lon(s)),
-                (&mut c.alt, is_alt(s, units_alt)),
-                (&mut c.track, is_track(s)),
-                (&mut c.speed, is_speed(s, units_speed)),
-                (&mut c.typ, is_type(s)),
-                (&mut c.reg, is_reg(s)),
-            ];
-            for (v, hit) in tally {
-                if hit {
-                    v[i] += 1;
-                }
+    match node {
+        J::Obj(members) => {
+            for (name, member) in members {
+                collect_rows(member, node, Some(name), rows);
             }
         }
+        J::Arr(members) => {
+            for member in members {
+                collect_rows(member, node, None, rows);
+            }
+        }
+        _ => {}
     }
-    for i in 0..n {
-        c.mean[i] = sum[i] / rows.len() as f64;
-    }
-    c
 }
 
-/// `Find*Index`: the first free column with the most hits, if more than 90 % of the rows.
-fn find(
-    hits: &[usize],
-    detected: &mut [bool],
-    rows: usize,
-    ok: impl Fn(usize) -> bool,
-) -> Option<usize> {
-    let (mut maxindex, mut maxcount) = (None, 0);
-    for (i, &h) in hits.iter().enumerate() {
-        if !detected[i] && ok(i) && h > maxcount {
-            maxcount = h;
-            maxindex = Some(i);
-        }
+fn plane_rows(root: &J) -> Result<(Vec<Row<'_>>, usize), FeedError> {
+    let mut rows = Vec::new();
+    collect_rows(root, root, None, &mut rows);
+    let mut counts = std::collections::HashMap::<usize, usize>::new();
+    for row in &rows {
+        *counts.entry(row.width).or_default() += 1;
     }
-    let i = maxindex?;
-    if maxcount as i64 > (0.9 * rows as f64) as i64 {
-        detected[i] = true;
-        Some(i)
+    let best = rows
+        .iter()
+        .copied()
+        .fold(None::<Row<'_>>, |best, row| {
+            if best.is_none_or(|best| counts[&row.width] > counts[&best.width]) {
+                Some(row)
+            } else {
+                best
+            }
+        })
+        .ok_or_else(|| FeedError::Parse("FlexJSON has no usable row structure".into()))?;
+
+    if rows
+        .iter()
+        .any(|row| row.named(LAT).is_some() && row.named(LON).is_some())
+    {
+        rows.retain(|row| row.named(LAT).is_some() || row.named(LON).is_some());
     } else {
-        None
+        rows.retain(|row| row.width == best.width || std::ptr::eq(row.parent, best.parent));
+    }
+    Ok((rows, best.width))
+}
+
+#[derive(Clone, Copy)]
+struct Units {
+    altitude_metric: bool,
+    speed_metric: bool,
+}
+
+impl Units {
+    fn altitude(self, cell: Cell<'_>) -> Option<f64> {
+        if self.altitude_metric {
+            cell.bounded(0.0, 30_000.0).map(|meters| meters * 3.28084)
+        } else {
+            cell.bounded(0.0, 100_000.0)
+        }
+    }
+
+    fn speed(self, cell: Cell<'_>) -> Option<f64> {
+        if self.speed_metric {
+            cell.bounded(0.0, 1000.0).map(|kmh| kmh / 1.852)
+        } else {
+            cell.bounded(0.0, 550.0)
+        }
     }
 }
 
-// ------------------------------------------------------------------ the feed
+#[derive(Default)]
+struct NumericStats {
+    samples: usize,
+    min: f64,
+    max: f64,
+    mean: f64,
+}
+
+impl NumericStats {
+    fn add(&mut self, value: f64) {
+        if self.samples == 0 {
+            self.min = value;
+            self.max = value;
+        }
+        self.samples += 1;
+        self.min = self.min.min(value);
+        self.max = self.max.max(value);
+        let n = self.samples as f64;
+        self.mean = self.mean * ((n - 1.0) / n) + value / n;
+    }
+}
+
+fn column_hits(rows: &[Row<'_>], column: usize, units: Units, now: DateTime<Utc>) -> [usize; 10] {
+    let mut hits = [0; 10];
+    let mut numbers = NumericStats::default();
+    for row in rows {
+        let cell = row.column(column);
+        let number = cell.number();
+        if let Some(value) = number {
+            numbers.add(value);
+        }
+        let stamp = cell.timestamp();
+        let text = cell.text().unwrap_or("");
+        let has_letters = text.bytes().any(|byte| byte.is_ascii_alphabetic());
+        let has_digits = text.bytes().any(|byte| byte.is_ascii_digit());
+        let mixed = number.is_none()
+            && has_letters
+            && has_digits
+            && text.bytes().all(|byte| byte.is_ascii_alphanumeric());
+        let type_code = mixed && text.len() == 4;
+        let matching = [
+            cell.hex().is_some(),
+            stamp.is_some_and(|time| (time - now).abs() <= chrono::Duration::seconds(1000)),
+            mixed && (3..=8).contains(&text.len()) && !type_code && cell.hex().is_none(),
+            type_code && cell.hex().is_none(),
+            cell.bounded(-90.0, 90.0).is_some(),
+            cell.bounded(-180.0, 180.0).is_some(),
+            units.altitude(cell).is_some(),
+            cell.bounded(0.0, 360.0).is_some(),
+            units.speed(cell).is_some(),
+            number.is_none()
+                && stamp.is_none()
+                && has_letters
+                && (text.contains('-') || (text.starts_with('N') && has_digits && text.len() <= 6)),
+        ];
+        for (count, matches) in hits.iter_mut().zip(matching) {
+            *count += usize::from(matches);
+        }
+    }
+    let mean_ft = if units.altitude_metric {
+        numbers.mean * 3.28084
+    } else {
+        numbers.mean
+    };
+    if mean_ft <= 5000.0 {
+        hits[ALT] = 0;
+    }
+    hits
+}
+
+#[derive(Clone, PartialEq, Eq)]
+struct InferenceLayout {
+    width: usize,
+    configured: [i32; 10],
+    named: [bool; 10],
+    candidates: [Vec<usize>; 10],
+}
+
+impl InferenceLayout {
+    fn needs_index(&self, field: usize) -> bool {
+        self.configured[field] < 0 && !self.named[field]
+    }
+
+    fn augment(
+        &self,
+        field: usize,
+        used: &mut [Option<usize>],
+        visited: &mut [bool],
+        excluded: Option<(usize, usize)>,
+    ) -> bool {
+        for &column in &self.candidates[field] {
+            if visited[column] || excluded == Some((field, column)) {
+                continue;
+            }
+            visited[column] = true;
+            if used[column].is_none_or(|other| self.augment(other, used, visited, excluded)) {
+                used[column] = Some(field);
+                return true;
+            }
+        }
+        false
+    }
+
+    fn assign_required(&self, excluded: Option<(usize, usize)>) -> Option<Vec<Option<usize>>> {
+        let mut used = vec![None; self.width];
+        for field in REQUIRED
+            .into_iter()
+            .filter(|&field| self.needs_index(field))
+        {
+            if !self.augment(field, &mut used, &mut vec![false; self.width], excluded) {
+                return None;
+            }
+        }
+        Some(used)
+    }
+
+    fn resolve(&self) -> Result<[Option<usize>; 10], FeedError> {
+        let configure = || {
+            FeedError::Config(
+                "FlexJSON requires explicit indices for missing or ambiguous aircraft fields"
+                    .into(),
+            )
+        };
+        let used = self.assign_required(None).ok_or_else(configure)?;
+        let mut inferred = [None; 10];
+        for (column, field) in used
+            .iter()
+            .enumerate()
+            .filter_map(|(column, field)| field.map(|field| (column, field)))
+        {
+            if self.assign_required(Some((field, column))).is_some() {
+                return Err(configure());
+            }
+            inferred[field] = Some(column);
+        }
+
+        for field in OPTIONAL
+            .into_iter()
+            .filter(|&field| self.needs_index(field))
+        {
+            let mut matches = self.candidates[field]
+                .iter()
+                .copied()
+                .filter(|&column| used[column].is_none());
+            if let Some(column) = matches.next() {
+                let overlapping = OPTIONAL.iter().any(|&other| {
+                    other != field
+                        && self.needs_index(other)
+                        && self.candidates[other].contains(&column)
+                });
+                if matches.next().is_none() && !overlapping {
+                    inferred[field] = Some(column);
+                }
+            }
+        }
+        Ok(inferred)
+    }
+}
+
+#[derive(Clone)]
+struct Inference {
+    layout: InferenceLayout,
+    indices: [Option<usize>; 10],
+}
+
+fn infer_layout(
+    rows: &[Row<'_>],
+    width: usize,
+    configured: [i32; 10],
+    units: Units,
+    now: DateTime<Utc>,
+) -> InferenceLayout {
+    let mut named = [false; 10];
+    let mut occupied = vec![false; width];
+    for column in configured
+        .iter()
+        .filter_map(|&index| usize::try_from(index).ok())
+    {
+        if let Some(used) = occupied.get_mut(column) {
+            *used = true;
+        }
+    }
+    for row in rows {
+        for field in 0..10 {
+            if configured[field] < 0 {
+                if let Some((column, _)) = row.named(field) {
+                    named[field] = true;
+                    if let Some(used) = occupied.get_mut(column) {
+                        *used = true;
+                    }
+                }
+            }
+        }
+    }
+    let mut layout = InferenceLayout {
+        width,
+        configured,
+        named,
+        candidates: std::array::from_fn(|_| Vec::new()),
+    };
+    if (0..10).any(|field| layout.needs_index(field)) {
+        for (column, _) in occupied.iter().enumerate().filter(|(_, used)| !**used) {
+            let hits = column_hits(rows, column, units, now);
+            for (field, count) in hits.into_iter().enumerate() {
+                if layout.needs_index(field) && count * 10 > rows.len() * 9 {
+                    layout.candidates[field].push(column);
+                }
+            }
+        }
+    }
+    layout
+}
+
+fn map_row(
+    row: Row<'_>,
+    layout: &InferenceLayout,
+    inferred: &[Option<usize>; 10],
+    units: Units,
+    now: DateTime<Utc>,
+) -> Option<FeedPlane> {
+    let cell = |field: usize| {
+        if let Ok(column) = usize::try_from(layout.configured[field]) {
+            return row.column(column);
+        }
+        if layout.named[field] {
+            return row.named(field).map_or(Cell::Missing, |(_, cell)| cell);
+        }
+        inferred[field].map_or(Cell::Missing, |column| row.column(column))
+    };
+    let optional_text = |field| cell(field).text().unwrap_or("").to_ascii_uppercase();
+    let time = match cell(UTC) {
+        Cell::Missing => now,
+        other => other.timestamp()?,
+    };
+    Some(FeedPlane {
+        hex: cell(HEX).hex()?.to_ascii_uppercase(),
+        time: Some(time),
+        lat: cell(LAT).bounded(-90.0, 90.0)?,
+        lon: cell(LON).bounded(-180.0, 180.0)?,
+        alt_ft: units.altitude(cell(ALT))?,
+        track: cell(TRACK).bounded(0.0, 360.0)?,
+        speed_kts: units.speed(cell(SPEED))?,
+        call: optional_text(CALL),
+        type_code: optional_text(TYPE),
+        reg: optional_text(REG),
+        ..FeedPlane::default()
+    })
+}
 
 pub const DISCLAIMER: &str = "This feed reads JSON from a web server you configure and \
 guesses its layout. Some servers do not allow automated use of their data: use only sources \
@@ -747,7 +722,7 @@ you are permitted to use. You use this feed at your own risk.";
 
 /// The FlexJSON feed. Indices are column numbers in a row `[key, v1, .., vn]`; -1 means
 /// "detect on the next request".
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct FlexJson {
     pub url: String,
     pub timeout_s: u64,
@@ -765,6 +740,29 @@ pub struct FlexJson {
     pub index_track: i32,
     pub index_speed: i32,
     pub index_reg: i32,
+    inference: Option<Inference>,
+}
+
+impl std::fmt::Debug for FlexJson {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FlexJson")
+            .field("timeout_s", &self.timeout_s)
+            .field("units_alt", &self.units_alt)
+            .field("units_speed", &self.units_speed)
+            .field("min_elements", &self.min_elements)
+            .field("min_planes", &self.min_planes)
+            .field("index_hex", &self.index_hex)
+            .field("index_utc", &self.index_utc)
+            .field("index_call", &self.index_call)
+            .field("index_type", &self.index_type)
+            .field("index_lat", &self.index_lat)
+            .field("index_lon", &self.index_lon)
+            .field("index_alt", &self.index_alt)
+            .field("index_track", &self.index_track)
+            .field("index_speed", &self.index_speed)
+            .field("index_reg", &self.index_reg)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Default for FlexJson {
@@ -786,6 +784,7 @@ impl Default for FlexJson {
             index_track: -1,
             index_speed: -1,
             index_reg: -1,
+            inference: None,
         }
     }
 }
@@ -818,81 +817,39 @@ impl FlexJson {
         ]
     }
 
-    /// Detect the missing indices, then map every row.
     fn planes(&mut self, json: &str, now: DateTime<Utc>) -> Result<Vec<FeedPlane>, FeedError> {
         let root = parse_json(json)?;
-        let (rows, n) = plane_rows(&root)?;
-        let mut detected = vec![false; n];
-        for i in self.indices() {
-            if let Some(d) = usize::try_from(i).ok().and_then(|i| detected.get_mut(i)) {
-                *d = true;
-            }
-        }
-        let c = column_info(&rows, n, &self.units_alt, &self.units_speed, now);
-        let r = rows.len();
-        let mut det = |idx: &mut i32, hits: &[usize], ok: &dyn Fn(usize) -> bool| {
-            if *idx < 0 {
-                if let Some(i) = find(hits, &mut detected, r, ok) {
-                    *idx = i as i32;
-                }
-            }
+        let (rows, width) = plane_rows(&root)?;
+        let units = Units {
+            altitude_metric: self.units_alt.trim().eq_ignore_ascii_case("m"),
+            speed_metric: self.units_speed.trim().eq_ignore_ascii_case("km/h"),
         };
-        let any = |_| true;
-        det(&mut self.index_hex, &c.hex, &any);
-        det(&mut self.index_utc, &c.utc, &any);
-        det(&mut self.index_type, &c.typ, &any);
-        det(&mut self.index_lat, &c.lat, &any);
-        det(&mut self.index_lon, &c.lon, &any);
-        det(&mut self.index_alt, &c.alt, &|i| c.mean[i] > 5000.0);
-        det(&mut self.index_track, &c.track, &|i| c.max[i] <= 360.0);
-        det(&mut self.index_speed, &c.speed, &|i| c.max[i] > 360.0);
-        det(&mut self.index_reg, &c.reg, &any);
-        for (name, idx) in [
-            ("Lat", self.index_lat),
-            ("Lon", self.index_lon),
-            ("Alt", self.index_alt),
-            ("Track", self.index_track),
-            ("Speed", self.index_speed),
-        ] {
-            if idx < 0 {
-                return Err(FeedError::Parse(format!(
-                    "[FlexJSON]: Cannot get planes, {name} index not found/not set!"
-                )));
-            }
+        let layout = infer_layout(&rows, width, self.indices(), units, now);
+        if self
+            .inference
+            .as_ref()
+            .is_some_and(|inference| inference.layout != layout)
+        {
+            self.inference = None;
         }
-        Ok(rows.iter().map(|r| self.plane(r, now)).collect())
-    }
-
-    fn plane(&self, r: &[String], now: DateTime<Utc>) -> FeedPlane {
-        // a column is read only if its index is > 0
-        let cell = |idx: i32| {
-            usize::try_from(idx)
-                .ok()
-                .filter(|&i| i > 0)
-                .and_then(|i| r.get(i))
+        let inferred = match &self.inference {
+            Some(inference) => inference.indices,
+            None => layout.resolve()?,
         };
-        let text = |idx: i32| cell(idx).and_then(|s| to_text(s)).unwrap_or_default();
-        FeedPlane {
-            hex: cell(self.index_hex)
-                .and_then(|s| to_hex(s))
-                .unwrap_or_default(),
-            time: match cell(self.index_utc) {
-                Some(s) => to_utc(s),
-                None => Some(now),
-            },
-            lat: cell(self.index_lat).map_or(f64::MIN, |s| to_latlon(s, 90.0)),
-            lon: cell(self.index_lon).map_or(f64::MIN, |s| to_latlon(s, 180.0)),
-            alt_ft: cell(self.index_alt)
-                .map_or(f64::MIN, |s| f64::from(to_alt(s, &self.units_alt))),
-            speed_kts: f64::from(
-                cell(self.index_speed).map_or(i32::MIN, |s| to_speed(s, &self.units_speed)),
-            ),
-            track: f64::from(cell(self.index_track).map_or(i32::MIN, |s| to_track(s))),
-            call: text(self.index_call),
-            type_code: text(self.index_type),
-            reg: text(self.index_reg),
-            ..FeedPlane::default()
+        let planes: Vec<_> = rows
+            .into_iter()
+            .filter_map(|row| map_row(row, &layout, &inferred, units, now))
+            .collect();
+        if planes.is_empty() {
+            return Err(FeedError::Parse(
+                "FlexJSON has no valid aircraft rows".into(),
+            ));
         }
+        self.inference = Some(Inference {
+            layout,
+            indices: inferred,
+        });
+        Ok(planes)
     }
 }
 
@@ -904,7 +861,8 @@ impl PlaneFeed for FlexJson {
     fn info(&self) -> &'static str {
         "Web feed with flexible JSON column assignment, for web feeds with unknown content. \
          The feed reads the JSON into rows of plane information and guesses which field is \
-         in which column. You can also enter the column indices yourself."
+         in which column. Set explicit indices for ambiguous fields. The legacy min_elements \
+         and min_planes settings do not filter the response."
     }
 
     fn disclaimer(&self) -> Option<&'static str> {
@@ -942,6 +900,7 @@ impl PlaneFeed for FlexJson {
     }
 
     fn load_settings(&mut self, t: &toml::Table) -> Result<(), FeedError> {
+        self.inference = None;
         set_str(t, "url", &mut self.url)?;
         set_u64(t, "timeout_s", &mut self.timeout_s)?;
         set_str(t, "units_alt", &mut self.units_alt)?;
@@ -970,11 +929,62 @@ impl PlaneFeed for FlexJson {
         if url.is_empty() {
             return Err(FeedError::Config("The URL is empty.".into()));
         }
-        let json = http_get(&url, self.timeout_s, None)?;
+        let json = http_get_bounded(&url, self.timeout_s, None, FLEX_JSON_BYTES)?;
         self.planes(&json, now)
     }
 
     fn stop(&mut self, _args: &FeedArgs) -> Result<(), FeedError> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn finding_77_column_statistics_ignore_missing_values() {
+        let mut stats = NumericStats::default();
+        for cell in [Cell::Number("-9"), Cell::Number("-3"), Cell::Missing] {
+            if let Some(value) = cell.number() {
+                stats.add(value);
+            }
+        }
+        assert_eq!(
+            (stats.min, stats.max, stats.mean, stats.samples),
+            (-9.0, -3.0, -6.0, 2)
+        );
+    }
+
+    #[test]
+    fn finding_77_inference_commits_only_after_a_usable_layout() {
+        let mut feed = FlexJson::default();
+        let settings: toml::Table = "index_lat=2\nindex_lon=3".parse().unwrap();
+        feed.load_settings(&settings).unwrap();
+        let now = DateTime::from_timestamp(2_147_483_647, 0).unwrap();
+        let valid = r#"[["3C0001",50.25,10.25,12000,80,430,2147484647]]"#;
+        let planes = feed.planes(valid, now).unwrap();
+        assert_eq!(planes[0].time, DateTime::from_timestamp(2_147_484_647, 0));
+        assert!(feed.inference.is_some());
+        assert_eq!(feed.settings()["index_hex"].as_integer(), Some(-1));
+
+        let ambiguous = r#"[["3C0001",50.25,10.25,12000,80,90]]"#;
+        assert!(matches!(
+            feed.planes(ambiguous, now),
+            Err(FeedError::Config(_))
+        ));
+        assert!(feed.inference.is_none());
+        feed.planes(valid, now).unwrap();
+        assert!(feed.inference.is_some());
+        feed.load_settings(&settings).unwrap();
+        assert!(feed.inference.is_none());
+    }
+
+    #[test]
+    fn finding_375_flexjson_parser_caps_utf16_units_independently_of_transport() {
+        let exact = format!("\"{}\"", "🙂".repeat((MAX_JSON_LENGTH - 2) / 2));
+        assert!(exact.len() > MAX_JSON_LENGTH);
+        assert!(parse_json(&exact).is_ok());
+        assert!(parse_json(&(exact + " ")).is_err());
     }
 }

@@ -9,9 +9,9 @@
 /// - `0x33`: 6 timestamp bytes, 1 signal byte, 14 frame bytes;
 /// - anything else (including `0x31` Mode A/C): skip the two bytes and keep scanning.
 ///
-/// Escaped `0x1A 0x1A` pairs inside a frame are **not** unescaped, as in C#: the frame keeps
-/// both bytes and its tail moves into the next scan (logic-findings #40). The Beast MLAT
-/// timestamp is ignored; C# discards it in nearly all cases (logic-findings #41).
+/// Escaped `0x1A 0x1A` pairs inside a frame are unescaped before counting frame bytes
+/// (logic-fixes #40). The Beast MLAT timestamp is ignored; C# discards it in nearly all cases
+/// (logic-findings #41).
 #[derive(Debug, Default, Clone)]
 pub struct BeastReader {
     buf: Vec<u8>,
@@ -23,7 +23,7 @@ impl BeastReader {
         self.buf.extend_from_slice(bytes);
         let mut out = Vec::new();
         let mut i = 0;
-        loop {
+        'scan: loop {
             // scan for the escape byte
             while i < self.buf.len() && self.buf[i] != 0x1A {
                 i += 1;
@@ -39,16 +39,32 @@ impl BeastReader {
                     continue;
                 }
             };
-            let end = i + 2 + 6 + 1 + len;
-            if end > self.buf.len() {
-                break;
+            let needed = 6 + 1 + len;
+            let mut body = Vec::with_capacity(needed);
+            let mut j = i + 2;
+            while body.len() < needed {
+                if j >= self.buf.len() {
+                    break 'scan;
+                }
+                if self.buf[j] != 0x1A {
+                    body.push(self.buf[j]);
+                    j += 1;
+                    continue;
+                }
+                if j + 1 >= self.buf.len() {
+                    break 'scan;
+                }
+                if self.buf[j + 1] == 0x1A {
+                    body.push(0x1A);
+                    j += 2;
+                    continue;
+                }
+                i = j;
+                continue 'scan;
             }
-            let hex: String = self.buf[end - len..end]
-                .iter()
-                .map(|b| format!("{b:02X}"))
-                .collect();
+            let hex: String = body[7..].iter().map(|b| format!("{b:02X}")).collect();
             out.push(format!("*{hex};"));
-            i = end;
+            i = j;
         }
         self.buf.drain(..i);
         out

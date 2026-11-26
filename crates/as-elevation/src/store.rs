@@ -44,8 +44,10 @@ const SCHEMA: &[&str] = &[
         MaxElv INTEGER, MaxLat REAL, MaxLon REAL,
         Rows INTEGER NOT NULL, Columns INTEGER NOT NULL,
         Elv BLOB NOT NULL, LastUpdated INTEGER NOT NULL)",
-    crate::path::PATH_SCHEMA,
+    crate::path::LEGACY_PATH_SCHEMA,
     crate::obstruction::OBSTRUCTION_SCHEMA,
+    // Stage 6 #10/#289: only the computed paths need rebuilding.
+    crate::path::PATH_CACHE_MIGRATION,
 ];
 
 struct ModelDb {
@@ -81,8 +83,7 @@ impl ElevationStore {
     fn open_inner(dir: &Path, capacity: Option<usize>) -> Result<Self, ElevationError> {
         let mut dbs = HashMap::new();
         for model in ElevationModel::ALL {
-            let conn = as_db::open(&dir.join(model.db_file_name()))?;
-            as_db::migrate(&conn, SCHEMA)?;
+            let conn = as_db::open_versioned(&dir.join(model.db_file_name()), SCHEMA)?;
             let cap = capacity.unwrap_or(DEFAULT_CACHE_BUDGET_BYTES / tile_size_bytes(model));
             dbs.insert(
                 model,
@@ -285,14 +286,6 @@ impl ElevationStore {
         lon: f64,
     ) -> Result<Option<Arc<ElevationTile>>, ElevationError> {
         let db = self.db(model)?;
-        {
-            let cache = lock(&db.cache);
-            if let Some(t) = &cache.last {
-                if t.contains(lat, lon) {
-                    return Ok(Some(t.clone()));
-                }
-            }
-        }
         let loc = maidenhead::loc_from_lat_lon(lat, lon, false, 3, false)?
             .ok_or(ElevationError::InvalidCoordinate { lat, lon })?;
         let mut td = lock(&db.cache).get(&loc);
@@ -302,9 +295,6 @@ impl ElevationStore {
                 lock(&db.cache).offer(&loc, t.clone());
                 td = Some(t);
             }
-        }
-        if let Some(t) = &td {
-            lock(&db.cache).last = Some(t.clone());
         }
         Ok(td)
     }
@@ -320,8 +310,17 @@ impl ElevationStore {
         if !(-90.0..=90.0).contains(&lat) || !(-180.0..=180.0).contains(&lon) {
             return Err(ElevationError::InvalidCoordinate { lat, lon });
         }
+        let lon = as_geo::latlon::wrap_longitude(lon);
         let mut e = match self.tile_for(model, lat, lon)? {
-            Some(t) => t.get_elevation(lat, lon),
+            Some(t) => {
+                // The pole belongs to the last tile. Sample the centre of its top row.
+                let lat = if lat == 90.0 {
+                    90.0 - (1.0 / 24.0) / (2.0 * t.rows as f64)
+                } else {
+                    lat
+                };
+                t.get_elevation(lat, lon)
+            }
             None => TILE_MISSING,
         };
         if set_invalid_to_zero && e <= TILE_MISSING {

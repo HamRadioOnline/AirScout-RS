@@ -1,15 +1,13 @@
 //! OpenSky Network feed (`AirScout.PlaneFeeds.Plugin.OpenSky`): `/api/states/all`,
 //! anonymous or with an OAuth2 client-credentials token.
 //!
-//! Faithful to the C# plugin: the configured URL is requested as is, so the covered area is
-//! never sent (the substituted URL is computed and not used); `Type` is read from the
-//! longitude field; a null callsign drops the state. Unlike C#, the token is cached until
-//! it expires instead of being fetched for every request.
+//! Each observation takes its position timestamp from the OpenSky state vector.
 
-use super::{client, parse_err, send, set_str};
-use crate::vars::format_double;
+use super::{client, epoch_seconds, parse_err, send, set_str};
+use crate::vars::{format_double, substitute_supported};
 use crate::{FeedArgs, FeedError, FeedPlane, PlaneFeed};
-use chrono::DateTime;
+use as_aircraft::AltitudeProvenance;
+use chrono::Utc;
 use reqwest::blocking::Client;
 use serde_json::Value;
 use std::time::{Duration, Instant};
@@ -57,12 +55,6 @@ fn prop_double(v: Option<&Value>) -> f64 {
     }
 }
 
-/// `ReadPropertyInt`.
-fn prop_int(v: Option<&Value>) -> Option<i32> {
-    let d = prop_double(v);
-    (d != f64::MIN && d >= f64::from(i32::MIN) && d <= f64::from(i32::MAX)).then_some(d as i32)
-}
-
 /// `ReadPropertyBool`: the value's text equals "true" (case-insensitive).
 fn prop_bool(v: Option<&Value>) -> bool {
     prop_string(v).is_some_and(|s| s.to_lowercase() == "true")
@@ -74,14 +66,16 @@ fn map_state(ac: &Value) -> Option<FeedPlane> {
         return None;
     }
     let hex = prop_string(a.first())?.to_uppercase().trim().to_string();
-    let call = prop_string(a.get(1))?.to_uppercase().trim().to_string();
+    let call = prop_string(a.get(1))
+        .unwrap_or_default()
+        .trim()
+        .to_uppercase();
     let lon = prop_double(a.get(5));
     let lat = prop_double(a.get(6));
     let alt_ft = prop_double(a.get(13)) * 3.28084;
     let track = prop_double(a.get(10));
     let speed_kts = prop_double(a.get(9)) * 3.6 / 1.852;
-    let time = DateTime::from_timestamp(i64::from(prop_int(a.get(3))?), 0)?;
-    let type_code = prop_string(a.get(5)).unwrap_or_default();
+    let time = epoch_seconds(prop_double(a.get(3)))?;
     if prop_bool(a.get(8)) || speed_kts <= 0.0 {
         return None;
     }
@@ -92,9 +86,14 @@ fn map_state(ac: &Value) -> Option<FeedPlane> {
         lat,
         lon,
         alt_ft,
+        // index 13 is `geo_altitude`; index 7 (`baro_altitude`) is not read
+        altitude_provenance: if alt_ft.is_finite() && alt_ft != f64::MIN {
+            AltitudeProvenance::Geometric
+        } else {
+            AltitudeProvenance::Unknown
+        },
         track,
         speed_kts,
-        type_code,
         ..FeedPlane::default()
     })
 }
@@ -102,8 +101,7 @@ fn map_state(ac: &Value) -> Option<FeedPlane> {
 /// Map one `/api/states/all` response.
 pub fn parse(json: &str) -> Result<Vec<FeedPlane>, FeedError> {
     if !json.starts_with('{') {
-        let head: String = json.chars().take(80).collect();
-        return Err(FeedError::Parse(format!("Response: {head}")));
+        return Err(FeedError::Parse("expected an OpenSky JSON object".into()));
     }
     let root: Value = serde_json::from_str(json).map_err(parse_err)?;
     Ok(match root.get("states").and_then(Value::as_array) {
@@ -125,11 +123,7 @@ pub struct OpenSky {
 
 impl std::fmt::Debug for OpenSky {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("OpenSky")
-            .field("url", &self.url)
-            .field("token_url", &self.token_url)
-            .field("oauth_client_id", &self.oauth_client_id)
-            .finish_non_exhaustive()
+        f.debug_struct("OpenSky").finish_non_exhaustive()
     }
 }
 
@@ -188,6 +182,33 @@ impl OpenSky {
     }
 }
 
+fn is_stock_endpoint(url: &str) -> bool {
+    let Some((scheme, rest)) = url.split_once("://") else {
+        return false;
+    };
+    let Some((authority, path)) = rest.split_once('/') else {
+        return false;
+    };
+    let authority = authority.strip_suffix(":443").unwrap_or(authority);
+    scheme.eq_ignore_ascii_case("https")
+        && authority.eq_ignore_ascii_case("opensky-network.org")
+        && path == "api/states/all"
+}
+
+fn request_url(template: &str, args: &FeedArgs) -> String {
+    let url = substitute_supported(template, args, Utc::now());
+    if !is_stock_endpoint(&url) {
+        return url;
+    }
+    format!(
+        "{url}?lamin={}&lomin={}&lamax={}&lomax={}",
+        format_double(args.min_lat),
+        format_double(args.min_lon),
+        format_double(args.max_lat),
+        format_double(args.max_lon)
+    )
+}
+
 impl PlaneFeed for OpenSky {
     fn name(&self) -> &'static str {
         "OpenSky"
@@ -223,15 +244,6 @@ impl PlaneFeed for OpenSky {
 
     fn load_settings(&mut self, t: &toml::Table) -> Result<(), FeedError> {
         set_str(t, "url", &mut self.url)?;
-        // `OpenSky.cs:193-195` (`Load`) at fbadef0, "correct URL with V1.4.7.0 automatically":
-        // a saved URL on the old API host is rewritten; it runs after the older V1.4.2.1 and
-        // V1.4.4.0 URL fixes, so it decides the final value (the `:187` reset reads legacy XML
-        // only; see #340). C# then calls `Save(true)`; a plugin cannot save here, so the migrated
-        // value lives in the plugin and the next load migrates again.
-        self.url = self.url.replace(
-            "https://api.opensky-network.org/api/",
-            "https://opensky-network.org/api/",
-        );
         set_str(t, "token_url", &mut self.token_url)?;
         set_str(t, "oauth_client_id", &mut self.oauth_client_id)?;
         set_str(t, "oauth_secret", &mut self.oauth_secret)?;
@@ -243,9 +255,9 @@ impl PlaneFeed for OpenSky {
         Ok(())
     }
 
-    fn get_planes(&mut self, _args: &FeedArgs) -> Result<Vec<FeedPlane>, FeedError> {
+    fn get_planes(&mut self, args: &FeedArgs) -> Result<Vec<FeedPlane>, FeedError> {
         let c = self.client()?;
-        let mut req = c.get(&self.url);
+        let mut req = c.get(request_url(&self.url, args));
         if !self.oauth_client_id.is_empty() && !self.oauth_secret.is_empty() {
             req = req.bearer_auth(self.access_token(&c)?);
         }
@@ -255,5 +267,46 @@ impl PlaneFeed for OpenSky {
 
     fn stop(&mut self, _args: &FeedArgs) -> Result<(), FeedError> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn finding_64_stock_bbox_applies_only_to_the_exact_canonical_endpoint() {
+        let args = FeedArgs {
+            min_lat: 47.5,
+            min_lon: -11.25,
+            max_lat: 54.0,
+            max_lon: 8.5,
+            ..Default::default()
+        };
+        for stock in [
+            DEFAULT_URL,
+            "HTTPS://OPENSKY-NETWORK.ORG:443/api/states/all",
+        ] {
+            assert_eq!(
+                request_url(stock, &args),
+                format!("{stock}?lamin=47.5&lomin=-11.25&lamax=54&lomax=8.5")
+            );
+        }
+        for custom in [
+            "http://opensky-network.org/api/states/all",
+            "https://opensky-network.org:444/api/states/all",
+            "https://u@opensky-network.org/api/states/all",
+            "https://opensky-network.org/api/states/all?",
+            "https://opensky-network.org/api/states/all#",
+            "https://opensky-network.org/api/../api/states/all",
+            "https://opensky-network.org/api/states/all/extension",
+            "https://localhost/api/states/all",
+        ] {
+            assert_eq!(request_url(custom, &args), custom);
+        }
+        assert_eq!(
+            request_url("http://localhost/?x=%2f%MINLAT%&y=%UNKNOWN%", &args),
+            "http://localhost/?x=%2f47.5&y=%UNKNOWN%"
+        );
     }
 }

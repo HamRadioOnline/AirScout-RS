@@ -155,6 +155,9 @@ pub fn decode(bytes: &[u8]) -> Result<Decoded, DecodeError> {
     }
     let data: String = chars.filter(|&c| c != '"').collect();
     let data = data.trim_end_matches('?').to_string();
+    // `Checksum` is reported as `last | 0x80` (as `WinTest.cs:98`), but `HasChecksum` must
+    // compare the raw trailing byte (`WinTest.cs:99`): masking bit 7 back on would accept a
+    // checksum byte corrupted only in bit 7.
     let cs = last | 0x80;
     Ok(Decoded {
         msg: WtMessage {
@@ -165,6 +168,6 @@ pub fn decode(bytes: &[u8]) -> Result<Decoded, DecodeError> {
             extra: String::new(),
         },
         checksum: cs,
-        checksum_ok: cs == checksum(&bytes[..bytes.len() - 1]),
+        checksum_ok: last == checksum(&bytes[..bytes.len() - 1]),
     })
 }

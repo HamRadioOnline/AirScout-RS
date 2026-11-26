@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 const CORE_JS: &str = "resources/js/airscout.core.js";
+const SCOUTBASE_CORE_JS: &str = "resources/js/scoutbase.core.js";
 const ORIGIN_LINE: &str = "static _rootURL = window.location.origin;";
 
 fn text(a: &Asset) -> &'static str {
@@ -237,6 +238,13 @@ fn core_js_uses_page_origin() {
     assert!(!js.contains("_rootURL = \"http"));
 }
 
+#[test]
+fn finding_16_web_unit_converter_uses_correct_mile_factors() {
+    let js = text(asset("resources/js/scoutbase.core.js").unwrap());
+    assert!(js.contains("return km / 1.609344;"));
+    assert!(js.contains("return mi * 1.609344;"));
+}
+
 /// Every dotted quad in `s` with four octets of at most 255.
 fn dotted_quads(s: &str) -> Vec<[u8; 4]> {
     let b = s.as_bytes();
@@ -406,8 +414,19 @@ fn unchanged_from_upstream() {
     }
     for a in ASSETS.iter().filter(|a| !a.path.starts_with("LICENSES/")) {
         let orig = std::fs::read(root.join(a.path)).unwrap_or_else(|e| panic!("{}: {e}", a.path));
-        if a.path != CORE_JS {
+        if a.path != CORE_JS && a.path != SCOUTBASE_CORE_JS {
             assert!(orig == a.bytes, "{} differs from upstream", a.path);
+            continue;
+        }
+        if a.path == SCOUTBASE_CORE_JS {
+            let ours: Vec<&[u8]> = a.bytes.split(|b| *b == b'\n').collect();
+            let theirs: Vec<&[u8]> = orig.split(|b| *b == b'\n').collect();
+            assert_eq!(ours.len(), theirs.len(), "line count");
+            let changed: Vec<usize> = (0..ours.len())
+                .filter(|i| ours[*i] != theirs[*i])
+                .map(|i| i + 1)
+                .collect();
+            assert_eq!(changed, [1093, 1098]);
             continue;
         }
         let ours: Vec<&[u8]> = a.bytes.split(|b| *b == b'\n').collect();

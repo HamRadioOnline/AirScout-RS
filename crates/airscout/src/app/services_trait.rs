@@ -36,6 +36,12 @@ pub trait Services {
     fn start_background(&mut self, _settings: &Settings, _generation: u64) {}
     /// Cancel the background workers (exit); returns at once. The default does nothing.
     fn stop_background(&mut self) {}
+    /// Number of background worker threads still running (the calculators, updaters and
+    /// preloader). A delete or clear is refused while this is above zero (#155). The default is
+    /// idle (0).
+    fn background_jobs(&self) -> usize {
+        0
+    }
     /// `PropagationData.Database.NearFieldSuppression` [m] (MapDlg.cs:1306): set only from here,
     /// when the services start and when Options is applied, never by a worker thread.
     fn set_near_field_suppression(&mut self, _m: f64) {}

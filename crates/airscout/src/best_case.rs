@@ -7,8 +7,9 @@
 //! The two callers differ in the original and so here:
 //! - the UI path ([`ui_position`]) asks the enabled models in `GetElevation` order and takes the
 //!   first one that has a tile with a real maximum;
-//! - the calculator ([`calculator_shift`]) asks only its own model and shifts whenever that
-//!   model has the tile (it does not check the maximum).
+//! - the calculator ([`calculator_shift`]) asks only its own model and shifts only when that
+//!   model has a stored tile with a real maximum (a void tile keeps the station at its locator
+//!   position, #94).
 
 use as_elevation::{ElevationModel, ElevationStore, ElvMinMaxInfo, ELV_MISSING};
 use as_geo::latlon::GPoint;
@@ -83,14 +84,17 @@ pub(crate) fn effective_position(
 }
 
 /// Best-case shift of the calculator (`PathCalculator.OnDoWork`): the tile info of `model` if
-/// `pos` is imprecise and the tile is stored, whatever its maximum. The caller takes position
-/// and elevation from it.
+/// `pos` is imprecise and the tile is stored with a real maximum. A stored tile whose maximum is
+/// the void flag (`ELV_MISSING`) does not shift the station (#94). The caller takes position and
+/// elevation from it.
 pub(crate) fn calculator_shift(
     model: ElevationModel,
     pos: GPoint,
     find: impl FnOnce(ElevationModel, &str) -> Option<ElvMinMaxInfo>,
 ) -> Result<Option<ElvMinMaxInfo>, String> {
-    Ok(imprecise_loc(pos)?.and_then(|loc| find(model, &loc)))
+    Ok(imprecise_loc(pos)?
+        .and_then(|loc| find(model, &loc))
+        .filter(|info| info.max_elv != i32::from(ELV_MISSING)))
 }
 
 #[cfg(test)]
@@ -182,13 +186,23 @@ mod tests {
     }
 
     #[test]
-    fn calculator_asks_only_its_model_and_does_not_check_the_maximum() {
+    fn calculator_skips_a_void_tile_but_shifts_on_a_real_maximum() {
+        // A stored tile with only the void flag (`max_elv == ELV_MISSING`) must not shift the
+        // station to its stored `(0, 0)` (#94).
         let r = calculator_shift(ElevationModel::Srtm3, centre(), |m, loc| {
             assert_eq!((m, loc), (ElevationModel::Srtm3, "JO50AB"));
             Some(info(i32::from(ELV_MISSING), 0.0, 0.0))
         })
         .unwrap();
-        assert_eq!(r.unwrap().max_lat, 0.0);
+        assert!(r.is_none());
+        // a real maximum still shifts, and only the calculator's own model is asked
+        let r = calculator_shift(ElevationModel::Srtm3, centre(), |m, loc| {
+            assert_eq!((m, loc), (ElevationModel::Srtm3, "JO50AB"));
+            Some(info(300, 50.01, 10.02))
+        })
+        .unwrap();
+        assert_eq!(r.unwrap().max_lat, 50.01);
+        // a precise position is never looked up
         let precise = GPoint::new(centre().lat + 0.001, centre().lon);
         let r =
             calculator_shift(ElevationModel::Srtm3, precise, |_, _| panic!("no lookup")).unwrap();

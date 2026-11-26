@@ -41,21 +41,21 @@ pub fn update_square(
         .get(&url)
         .header(reqwest::header::USER_AGENT, user_agent())
         .send()
-        .map_err(|e| ElevationError::Http(format!("{url}: {e}")))?;
+        .map_err(|_| ElevationError::Http("request or response body failed".into()))?;
     if resp.status() == reqwest::StatusCode::NOT_FOUND {
-        return Err(ElevationError::NotFound(url));
+        return Err(ElevationError::NotFound("HTTP 404".into()));
     }
     if !resp.status().is_success() {
         return Err(ElevationError::Http(format!(
-            "{url}: HTTP {}",
-            resp.status()
+            "HTTP {}",
+            resp.status().as_u16()
         )));
     }
     let bytes = resp
         .bytes()
-        .map_err(|e| ElevationError::Http(format!("{url}: {e}")))?;
+        .map_err(|_| ElevationError::Http("request or response body failed".into()))?;
     let mut z = zip::ZipArchive::new(std::io::Cursor::new(bytes))
-        .map_err(|e| ElevationError::Corrupt(format!("{url}: {e}")))?;
+        .map_err(|_| ElevationError::Corrupt("invalid square archive".into()))?;
     let mut tiles = Vec::with_capacity(z.len());
     for i in 0..z.len() {
         if cancel.is_some_and(|c| c.load(Ordering::Relaxed)) {
@@ -63,14 +63,23 @@ pub fn update_square(
         }
         let mut f = z
             .by_index(i)
-            .map_err(|e| ElevationError::Corrupt(format!("{url}: {e}")))?;
+            .map_err(|_| ElevationError::Corrupt("invalid square archive".into()))?;
         if !f.name().to_ascii_lowercase().ends_with(".loc") {
             continue;
         }
         let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| ElevationError::Corrupt(format!("{url}: {}: {e}", f.name())))?;
-        tiles.push(ElevationTile::from_loc_json(&s)?);
+        f.read_to_string(&mut s).map_err(|_| {
+            ElevationError::Corrupt("could not decode square archive member".into())
+        })?;
+        tiles.push(
+            ElevationTile::from_loc_json(&s).map_err(|error| match error {
+                ElevationError::Parse(error) => ElevationError::ArchiveTile {
+                    line: error.line(),
+                    column: error.column(),
+                },
+                _ => ElevationError::Corrupt("invalid square archive tile".into()),
+            })?,
+        );
     }
     store.insert_tiles_atomic(model, &tiles)?;
     progress(UpdateProgress::Square {

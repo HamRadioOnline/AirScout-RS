@@ -17,7 +17,22 @@ pub enum PropagationError {
     Elevation(#[from] ElevationError),
     #[error("database error: {0}")]
     Db(#[from] rusqlite::Error),
+    #[error("database schema version {actual} is newer than supported version {supported}")]
+    SchemaAhead { actual: i64, supported: i64 },
 }
+
+impl From<as_db::DbError> for PropagationError {
+    fn from(err: as_db::DbError) -> Self {
+        match err {
+            as_db::DbError::SchemaAhead { actual, supported } => {
+                Self::SchemaAhead { actual, supported }
+            }
+            as_db::DbError::Sqlite(err) => Self::Db(err),
+        }
+    }
+}
+
+const PATH_ALGORITHM_VERSION: i64 = 3;
 
 const SCHEMA: &[&str] = &[
     "CREATE TABLE IF NOT EXISTS PropagationPath (
@@ -26,7 +41,17 @@ const SCHEMA: &[&str] = &[
     QRG REAL NOT NULL, Radius REAL NOT NULL, F1_Clearance REAL NOT NULL, StepWidth REAL NOT NULL,
     Eps1_Min REAL, Eps2_Min REAL, LastUpdated INTEGER NOT NULL,
     PRIMARY KEY (Lat1, Lon1, h1, Lat2, Lon2, h2, QRG, Radius, F1_Clearance, StepWidth))",
-    crate::horizon::HORIZON_SCHEMA,
+    crate::horizon::LEGACY_HORIZON_SCHEMA,
+    // Stage 6: new Fresnel geometry and an expanded primary key (#354).
+    "DROP TABLE PropagationPath;
+     CREATE TABLE PropagationPath (
+        Lat1 REAL NOT NULL, Lon1 REAL NOT NULL, h1 REAL NOT NULL,
+        Lat2 REAL NOT NULL, Lon2 REAL NOT NULL, h2 REAL NOT NULL,
+        QRG REAL NOT NULL, Radius REAL NOT NULL, F1_Clearance REAL NOT NULL, StepWidth REAL NOT NULL,
+        NearField REAL NOT NULL, Eps1_Min REAL, Eps2_Min REAL, LastUpdated INTEGER NOT NULL,
+        AlgorithmVersion INTEGER NOT NULL,
+        PRIMARY KEY (Lat1, Lon1, h1, Lat2, Lon2, h2, QRG, Radius, F1_Clearance, StepWidth, NearField))",
+    crate::horizon::HORIZON_CACHE_MIGRATION,
 ];
 
 /// Propagation calculator with per-model SQLite caches (`propagation_<model>.db3`).
@@ -49,8 +74,10 @@ impl PropagationEngine {
     pub fn open(elevation: Arc<ElevationStore>, dir: &Path) -> Result<Self, PropagationError> {
         let mut conns = HashMap::new();
         for model in ElevationModel::ALL {
-            let conn = as_db::open(&dir.join(format!("propagation_{}", model.db_file_name())))?;
-            as_db::migrate(&conn, SCHEMA)?;
+            let conn = as_db::open_versioned(
+                &dir.join(format!("propagation_{}", model.db_file_name())),
+                SCHEMA,
+            )?;
             conns.insert(model, Mutex::new(conn));
         }
         Ok(Self {
@@ -122,6 +149,19 @@ impl PropagationEngine {
         cancel: Option<&AtomicBool>,
         coverage: Option<Coverage>,
     ) -> Result<Option<PropagationPath>, PropagationError> {
+        let near_field_m = self.near_field_suppression_m();
+        self.compute_path(model, p, save, cancel, coverage, near_field_m)
+    }
+
+    fn compute_path(
+        &self,
+        model: ElevationModel,
+        p: &PathParams,
+        save: bool,
+        cancel: Option<&AtomicBool>,
+        coverage: Option<Coverage>,
+        near_field_m: f64,
+    ) -> Result<Option<PropagationPath>, PropagationError> {
         let found =
             self.elevation
                 .find_path(model, p.lat1, p.lon1, p.lat2, p.lon2, p.step_width_m)?;
@@ -144,10 +184,11 @@ impl PropagationEngine {
         };
         let mut eps1_min = f64::MIN;
         let mut eps2_min = f64::MIN;
-        let nf = self.near_field_suppression_m() / 1000.0;
+        let nf = near_field_m / 1000.0;
+        let distance = ep.distance();
         for i in 0..ep.count {
             let dist1 = i as f64 * p.step_width_m / 1000.0;
-            let dist2 = (ep.count - i - 1) as f64 * p.step_width_m / 1000.0;
+            let dist2 = (distance - dist1).max(0.0);
             let f1c1 = f1_radius(p.qrg_ghz, dist1, dist2) * p.f1_clearance;
             let f1c2 = f1_radius(p.qrg_ghz, dist2, dist1) * p.f1_clearance;
             let elv = ep.path.get(i).copied().unwrap_or(0) as f64;
@@ -174,8 +215,8 @@ impl PropagationEngine {
             }
         }
         let pp = PropagationPath::new(*p, eps1_min, eps2_min, ep.valid);
-        if pp.valid && save {
-            self.insert_path_if_newer(model, &pp)?;
+        if pp.valid && save && !near_field_m.is_nan() {
+            self.insert_path_if_newer(model, &pp, near_field_m)?;
         }
         Ok(Some(pp))
     }
@@ -188,10 +229,11 @@ impl PropagationEngine {
         save: bool,
         cancel: Option<&AtomicBool>,
     ) -> Result<Option<PropagationPath>, PropagationError> {
-        if let Some(pp) = self.find_path(model, p)? {
+        let near_field_m = self.near_field_suppression_m();
+        if let Some(pp) = self.find_path_with_near_field(model, p, near_field_m)? {
             return Ok(Some(pp));
         }
-        self.create_path(model, p, save, cancel)
+        self.compute_path(model, p, save, cancel, None, near_field_m)
     }
 
     /// `PropagationPathFind`; the local obstruction is applied on load (not part of the key).
@@ -200,12 +242,22 @@ impl PropagationEngine {
         model: ElevationModel,
         p: &PathParams,
     ) -> Result<Option<PropagationPath>, PropagationError> {
+        self.find_path_with_near_field(model, p, self.near_field_suppression_m())
+    }
+
+    fn find_path_with_near_field(
+        &self,
+        model: ElevationModel,
+        p: &PathParams,
+        near_field_m: f64,
+    ) -> Result<Option<PropagationPath>, PropagationError> {
         let conn = self.conn(model)?;
         let row = conn
             .query_row(
                 "SELECT Eps1_Min, Eps2_Min, LastUpdated FROM PropagationPath
                  WHERE Lat1 = ?1 AND Lon1 = ?2 AND h1 = ?3 AND Lat2 = ?4 AND Lon2 = ?5 AND h2 = ?6
-                   AND QRG = ?7 AND Radius = ?8 AND F1_Clearance = ?9 AND StepWidth = ?10",
+                   AND QRG = ?7 AND Radius = ?8 AND F1_Clearance = ?9 AND StepWidth = ?10
+                   AND NearField = ?11 AND AlgorithmVersion = ?12",
                 params![
                     p.lat1,
                     p.lon1,
@@ -216,7 +268,9 @@ impl PropagationEngine {
                     p.qrg_ghz,
                     p.radius_km,
                     p.f1_clearance,
-                    p.step_width_m
+                    p.step_width_m,
+                    near_field_m,
+                    PATH_ALGORITHM_VERSION
                 ],
                 |r| {
                     Ok((
@@ -238,16 +292,23 @@ impl PropagationEngine {
         &self,
         model: ElevationModel,
         pp: &PropagationPath,
+        near_field_m: f64,
     ) -> Result<(), PropagationError> {
         let p = &pp.params;
         let lu = pp.last_updated.timestamp_nanos_opt().unwrap_or(i64::MAX);
         self.conn(model)?.execute(
-            "INSERT INTO PropagationPath (Lat1, Lon1, h1, Lat2, Lon2, h2, QRG, Radius, F1_Clearance, StepWidth, Eps1_Min, Eps2_Min, LastUpdated)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
-             ON CONFLICT (Lat1, Lon1, h1, Lat2, Lon2, h2, QRG, Radius, F1_Clearance, StepWidth) DO UPDATE SET
-               Eps1_Min = excluded.Eps1_Min, Eps2_Min = excluded.Eps2_Min, LastUpdated = excluded.LastUpdated
-             WHERE excluded.LastUpdated > PropagationPath.LastUpdated",
-            params![p.lat1, p.lon1, p.h1, p.lat2, p.lon2, p.h2, p.qrg_ghz, p.radius_km, p.f1_clearance, p.step_width_m, pp.eps1_min, pp.eps2_min, lu],
+            "INSERT INTO PropagationPath
+               (Lat1, Lon1, h1, Lat2, Lon2, h2, QRG, Radius, F1_Clearance, StepWidth,
+                NearField, Eps1_Min, Eps2_Min, LastUpdated, AlgorithmVersion)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
+             ON CONFLICT (Lat1, Lon1, h1, Lat2, Lon2, h2, QRG, Radius, F1_Clearance, StepWidth, NearField)
+             DO UPDATE SET Eps1_Min = excluded.Eps1_Min, Eps2_Min = excluded.Eps2_Min,
+               LastUpdated = excluded.LastUpdated, AlgorithmVersion = excluded.AlgorithmVersion
+             WHERE excluded.AlgorithmVersion != PropagationPath.AlgorithmVersion
+                OR excluded.LastUpdated > PropagationPath.LastUpdated",
+            params![p.lat1, p.lon1, p.h1, p.lat2, p.lon2, p.h2, p.qrg_ghz, p.radius_km,
+                p.f1_clearance, p.step_width_m, near_field_m, pp.eps1_min, pp.eps2_min, lu,
+                PATH_ALGORITHM_VERSION],
         )?;
         Ok(())
     }

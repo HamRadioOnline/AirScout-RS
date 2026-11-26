@@ -3,14 +3,13 @@ use as_aircraft::{HistJson, PlaneCategory, PlaneInfo, PlaneJson};
 use chrono::{TimeZone, Utc};
 
 #[test]
-fn units_match_original() {
+fn finding_16_units_use_si_factors() {
     assert!((ft_m(3280.84) - 1000.0).abs() < 1e-9);
     assert!((m_ft(1000.0) - 3280.84).abs() < 1e-9);
     assert!((kts_kmh(100.0) - 185.2).abs() < 1e-9);
     assert!((kmh_kts(185.2) - 100.0).abs() < 1e-9);
-    // logic-findings: km_mi multiplies instead of dividing (SupportFunctions.cs:471)
-    assert!((km_mi(10.0) - 16.09).abs() < 1e-9);
-    assert!((mi_km(16.09) - 10.0).abs() < 1e-9);
+    assert!((km_mi(10.0) - 6.213_711_922_373_339_5).abs() < 1e-12);
+    assert!((mi_km(1.0) - 1.609_344).abs() < 1e-12);
 }
 
 #[test]

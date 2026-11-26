@@ -1090,12 +1090,12 @@ class UnitConverter {
 
     static km_mi(km) {
 
-        return km * 1.609;
+        return km / 1.609344;
     }
 
     static mi_km(mi) {
 
-        return mi / 1.609;
+        return mi * 1.609344;
     }
 }
 

@@ -225,3 +225,30 @@ fn result_debug_hides_credentials() {
     t.insert("oauth_secret".into(), "s3cr3t".into());
     assert!(!format!("{:?}", FeedSettingsResult::Ok(t)).contains("s3cr3t"));
 }
+
+#[test]
+fn finding_340_editor_stores_the_canonical_endpoint() {
+    use airscout::ui::dialogs::feed_settings::FeedSettingsDlg;
+    let mut dlg = FeedSettingsDlg::new("OpenSky", None).unwrap();
+    dlg.table.insert(
+        "url".into(),
+        "https://api.opensky-network.org/api/%2F/states?lat=%MINLAT%".into(),
+    );
+    let stored = dlg.try_ok().unwrap();
+    assert_eq!(
+        stored["url"].as_str(),
+        Some("https://opensky-network.org/api/%2F/states?lat=%MINLAT%")
+    );
+}
+
+#[test]
+fn finding_329_editor_restores_the_desktop_default() {
+    use airscout::ui::dialogs::feed_settings::FeedSettingsDlg;
+    let mut dlg = FeedSettingsDlg::new("AirScoutServer", None).unwrap();
+    dlg.table.insert("url".into(), "".into());
+    dlg.restore_defaults();
+    assert_eq!(
+        dlg.table["url"].as_str(),
+        Some("http://localhost:9872/planes.json")
+    );
+}

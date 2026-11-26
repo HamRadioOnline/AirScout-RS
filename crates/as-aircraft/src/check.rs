@@ -80,37 +80,28 @@ pub fn hex(s: &str) -> bool {
     len16(&h) == 6 && h.chars().all(|c| c.is_ascii_hexdigit())
 }
 
-/// `Check_Call`. A callsign whose third character is a digit must start with a known IATA
-/// airline code, and (always) its first three characters must be a known ICAO airline. So
-/// IATA-style calls (`LH123`) never pass (logic-findings #19).
+/// `Check_Call`: shape gate plus airline discriminator shared with checked `To_Call`.
 pub fn call(s: &str, l: &dyn Lookup) -> bool {
     if s.trim().is_empty() || s.contains("[unknown]") {
         return false;
     }
-    let c = norm_upper(s);
-    let ch: Vec<char> = c.chars().collect();
-    if len16(&c) < 4 || ch.len() < 3 || c.contains('-') {
+    let c = crate::convert::call_shape(s);
+    let Some(c) = c else {
         return false;
+    };
+    match crate::convert::call_discriminator(&c) {
+        Some(crate::convert::CallDiscriminator::Iata(iata)) => l.airline_by_iata(&iata),
+        Some(crate::convert::CallDiscriminator::Icao(icao)) => l.airline_by_icao(&icao),
+        None => false,
     }
-    if ch[2].is_numeric() && !l.airline_by_iata(&ch[..2].iter().collect::<String>()) {
-        return false;
-    }
-    if !ch[0].is_alphabetic() || !ch[1].is_alphabetic() {
-        return false;
-    }
-    l.airline_by_icao(&ch[..3].iter().collect::<String>())
 }
 
-/// `Check_Reg`: long enough and contains `-` or starts with `N` or `H`.
+/// `Check_Reg`: shared shape gate with checked `To_Reg`.
 pub fn reg(s: &str, l: &dyn Lookup) -> bool {
     if s.trim().is_empty() || s.contains("[unknown]") {
         return false;
     }
-    let r = norm_upper(s);
-    if len16(&r) < l.registration_min_len() + 1 {
-        return false;
-    }
-    r.contains('-') || r.starts_with('N') || r.starts_with('H')
+    crate::convert::reg_shape(s, l.registration_min_len()).is_some()
 }
 
 /// `Check_Lat`.
@@ -153,7 +144,7 @@ pub fn not_empty(s: &str) -> bool {
 }
 
 /// `Check(PlaneInfo)`: the mandatory data. Looser than the field checks (track up to 360, speed
-/// up to 5000), and NaN positions pass. `DateTime::MIN_UTC`/`MAX_UTC` stand for C#
+/// up to 5000). `DateTime::MIN_UTC`/`MAX_UTC` stand for C#
 /// `DateTime.MinValue`/`MaxValue`.
 pub fn plane(p: &PlaneInfo) -> bool {
     if crate::convert::to_hex(&p.hex).is_none_or(|h| h.is_empty()) {
@@ -163,6 +154,14 @@ pub fn plane(p: &PlaneInfo) -> bool {
         return false;
     }
     if p.time == DateTime::<Utc>::MIN_UTC || p.time == DateTime::<Utc>::MAX_UTC {
+        return false;
+    }
+    if !p.lat.is_finite()
+        || !p.lon.is_finite()
+        || !p.alt_ft.is_finite()
+        || !p.track.is_finite()
+        || !p.speed_kts.is_finite()
+    {
         return false;
     }
     !(p.lat > 90.0

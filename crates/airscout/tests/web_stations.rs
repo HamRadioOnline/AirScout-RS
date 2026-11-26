@@ -231,7 +231,7 @@ fn best_case_follows_settings_when_not_given() {
 }
 
 #[test]
-fn best_case_without_tiles_moves_to_zero() {
+fn best_case_without_tiles_keeps_position() {
     let dir = common::data_dir_with_globe();
     let mut s = settings();
     s.elevation_enabled.globe = false;
@@ -240,24 +240,23 @@ fn best_case_without_tiles_moves_to_zero() {
         &a,
         "/location.json?call=TE2ND&loc=JO60AA&bestcaseelevation=true",
     ));
-    // 1:1: the C# `ElvMinMaxInfo` default, lat 0, lon 0, and the missing elevation as 0
-    assert_eq!(v["Lat"].as_f64(), Some(0.0));
-    assert_eq!(v["Lon"].as_f64(), Some(0.0));
-    assert_eq!(v["Elevation"], 0);
-    assert_eq!(v["Source"], 3);
-    assert_eq!(v["BestCaseElevation"], true);
+    // no tile covers the square: the station keeps its locator centre and source (#263)
+    let (lat, lon) = as_geo::maidenhead::lat_lon_from_loc(
+        "JO60AA",
+        as_geo::maidenhead::PositionInRectangle::MiddleMiddle,
+    )
+    .unwrap();
+    assert_eq!(v["Lat"].as_f64(), Some(lat));
+    assert_eq!(v["Lon"].as_f64(), Some(lon));
+    assert_eq!(v["Source"], 1);
+    assert_eq!(v["BestCaseElevation"], false);
 }
 
 #[test]
-fn web_min_max_without_tile_is_zero() {
+fn web_min_max_without_tile_is_none() {
     let dir = tempfile::tempdir().unwrap();
     let a = api(dir.path(), settings());
-    let i = web_min_max(&a.ctx.paths.store, &settings().elevation_enabled, "JO60AA");
-    assert_eq!((i.max_elv, i.min_elv), (0, 0));
-    assert_eq!(
-        (i.max_lat, i.max_lon, i.min_lat, i.min_lon),
-        (0.0, 0.0, 0.0, 0.0)
-    );
+    assert!(web_min_max(&a.ctx.paths.store, &settings().elevation_enabled, "JO60AA").is_none());
 }
 
 #[test]
@@ -345,12 +344,19 @@ fn qrv_routes() {
 }
 
 #[test]
-fn qrv_short_locator_answers_error() {
+fn qrv_coarse_locator_is_no_match() {
     let dir = tempfile::tempdir().unwrap();
     let a = api(dir.path(), settings());
-    // a 4-character locator is valid, but a QRV row needs 6 (C# throws: L8 class)
-    let body = get(&a, "/qrv.json?call=TE1ST&loc=JO50");
-    assert!(body.starts_with("Error: "), "{body}");
+    // a 4-character locator is a valid Maidenhead locator but can never match a stored
+    // six-character key: exact lookup answers "not found", not an invalid-locator error (#13)
+    assert_eq!(
+        get(&a, "/qrv.json?call=TE1ST&loc=JO50"),
+        "Error: QRV info not found in database!"
+    );
+    assert_eq!(
+        get(&a, "/qrv.json?call=TE1ST&loc=JO50&band=all"),
+        "Error: QRV info not found in database!"
+    );
 }
 
 #[test]
@@ -360,19 +366,19 @@ fn qrv_defaulted_replaces_zeros() {
     let db = &a.ctx.paths.stations;
     let z = Qrv::new("TE2ND", "JO60AA", Band::B144M, 0.0, 0.0, 0.0, Utc::now()).unwrap();
     db.qrv_insert_or_update_if_newer(&z).unwrap();
-    let q = qrv_defaulted(db, "TE2ND", "JO60AA", Band::B144M).unwrap();
+    let q = qrv_defaulted(db, "TE2ND", "JO60AA", Band::B144M, None).unwrap();
     assert_eq!(q.antenna_height, default_antenna_height(Band::B144M));
     assert_eq!(q.antenna_gain, default_antenna_gain(Band::B144M));
     assert_eq!(q.power, default_power(Band::B144M));
     // stored values stay
-    let q = qrv_defaulted(db, "TE1ST", "JO50AA", Band::B1_2G).unwrap();
+    let q = qrv_defaulted(db, "TE1ST", "JO50AA", Band::B1_2G, None).unwrap();
     assert_eq!(
         (q.antenna_height, q.antenna_gain, q.power),
         (15.0, 23.0, 400.0)
     );
     // not stored: the defaults, and nothing is written
     let before = db.qrv_count().unwrap();
-    let q = qrv_defaulted(db, "TE2ND", "JO60AA", Band::B10G).unwrap();
+    let q = qrv_defaulted(db, "TE2ND", "JO60AA", Band::B10G, None).unwrap();
     assert_eq!(q.power, default_power(Band::B10G));
     assert_eq!(db.qrv_count().unwrap(), before);
 }

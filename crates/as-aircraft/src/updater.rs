@@ -16,6 +16,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 /// `Aircrafts_UpdateURL` default.
 pub const DEFAULT_UPDATE_URL: &str = "http://www.airscout.eu/downloads/AirScout/1/AircraftData/";
+const MAX_ARCHIVE_BYTES: u64 = 256 * 1024 * 1024;
 
 /// The files on the server, in the order the original reads them. Each `<name>.zip` holds
 /// `<name>.json`.
@@ -38,10 +39,24 @@ pub struct UpdateStats {
 }
 
 fn read_zip_entry(zip_path: &Path, name: &str) -> Result<String, AircraftError> {
-    let mut z = zip::ZipArchive::new(std::fs::File::open(zip_path)?)?;
+    let mut z = zip::ZipArchive::new(std::fs::File::open(zip_path)?)
+        .map_err(|_| AircraftError::ArchiveMalformed)?;
     let mut s = String::new();
-    z.by_name(name)?.read_to_string(&mut s)?;
+    z.by_name(name)
+        .map_err(|_| AircraftError::ArchiveMalformed)?
+        .read_to_string(&mut s)
+        .map_err(|_| AircraftError::ArchiveMalformed)?;
     Ok(s)
+}
+
+fn archive_data_error(error: AircraftError) -> AircraftError {
+    match error {
+        AircraftError::Json(error) => AircraftError::ArchiveData {
+            line: error.line(),
+            column: error.column(),
+        },
+        other => other,
+    }
 }
 
 /// Import when the local zip is newer than the last successful import of `table`. The original
@@ -72,24 +87,29 @@ pub fn update_aircraft_db(
         }
         progress(&format!("Updating {name} from web database..."));
         let zip = tmp_dir.join(format!("{name}.zip"));
-        as_net::download_if_newer(client, &format!("{base_url}{name}.zip"), &zip)?;
+        as_net::download_if_newer(
+            client,
+            &format!("{base_url}{name}.zip"),
+            &zip,
+            MAX_ARCHIVE_BYTES,
+        )?;
         if !needs_import(db, name, &zip)? {
             continue;
         }
         let json = read_zip_entry(&zip, &format!("{name}.json"))?;
         let n = match name {
             "AircraftTypes" => {
-                let v = aircraft_types_from_json(&json)?;
+                let v = aircraft_types_from_json(&json).map_err(archive_data_error)?;
                 stats.aircraft_types = db.aircraft_type_bulk_insert_or_update_if_newer(&v)?;
                 stats.aircraft_types
             }
             "Airports" => {
-                let v = airports_from_json(&json)?;
+                let v = airports_from_json(&json).map_err(archive_data_error)?;
                 stats.airports = db.airport_bulk_insert_or_update_if_newer(&v)?;
                 stats.airports
             }
             "Aircrafts" => {
-                let mut v = aircrafts_from_json(&json)?;
+                let mut v = aircrafts_from_json(&json).map_err(archive_data_error)?;
                 for a in &mut v {
                     for f in [&mut a.call, &mut a.reg, &mut a.type_code] {
                         if f.is_empty() {
@@ -101,12 +121,12 @@ pub fn update_aircraft_db(
                 stats.aircrafts
             }
             "AircraftRegistrations" => {
-                let v = aircraft_registrations_from_json(&json)?;
+                let v = aircraft_registrations_from_json(&json).map_err(archive_data_error)?;
                 stats.registrations = db.registration_bulk_insert_or_update_if_newer(&v)?;
                 stats.registrations
             }
             _ => {
-                let v = airlines_from_json(&json)?;
+                let v = airlines_from_json(&json).map_err(archive_data_error)?;
                 stats.airlines = db.airline_bulk_insert_or_update_if_newer(&v)?;
                 stats.airlines
             }

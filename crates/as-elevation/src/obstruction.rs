@@ -20,34 +20,28 @@ pub struct LocalObstruction {
 }
 
 impl LocalObstruction {
-    /// Constructor reproducing `logic-findings.md` #4: with `height == None` the original zeroes
-    /// the *distance* array (so given distances are wiped) and leaves height at its default 0.
+    /// Missing heights and distances default independently to zero.
     pub fn new(
         lat: f64,
         lon: f64,
         distance: Option<[f64; 360]>,
         height: Option<[f64; 360]>,
     ) -> Self {
-        let mut distance = distance.unwrap_or([0.0; 360]);
-        let height = match height {
-            Some(h) => h,
-            None => {
-                distance = [0.0; 360];
-                [0.0; 360]
-            }
-        };
         Self {
             lat,
             lon,
-            distance,
-            height,
+            distance: distance.unwrap_or([0.0; 360]),
+            height: height.unwrap_or([0.0; 360]),
         }
     }
 
     /// `GetObstruction`: elevation angle [rad] of the obstacle at `bearing`, seen from `my_height`.
-    /// Reproduces `logic-findings.md` #8: `(int)bearing` truncation, division by zero.
+    /// Each sector is centred on its integer bearing. A missing distance has no obstruction.
     pub fn obstruction(&self, my_height: f64, bearing: f64) -> f64 {
-        let i = (bearing as i64).rem_euclid(360) as usize;
+        let i = bearing.rem_euclid(360.0).round() as usize % 360;
+        if self.distance[i] <= 0.0 {
+            return f64::MIN;
+        }
         ((self.height[i] - my_height) / self.distance[i]).atan()
     }
 }

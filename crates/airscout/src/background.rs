@@ -229,10 +229,11 @@ impl BackgroundService {
         tx: Sender<ServiceEvent>,
         cancel: Arc<AtomicBool>,
         generation: u64,
+        running: Arc<AtomicUsize>,
     ) -> Self {
         let svc = Self {
             cancel: cancel.clone(),
-            running: Arc::new(AtomicUsize::new(0)),
+            running,
         };
         let bg = &settings.background;
         let sched = Schedule {
@@ -424,7 +425,7 @@ impl BackgroundService {
         self.running.fetch_add(1, Ordering::SeqCst);
         let guard = RunningGuard(self.running.clone());
         let em = em.clone();
-        let r = std::thread::Builder::new()
+        let _ = std::thread::Builder::new()
             .name("bg-mappreloader".into())
             .spawn(move || {
                 let _guard = guard;
@@ -478,9 +479,8 @@ impl BackgroundService {
                     }
                 }
             });
-        if r.is_err() {
-            self.running.fetch_sub(1, Ordering::SeqCst);
-        }
+        // A failed spawn drops the closure and with it `guard`, which decrements the count; a
+        // second decrement here would wrap it (#155).
     }
 
     /// The `PathCalculator` of one model: starts when the stations and the model's updater have
@@ -490,7 +490,7 @@ impl BackgroundService {
         let guard = RunningGuard(self.running.clone());
         let name = format!("calc-{}", calc.model.dir_name().to_lowercase());
         let (em, idle) = (em.clone(), em.idle_set.clone());
-        let r = std::thread::Builder::new().name(name).spawn(move || {
+        let _ = std::thread::Builder::new().name(name).spawn(move || {
             let _guard = guard;
             let mut last = String::new();
             calc.run_loop(&idle, period, &mut |m| {
@@ -504,9 +504,8 @@ impl BackgroundService {
                 }
             });
         });
-        if r.is_err() {
-            self.running.fetch_sub(1, Ordering::SeqCst);
-        }
+        // A failed spawn drops the closure and with it `guard`, which decrements the count; a
+        // second decrement here would wrap it (#155).
     }
 
     fn spawn_job(
@@ -519,7 +518,7 @@ impl BackgroundService {
     ) {
         self.running.fetch_add(1, Ordering::SeqCst);
         let guard = RunningGuard(self.running.clone());
-        let r = std::thread::Builder::new()
+        let _ = std::thread::Builder::new()
             .name(name.into())
             .spawn(move || {
                 let _guard = guard;
@@ -562,9 +561,8 @@ impl BackgroundService {
                     }
                 }
             });
-        if r.is_err() {
-            self.running.fetch_sub(1, Ordering::SeqCst);
-        }
+        // A failed spawn drops the closure and with it `guard`, which decrements the count; a
+        // second decrement here would wrap it (#155).
     }
 
     /// Number of job threads still alive.
@@ -572,8 +570,10 @@ impl BackgroundService {
         self.running.clone()
     }
 
-    /// Set the cancel flag and detach: threads end after the request in flight; none reports
-    /// anything after this call.
+    /// Set the cancel flag and return at once; a thread inside a blocking request ends when that
+    /// request returns. The shared `running` counter is only decremented by a worker as it exits,
+    /// so the app's `background_jobs` stays above zero (and refuses a delete/clear) until every
+    /// worker is actually gone (#155).
     pub fn stop(self) {
         self.cancel.store(true, Ordering::Relaxed);
     }
@@ -597,4 +597,54 @@ fn finish(r: Result<(), String>, cancelled: bool) -> Outcome {
         Ok(()) => (LedState::UpToDate, String::new()),
         Err(e) => (LedState::Error, e),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Instant;
+
+    /// `stop` only sets the cancel flag and returns at once: it never waits for the workers, and
+    /// the shared `running` counter stays above zero until a worker actually exits. The app gates
+    /// a delete/clear on that counter, not on a blocking stop (#155). The worker is held at a
+    /// channel rendezvous so it is provably still running when `stop` returns.
+    #[test]
+    fn stop_is_signal_only() {
+        let cancel = Arc::new(AtomicBool::new(false));
+        let running = Arc::new(AtomicUsize::new(1));
+        let svc = BackgroundService {
+            cancel: cancel.clone(),
+            running: running.clone(),
+        };
+        let (started, started_rx) = std::sync::mpsc::sync_channel(1);
+        let (release, release_rx) = std::sync::mpsc::sync_channel(1);
+        let (r, c) = (running.clone(), cancel.clone());
+        let worker = std::thread::spawn(move || {
+            started.send(()).unwrap();
+            // a "write" that ends only when the test releases it: `stop` must not wait for it
+            let _ = release_rx.recv_timeout(Duration::from_secs(10));
+            let _ = c.load(Ordering::Relaxed);
+            r.fetch_sub(1, Ordering::SeqCst);
+        });
+        started_rx.recv().unwrap();
+        let started_at = Instant::now();
+        svc.stop();
+        assert!(
+            cancel.load(Ordering::Relaxed),
+            "stop must set the cancel flag"
+        );
+        assert!(
+            started_at.elapsed() < Duration::from_millis(50),
+            "stop must not wait for the worker"
+        );
+        // the worker is still held at the release gate: `stop` neither waited nor decremented
+        assert_eq!(
+            running.load(Ordering::SeqCst),
+            1,
+            "stop must not decrement the count"
+        );
+        release.send(()).unwrap();
+        worker.join().unwrap();
+        assert_eq!(running.load(Ordering::SeqCst), 0);
+    }
 }

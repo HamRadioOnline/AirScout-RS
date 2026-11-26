@@ -163,11 +163,12 @@ fn options_ok_in_history_keeps_workers_stopped_and_replay_time() {
 }
 
 #[test]
-fn options_ok_in_life_restarts_workers() {
+fn options_close_in_life_restarts_workers() {
     let rec = Rec::default();
     let mut st = state(&rec);
     let new = st.settings.clone();
     st.apply_options(new);
+    st.options_closed();
     assert_eq!(rec.0.borrow().bg_restarts, 1);
 }
 

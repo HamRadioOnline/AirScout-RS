@@ -87,8 +87,7 @@ fn run_mode(
     mode: PathMode,
 ) -> airscout::pipeline::TickResult {
     tick(TickInput {
-        now: now(),
-        nearest_at: now(),
+        at: now(),
         paths,
         planes,
         settings: s,
@@ -158,7 +157,7 @@ fn merge_equal_potential_prefers_nearer() {
 }
 
 #[test]
-fn nearest_is_from_last_path_only() {
+fn finding_82_global_nearest_survives_empty_later_path() {
     let s = settings();
     let near = jo50_jo61();
     let far = path(40.0, 10.0, 41.0, 12.0); // no plane within its circumcircle
@@ -166,11 +165,9 @@ fn nearest_is_from_last_path_only() {
     assert!(run(std::slice::from_ref(&near), planes(), &s)
         .nearest
         .is_some());
-    // logic-findings #82: the original resets NearestPlane for every path, so the nearest plane
-    // found on path 1 is lost when path 2 finds none (the plane stays in the active list).
     let r = run(&[near.clone(), far.clone()], planes(), &s);
-    assert!(r.nearest.is_none());
-    assert_eq!(r.highest_potential, 0);
+    assert_eq!(r.nearest.unwrap().hex, "AAAAAA");
+    assert_eq!(r.highest_potential, 100);
     assert!(r.active.contains_key("AAAAAA"));
     let r = run(&[far, near], planes(), &s);
     assert_eq!(r.nearest.unwrap().hex, "AAAAAA");
@@ -196,7 +193,7 @@ fn filter_hides_low_and_light_planes() {
 #[test]
 fn highest_potential_counts_only_filtered_planes() {
     let mut s = settings();
-    s.gui.planes_filter_min_alt_m = 12000; // above 32000 ft = 9754 m
+    s.planes_min_alt_m = 12000; // above 32000 ft = 9754 m
     let r = run(&[jo50_jo61()], vec![crossing("AAAAAA", HIGH_FT)], &s);
     assert_eq!(r.active["AAAAAA"].potential, 100);
     assert_eq!(r.highest_potential, 0);
@@ -275,6 +272,69 @@ fn alarm_needs_activate_and_distance() {
 }
 
 #[test]
+fn finding_358_alarm_uses_strict_forward_distance_cutoff() {
+    let mut s = settings();
+    s.gui.alarm_activate = true;
+    s.gui.alarm_distance_km = 2.0;
+    // 1 km north of the equator path, moving east (parallel/receding from crossing): near but no
+    // forward crossing ETA.
+    let p = plane(
+        "AAAAAA",
+        0.008993216,
+        1.0,
+        90.0,
+        HIGH_FT,
+        PlaneCategory::Medium,
+    );
+    let r = run(&[path(0.0, 0.0, 0.0, 2.0)], vec![p], &s);
+    assert!(r.alarm.is_none(), "{r:#?}");
+}
+
+#[test]
+fn finding_27_common_floor_and_zero_disabled_angle_limits() {
+    let mut s = settings();
+    s.gui.alarm_activate = true;
+    s.gui.alarm_distance_km = 1_000.0;
+    let base = run(&[jo50_jo61()], vec![crossing("AAAAAA", HIGH_FT)], &s);
+    assert_eq!(base.per_path_potential, [100]);
+    assert_eq!(base.shown.len(), 1);
+    assert!(base.alarm.is_some());
+
+    s.planes_min_alt_m = 12_000;
+    let floor = run(&[jo50_jo61()], vec![crossing("AAAAAA", HIGH_FT)], &s);
+    assert_eq!(floor.per_path_potential, [0]);
+    assert!(floor.shown.is_empty());
+    assert!(floor.alarm.is_none());
+
+    let mut s = settings();
+    let base = run(&[jo50_jo61()], vec![crossing("AAAAAA", HIGH_FT)], &s);
+    let p = &base.active["AAAAAA"];
+    let t1 = p.theta1.abs().to_degrees();
+    let t2 = p.theta2.abs().to_degrees();
+    let sq = p.squint.to_degrees();
+    let band = s.band;
+    s.band_settings.get_mut(&band).unwrap().max_squint = 0.0;
+    s.band_settings.get_mut(&band).unwrap().max_elevation = 0.0;
+    assert_eq!(
+        run(&[jo50_jo61()], vec![crossing("AAAAAA", HIGH_FT)], &s)
+            .shown
+            .len(),
+        1
+    );
+
+    s.band_settings.get_mut(&band).unwrap().max_squint = sq.max(0.1) - 0.05;
+    assert!(run(&[jo50_jo61()], vec![crossing("AAAAAA", HIGH_FT)], &s)
+        .shown
+        .is_empty());
+
+    let mut s = settings();
+    s.band_settings.get_mut(&band).unwrap().max_elevation = t1.min(t2) - 0.01;
+    assert!(run(&[jo50_jo61()], vec![crossing("AAAAAA", HIGH_FT)], &s)
+        .shown
+        .is_empty());
+}
+
+#[test]
 fn pipeline_1000_planes_is_fast() {
     let s = settings();
     let planes: Vec<_> = (0..1000)
@@ -328,25 +388,22 @@ fn pipeline_50_paths_1000_planes_is_fast() {
     assert!(el.as_millis() < 1000, "tick took {el:?}");
 }
 
-/// HISTORY passes the wall clock as `nearest_at` (MapDlg.cs:5140): `get_nearest_planes` moves the
-/// caller's planes, so the second path of MULTI sees them a day later (finding #24 interplay).
+/// HISTORY must evaluate all paths at the same replay instant: the crossing pass cannot depend on
+/// a separate wall clock.
 #[test]
-fn history_nearest_at_moves_planes_for_second_path() {
+fn history_uses_a_single_analysis_instant_across_paths() {
     let s = settings();
     let a = jo50_jo61();
     let paths = [a.clone(), a];
-    let at = |nearest_at| {
+    let at = |analysis_at| {
         tick(TickInput {
-            now: now(),
-            nearest_at,
+            at: analysis_at,
             paths: &paths,
             planes: vec![crossing("AAAAAA", HIGH_FT)],
             settings: &s,
             mode: PathMode::Multi,
         })
     };
-    let moved = at(now() + chrono::Duration::days(1));
-    assert_eq!(moved.per_path_potential, vec![100, 0]);
     let same = at(now());
     assert_eq!(same.per_path_potential, vec![100, 100]);
 }

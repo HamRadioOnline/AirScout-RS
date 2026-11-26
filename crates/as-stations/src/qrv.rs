@@ -3,7 +3,12 @@
 use crate::location::normalise_call;
 use crate::StationError;
 use as_geo::band::Band;
+use as_geo::latlon::GPoint;
+use as_geo::maidenhead;
 use chrono::{DateTime, Utc};
+
+/// The length of a stored QRV locator key.
+pub(crate) const QRV_LOC_LEN: usize = 6;
 
 /// Station equipment on one band.
 #[derive(Clone, Debug, PartialEq)]
@@ -20,13 +25,42 @@ pub struct Qrv {
     pub last_updated: DateTime<Utc>,
 }
 
-/// C#: `loc.ToUpper().Trim().Substring(0, 6)`; throws for shorter locators.
+/// C#: `loc.ToUpper().Trim().Substring(0, 6)`; throws for shorter locators. The full ASCII
+/// Maidenhead locator is validated before truncation: a coarse (2/4-character) or malformed
+/// locator is an error, because `Qrv::new` and the storage/delete paths need a full key.
 pub(crate) fn normalise_qrv_loc(loc: &str) -> Result<String, StationError> {
-    let l = loc.to_uppercase();
-    let l = l.trim();
-    l.get(0..6)
-        .map(str::to_string)
-        .ok_or_else(|| StationError::InvalidLocator(loc.to_string()))
+    let l = loc.trim();
+    if !maidenhead::check(l) || l.len() < QRV_LOC_LEN {
+        return Err(StationError::InvalidLocator(loc.to_string()));
+    }
+    Ok(l[..QRV_LOC_LEN].to_ascii_uppercase())
+}
+
+/// The six-character key for an exact QRV lookup. A valid coarse locator (2 or 4 characters)
+/// returns `Ok(None)`: it can never match a stored six-character key. Malformed text is an error.
+pub(crate) fn qrv_lookup_key(loc: &str) -> Result<Option<String>, StationError> {
+    let l = loc.trim();
+    if !maidenhead::check(l) {
+        return Err(StationError::InvalidLocator(loc.to_string()));
+    }
+    if l.len() < QRV_LOC_LEN {
+        return Ok(None);
+    }
+    Ok(Some(l[..QRV_LOC_LEN].to_ascii_uppercase()))
+}
+
+/// The six-character key derived from a trusted position inside the coarse locator `coarse`, or
+/// `None` when the position is invalid or outside the coarse cell. A locator midpoint, a stored
+/// `FromLoc` position or a terrain-selected point is positional fallback and must not be passed.
+pub(crate) fn qrv_key_from_position(coarse: &str, p: GPoint) -> Option<String> {
+    let key = maidenhead::loc_from_lat_lon(p.lat, p.lon, false, 3, false)
+        .ok()
+        .flatten()?;
+    let coarse = coarse.trim();
+    if coarse.is_empty() || !key.starts_with(&coarse.to_ascii_uppercase()) {
+        return None;
+    }
+    Some(key)
 }
 
 impl Qrv {

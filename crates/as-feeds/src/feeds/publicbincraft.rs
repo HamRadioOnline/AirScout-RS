@@ -6,7 +6,7 @@
 //! the AirScout-RS User-Agent. It keeps a cookie store, as C# does.
 
 use super::bincraft_parse::parse_public;
-use super::{client, get_bytes, set_bool, set_str, unzstd};
+use super::{bincraft_body, client, set_bool, set_str};
 use crate::vars::format_double;
 use crate::{FeedArgs, FeedError, FeedPlane, PlaneFeed};
 use reqwest::blocking::Client;
@@ -29,11 +29,19 @@ const DISCLAIMER: &str = concat!(
 const TIMEOUT_S: u64 = 100;
 
 /// The PublicBinCraft feed.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct PublicBinCraft {
     pub host: String,
     pub compressed: bool,
     client: Option<Client>,
+}
+
+impl std::fmt::Debug for PublicBinCraft {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PublicBinCraft")
+            .field("compressed", &self.compressed)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Default for PublicBinCraft {
@@ -50,8 +58,8 @@ impl PublicBinCraft {
     /// `<scheme>://<host>[:port]/re-api/?binCraft&zstd&box=minLat,maxLat,minLon,maxLon`;
     /// any path in the host setting is dropped (`GetLeftPart(UriPartial.Authority)`).
     pub fn url(&self, args: &FeedArgs) -> Result<String, FeedError> {
-        let u =
-            reqwest::Url::parse(&self.host).map_err(|e| FeedError::Config(format!("host: {e}")))?;
+        let u = reqwest::Url::parse(&self.host)
+            .map_err(|_| FeedError::Config("invalid host URL".into()))?;
         let base = u.origin().ascii_serialization();
         Ok(format!(
             "{base}/re-api/?binCraft&zstd&box={},{},{},{}",
@@ -106,12 +114,7 @@ impl PlaneFeed for PublicBinCraft {
         let Some(c) = self.client.as_ref() else {
             return Err(FeedError::Http("no HTTP client".into()));
         };
-        let body = get_bytes(c, &url, None)?;
-        let data = if self.compressed {
-            unzstd(&body)?
-        } else {
-            body
-        };
+        let data = bincraft_body(c, &url, self.compressed)?;
         parse_public(&data)
     }
 

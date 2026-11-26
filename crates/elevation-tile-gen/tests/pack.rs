@@ -3,9 +3,7 @@
 
 mod common;
 
-use as_elevation::{
-    read_files_zip, update_square, Catalogue, ElevationModel, ElevationStore, TILE_MISSING,
-};
+use as_elevation::{read_files_zip, update_square, Catalogue, ElevationModel, ElevationStore};
 use as_geo::latlon::GRect;
 use as_geo::maidenhead::{self, PositionInRectangle};
 use assert_cmd::Command;
@@ -107,14 +105,14 @@ fn zip_packs_square_flat_deflated() {
     let v = ok_json(&zip_cmd(&out, &[]));
     assert_eq!(
         v,
-        serde_json::json!({"squares": 1, "tiles": 287, "removed": 0})
+        serde_json::json!({"squares": 1, "tiles": 288, "removed": 0})
     );
     let dir = out.join("JO").join("50");
     let names = loc_names(&dir);
-    assert_eq!(names.len(), 287);
-    assert_eq!(names[0], "JO50MB.loc");
+    assert_eq!(names.len(), 288);
+    assert_eq!(names[0], "JO50MA.loc");
     let mut z = archive(&out.join("JO").join("JO50.zip"));
-    assert_eq!(z.len(), 287);
+    assert_eq!(z.len(), 288);
     for (i, want) in names.iter().enumerate() {
         {
             let f = z.by_index(i).unwrap();
@@ -146,10 +144,10 @@ fn zip_remove_loc_verifies_first() {
     let (out, _) = tree(tmp.path(), &["N50E011.hgt"]);
     let v = ok_json(&zip_cmd(&out, &["--remove-loc"]));
     assert_eq!(v["squares"], 1);
-    assert_eq!(v["tiles"], 287);
-    assert_eq!(v["removed"], 287);
+    assert_eq!(v["tiles"], 288);
+    assert_eq!(v["removed"], 288);
     assert!(!out.join("JO").join("50").exists());
-    assert_eq!(archive(&out.join("JO").join("JO50.zip")).len(), 287);
+    assert_eq!(archive(&out.join("JO").join("JO50.zip")).len(), 288);
 }
 
 #[test]
@@ -160,7 +158,7 @@ fn zip_remove_loc_keeps_other_files() {
     std::fs::write(dir.join("notes.txt"), "keep").unwrap();
     std::fs::write(out.join("JO").join("JO50MB.loc"), "not in a square dir").unwrap();
     let v = ok_json(&zip_cmd(&out, &["--remove-loc"]));
-    assert_eq!(v["removed"], 287);
+    assert_eq!(v["removed"], 288);
     assert!(loc_names(&dir).is_empty());
     assert_eq!(std::fs::read(dir.join("notes.txt")).unwrap(), b"keep");
     assert!(out.join("JO").join("JO50MB.loc").exists());
@@ -173,7 +171,7 @@ fn zip_bad_tile_removes_nothing() {
     ok_json(&zip_cmd(&out, &[]));
     let zip_path = out.join("JO").join("JO50.zip");
     let old = std::fs::read(&zip_path).unwrap();
-    assert_eq!(archive(&zip_path).len(), 287);
+    assert_eq!(archive(&zip_path).len(), 288);
     let dir = out.join("JO").join("50");
     let mb = dir.join("JO50MB.loc");
     let mut text = std::fs::read(&mb).unwrap();
@@ -182,7 +180,7 @@ fn zip_bad_tile_removes_nothing() {
 
     let e = failed(&zip_cmd(&out, &["--remove-loc"]));
     assert!(e.contains("JO50MB.loc"), "{e}");
-    assert_eq!(loc_names(&dir).len(), 287);
+    assert_eq!(loc_names(&dir).len(), 288);
     assert_eq!(std::fs::read(&zip_path).unwrap(), old);
     assert!(!out.join("JO").join("JO50.zip.part").exists());
 }
@@ -198,7 +196,7 @@ fn zip_again_keeps_tiles_of_an_earlier_batch() {
     let tmp = tempfile::tempdir().unwrap();
     let g = golden();
     let e011 = Synth::from_case(source_case(&g, "N50E011.hgt")).write(tmp.path());
-    // the same synthetic data as the west half of JO50 (SRTM3, `JO50AB` .. `JO50LX`)
+    // the same synthetic data as the west half of JO50 (SRTM3, `JO50AA` .. `JO50LX`)
     let e010 = Synth::from_case(source_case(&g, "N50E011.hgt")).write_as(tmp.path(), "N50E010.hgt");
     let out = tmp.path().join("out");
     let tiles = |src: &Path, time: &str| {
@@ -207,23 +205,23 @@ fn zip_again_keeps_tiles_of_an_earlier_batch() {
     let zip_path = out.join("JO").join("JO50.zip");
 
     tiles(&e011, T1);
-    assert_eq!(ok_json(&zip_cmd(&out, &["--remove-loc"]))["removed"], 287);
+    assert_eq!(ok_json(&zip_cmd(&out, &["--remove-loc"]))["removed"], 288);
     let first = entries(&zip_path);
-    assert_eq!(first.len(), 287);
+    assert_eq!(first.len(), 288);
 
     tiles(&e010, T1);
     let v = ok_json(&zip_cmd(&out, &["--remove-loc"]));
     assert_eq!(
         v,
-        serde_json::json!({"squares": 1, "tiles": 574, "removed": 287})
+        serde_json::json!({"squares": 1, "tiles": 576, "removed": 288})
     );
     let both = entries(&zip_path);
-    assert_eq!(both.len(), 574);
+    assert_eq!(both.len(), 576);
     let names: Vec<&str> = both.iter().map(|(n, _)| n.as_str()).collect();
     let mut sorted = names.clone();
     sorted.sort();
     assert_eq!(names, sorted);
-    assert_eq!(names[0], "JO50AB.loc");
+    assert_eq!(names[0], "JO50AA.loc");
     // every tile of the first batch, byte for byte
     for (name, bytes) in &first {
         let (_, b) = both.iter().find(|(n, _)| n == name).unwrap();
@@ -237,14 +235,14 @@ fn zip_again_keeps_tiles_of_an_earlier_batch() {
     let v = ok_json(&zip_cmd(&out, &[]));
     assert_eq!(
         v,
-        serde_json::json!({"squares": 1, "tiles": 574, "removed": 0})
+        serde_json::json!({"squares": 1, "tiles": 576, "removed": 0})
     );
     let again = entries(&zip_path);
-    assert_eq!(again.len(), 574);
+    assert_eq!(again.len(), 576);
     let (_, b) = again.iter().find(|(n, _)| n == "JO50MB.loc").unwrap();
     assert_eq!(b, &mb);
-    let (_, b) = again.iter().find(|(n, _)| n == "JO50AB.loc").unwrap();
-    assert_eq!(b, &both.iter().find(|(n, _)| n == "JO50AB.loc").unwrap().1);
+    let (_, b) = again.iter().find(|(n, _)| n == "JO50AA.loc").unwrap();
+    assert_eq!(b, &both.iter().find(|(n, _)| n == "JO50AA.loc").unwrap().1);
 }
 
 #[test]
@@ -255,7 +253,7 @@ fn zip_rejects_a_doubled_extension() {
     std::fs::copy(dir.join("JO50MB.loc"), dir.join("JO50MB.loc.loc")).unwrap();
     let e = failed(&zip_cmd(&out, &["--remove-loc"]));
     assert!(e.contains("JO50MB.loc.loc"), "{e}");
-    assert_eq!(loc_names(&dir).len(), 288);
+    assert_eq!(loc_names(&dir).len(), 289);
     assert!(!out.join("JO").join("JO50.zip").exists());
 }
 
@@ -267,7 +265,7 @@ fn catalogue_lists_every_tile() {
     let v = ok_json(&catalogue_cmd(&out, &["--time", T2]));
     assert_eq!(
         v,
-        serde_json::json!({"tiles": 287, "from": "zip", "files": ["files.cat", "files.zip"]})
+        serde_json::json!({"tiles": 288, "from": "zip", "files": ["files.cat", "files.zip"]})
     );
 
     // the expected file from literals and a directory listing (pre-flight C7)
@@ -280,7 +278,7 @@ fn catalogue_lists_every_tile() {
          \r\n",
     );
     let names = loc_names(&out.join("JO").join("50"));
-    assert_eq!(names.len(), 287);
+    assert_eq!(names.len(), 288);
     for n in &names {
         want.push_str(&format!("{n};2026-11-24 12:00:00Z\r\n"));
     }
@@ -294,7 +292,7 @@ fn catalogue_lists_every_tile() {
     assert_eq!(bytes, cat);
 
     let files = read_files_zip(&out.join("files.zip")).unwrap();
-    assert_eq!(files.len(), 287);
+    assert_eq!(files.len(), 288);
     assert!(files.keys().all(|k| k.starts_with("JO50")), "{files:?}");
 
     // the root files.zip is not scanned
@@ -322,11 +320,11 @@ fn catalogue_from_loc_reads_tile_times() {
         .set_modified(time(T2).into())
         .unwrap();
     let v = ok_json(&catalogue_cmd(&out, &["--from", "loc", "--time", T2]));
-    assert_eq!(v["tiles"], 287);
+    assert_eq!(v["tiles"], 288);
     assert_eq!(v["from"], "loc");
     let text = std::fs::read_to_string(out.join("files.cat")).unwrap();
     assert!(
-        text.contains("\r\n\r\nJO50MB.loc;2026-11-24 12:00:00Z\r\n"),
+        text.contains("\r\n\r\nJO50MA.loc;2026-11-24 12:00:00Z\r\n"),
         "{text:.600}"
     );
     assert!(text.ends_with("JO50XX.loc;2026-11-24 12:00:00Z\r\n"));
@@ -340,7 +338,7 @@ fn catalogue_duplicate_tile_is_error() {
     let jo = out.join("JO");
     std::fs::copy(jo.join("JO50.zip"), jo.join("JO50-copy.zip")).unwrap();
     let e = failed(&catalogue_cmd(&out, &[]));
-    assert!(e.contains("tile JO50MB.loc is in"), "{e}");
+    assert!(e.contains("tile JO50MA.loc is in"), "{e}");
     assert!(!out.join("files.cat").exists());
 }
 
@@ -354,7 +352,7 @@ fn self_hosted_tree_feeds_the_updater() {
     let (out, srcs) = tree(tmp.path(), &["N50E011.hgt", "S01W002.hgt"]);
     let v = ok_json(&zip_cmd(&out, &[]));
     assert_eq!(v["squares"], 2);
-    assert_eq!(v["tiles"], 287 + 288);
+    assert_eq!(v["tiles"], 288 + 288);
     ok_json(&catalogue_cmd(&out, &["--time", T2]));
 
     let mut server = mockito::Server::new();
@@ -391,7 +389,7 @@ fn self_hosted_tree_feeds_the_updater() {
             generated.insert(n.trim_end_matches(".loc").to_string());
         }
     }
-    assert_eq!(generated.len(), 287 + 288);
+    assert_eq!(generated.len(), 288 + 288);
     let listed: BTreeSet<String> = cat.files.keys().cloned().collect();
     assert_eq!(listed, generated);
     assert!(cat.files.values().all(|t| *t == time(T1)));
@@ -408,7 +406,7 @@ fn self_hosted_tree_feeds_the_updater() {
         None,
         &mut |_| {},
     );
-    assert_eq!(n.unwrap(), 287);
+    assert_eq!(n.unwrap(), 288);
     let n = update_square(
         &client,
         &server.url(),
@@ -440,13 +438,13 @@ fn self_hosted_tree_feeds_the_updater() {
             }
         }
     }
-    assert!(checked > (287 + 288) * 700, "{checked}");
+    assert!(checked > (288 + 288) * 700, "{checked}");
 
-    // a tile the generator skipped stays missing
-    let lat = maidenhead::lat_from_loc("JO50MA", PositionInRectangle::MiddleMiddle).unwrap();
-    let lon = maidenhead::lon_from_loc("JO50MA", PositionInRectangle::MiddleMiddle).unwrap();
-    assert_eq!(
-        store.elevation(srtm3, lat, lon, false).unwrap(),
-        TILE_MISSING
-    );
+    // JO50MA is now written (under the old formula it was skipped as all-void); its bottom-left
+    // cell reads the file's bottom row 1200, col 0: ((1200 * 31 + 0 * 17) % 5200) - 700 = 100.
+    let lat = maidenhead::lat_from_loc("JO50MA", PositionInRectangle::BottomLeft).unwrap();
+    let lon = maidenhead::lon_from_loc("JO50MA", PositionInRectangle::BottomLeft).unwrap();
+    let lat = lat + 0.5 / 24.0 / 50.0;
+    let lon = lon + 0.5 * 2.0 / 24.0 / 100.0;
+    assert_eq!(store.elevation(srtm3, lat, lon, false).unwrap(), 100);
 }

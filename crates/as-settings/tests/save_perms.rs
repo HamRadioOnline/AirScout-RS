@@ -14,7 +14,7 @@ fn saved_file_is_owner_only() {
 }
 
 #[test]
-fn save_over_stale_tmp() {
+fn finding_381_preserves_an_unowned_staging_file() {
     let dir = tempfile::tempdir().unwrap();
     let p = dir.path().join("settings.toml");
     let tmp = dir.path().join("settings.toml.tmp");
@@ -26,7 +26,7 @@ fn save_over_stale_tmp() {
         std::fs::metadata(&p).unwrap().permissions().mode() & 0o777,
         0o600
     );
-    assert!(!tmp.exists());
+    assert_eq!(std::fs::read_to_string(tmp).unwrap(), "stale");
 }
 
 #[test]

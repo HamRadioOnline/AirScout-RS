@@ -1,6 +1,6 @@
 use as_aircraft::db::{
     aircraft_registrations_from_json, aircraft_types_from_json, aircrafts_from_json,
-    airlines_from_json, airports_from_json, Aircraft, AircraftDb,
+    airlines_from_json, airports_from_json, Aircraft, AircraftDb, AircraftType,
 };
 use as_aircraft::PlaneCategory;
 use chrono::{TimeZone, Utc};
@@ -149,20 +149,23 @@ fn file_db_persists() {
     assert_eq!(db.airline_count().unwrap(), 10);
 }
 
-/// `PlaneInfoBulkInsertOrUpdateIfNewer`: aircraft rows need hex+reg+type; every typed plane writes
-/// an `IATA = ""` type row that then wins `aircraft_type_find_by_icao` (logic-findings #18).
+/// `PlaneInfoBulkInsertOrUpdateIfNewer`: typed feed rows keep `IATA = ""`, but lookup prefers
+/// populated-IATA reference rows for the same ICAO (#18).
 #[test]
-fn plane_info_bulk_upsert_reproduces_type_override() {
+fn finding_18_aircraft_type_lookup_prefers_populated_iata() {
     use as_aircraft::PlaneInfo;
-    let db = loaded();
-    assert_eq!(
-        db.aircraft_type_find_by_icao("A388")
-            .unwrap()
-            .unwrap()
-            .category,
-        PlaneCategory::Superheavy
-    );
+    let db = AircraftDb::open_in_memory().unwrap();
+    let t0 = Utc.with_ymd_and_hms(2023, 12, 31, 23, 59, 0).unwrap();
     let t = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
+    db.aircraft_type_insert_or_update_if_newer(&AircraftType {
+        icao: "A388".into(),
+        iata: "388".into(),
+        manufacturer: "Airbus".into(),
+        model: "A380 861".into(),
+        category: PlaneCategory::Superheavy,
+        last_updated: t0,
+    })
+    .unwrap();
     let full = PlaneInfo::new(
         t,
         "DLH1A",
@@ -174,8 +177,8 @@ fn plane_info_bulk_upsert_reproduces_type_override() {
         35000.0,
         450.0,
         "A388",
-        "",
-        "",
+        "FeedMaker",
+        "FeedModel",
         PlaneCategory::None,
     );
     let noreg = PlaneInfo::new(
@@ -205,7 +208,7 @@ fn plane_info_bulk_upsert_reproduces_type_override() {
     let a388 = db.aircraft_type_find_by_icao("A388").unwrap().unwrap();
     assert_eq!(
         (a388.iata.as_str(), a388.category),
-        ("", PlaneCategory::None)
+        ("388", PlaneCategory::Superheavy)
     );
     assert_eq!(
         db.aircraft_type_find_by_icao("B744")
@@ -234,4 +237,44 @@ fn airport_get_all_in_table_order() {
     db.airport_bulk_insert_or_update_if_newer(&airports)
         .unwrap();
     assert_eq!(db.airport_get_all().unwrap(), airports);
+}
+
+#[test]
+fn finding_372_aircraft_db_guards_schema_version() {
+    let mem = AircraftDb::open_in_memory().unwrap();
+    let ver: i64 = mem.with_conn(|c| {
+        c.query_row("PRAGMA user_version", [], |r| r.get(0))
+            .unwrap()
+    });
+    assert_eq!(ver, 1);
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("aircrafts.db3");
+    let raw = rusqlite::Connection::open(&path).unwrap();
+    raw.execute_batch(
+        "CREATE TABLE FutureAircraft (Hex TEXT PRIMARY KEY);
+         INSERT INTO FutureAircraft VALUES ('3C0001');
+         PRAGMA user_version = 2;",
+    )
+    .unwrap();
+    drop(raw);
+    let before = std::fs::read(&path).unwrap();
+
+    let err = AircraftDb::open(dir.path()).err().unwrap();
+    assert!(
+        matches!(
+            err,
+            as_aircraft::AircraftError::SchemaAhead {
+                actual: 2,
+                supported: 1
+            }
+        ),
+        "unexpected error: {err:?}"
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), before);
+    let check = rusqlite::Connection::open(&path).unwrap();
+    let journal: String = check
+        .query_row("PRAGMA journal_mode", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(journal.to_lowercase(), "delete");
 }

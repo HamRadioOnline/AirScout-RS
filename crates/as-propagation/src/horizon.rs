@@ -10,11 +10,21 @@ use rayon::prelude::*;
 use rusqlite::{params, OptionalExtension};
 use std::sync::atomic::AtomicBool;
 
-pub(crate) const HORIZON_SCHEMA: &str = "CREATE TABLE IF NOT EXISTS PropagationHorizon (
+const HORIZON_ALGORITHM_VERSION: i64 = 3;
+
+pub(crate) const LEGACY_HORIZON_SCHEMA: &str = "CREATE TABLE IF NOT EXISTS PropagationHorizon (
     Lat REAL NOT NULL, Lon REAL NOT NULL, h REAL NOT NULL, Dist REAL NOT NULL,
     QRG REAL NOT NULL, Radius REAL NOT NULL, F1_Clearance REAL NOT NULL, StepWidth REAL NOT NULL,
     Horizon BLOB NOT NULL, LastUpdated INTEGER NOT NULL,
     PRIMARY KEY (Lat, Lon, h, Dist, QRG, Radius, F1_Clearance, StepWidth))";
+
+pub(crate) const HORIZON_CACHE_MIGRATION: &str = "DROP TABLE PropagationHorizon;
+    CREATE TABLE PropagationHorizon (
+        Lat REAL NOT NULL, Lon REAL NOT NULL, h REAL NOT NULL, Dist REAL NOT NULL,
+        QRG REAL NOT NULL, Radius REAL NOT NULL, F1_Clearance REAL NOT NULL, StepWidth REAL NOT NULL,
+        NearField REAL NOT NULL, Horizon BLOB NOT NULL, LastUpdated INTEGER NOT NULL,
+        AlgorithmVersion INTEGER NOT NULL,
+        PRIMARY KEY (Lat, Lon, h, Dist, QRG, Radius, F1_Clearance, StepWidth, NearField))";
 
 /// Horizon of one azimuth: the obstacle with the highest elevation angle.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -60,7 +70,7 @@ pub struct PropagationHorizon {
     pub params: HorizonParams,
     pub horizon: [HorizonPoint; 360],
     pub valid: bool,
-    /// Always `false`: reproduces `logic-findings.md` #11 (the C# check loop never runs).
+    /// Whether a local obstruction exceeds the terrain angle at any azimuth.
     pub local_obstructed: bool,
     pub local_obstruction: Option<LocalObstruction>,
     pub last_updated: DateTime<Utc>,
@@ -73,12 +83,16 @@ impl PropagationHorizon {
         valid: bool,
         local_obstruction: Option<&LocalObstruction>,
     ) -> Self {
+        let local_obstructed = local_obstruction.is_some_and(|obstruction| {
+            horizon.iter().enumerate().any(|(bearing, point)| {
+                point.eps_min < obstruction.obstruction(params.h, bearing as f64)
+            })
+        });
         Self {
             params,
             horizon,
             valid,
-            // C#: `for (int i = 0; i > 360; i++)` -- the loop body never executes.
-            local_obstructed: false,
+            local_obstructed,
             local_obstruction: local_obstruction.cloned(),
             last_updated: Utc::now(),
         }
@@ -125,9 +139,11 @@ pub fn epsilon_max_from_path(
     re: f64,
 ) -> HorizonPoint {
     let mut hp = HorizonPoint::default();
-    let step = step_width_m / 1000.0;
-    let mut d = 0.0;
+    // The first Fresnel radius is largest at the midpoint, so this height
+    // bounds all remaining terrain samples including clearance.
+    let max_height = max_elv + f1_clearance * f1_radius(freq, dist / 2.0, dist / 2.0);
     for i in 0..elv.len() {
+        let d = i as f64 * step_width_m / 1000.0;
         let f1 = f1_radius(freq, d, dist - d);
         let h2 = elv[i] as f64 + f1 * f1_clearance;
         let eps = epsilon_from_heights(h1, d, h2, re);
@@ -137,25 +153,24 @@ pub fn epsilon_max_from_path(
             hp.elv = elv[i];
         }
         if max_elv > 0.0 {
-            let epsmax = epsilon_from_heights(h1, d, max_elv, re);
+            let epsmax = epsilon_from_heights(h1, d, max_height, re);
             if epsmax < hp.eps_min {
                 elv.truncate(i);
                 return hp;
             }
         }
-        d += step;
     }
     hp
 }
 
 impl PropagationEngine {
-    /// One azimuth of `PropagationHorizonCreate`. Reproduces `logic-findings.md` #3
-    /// (F1 radius uses the full horizon distance as the second leg).
+    /// One azimuth of `PropagationHorizonCreate`.
     fn horizon_azimuth(
         &self,
         model: ElevationModel,
         p: &HorizonParams,
         azimuth: usize,
+        near_field_km: f64,
         cancel: Option<&AtomicBool>,
     ) -> Result<Option<(HorizonPoint, bool)>, PropagationError> {
         let Some(ep) = self.elevation().find_or_create_path_from_bearing(
@@ -171,15 +186,14 @@ impl PropagationEngine {
         else {
             return Ok(None);
         };
-        let nf = self.near_field_suppression_m() / 1000.0;
         let mut eps_min = f64::MIN;
         let mut eps_dist = 0.0;
         let mut eps_elv: i16 = 0;
         for i in 0..ep.count {
             let d = i as f64 * p.step_width_m / 1000.0;
             let elv = ep.path.get(i).copied().unwrap_or(0);
-            let dd = if d > nf { d } else { nf };
-            let f1c = f1_radius(p.qrg_ghz, dd, p.dist_km) * p.f1_clearance;
+            let dd = if d > near_field_km { d } else { near_field_km };
+            let f1c = f1_radius(p.qrg_ghz, dd, (p.dist_km - dd).max(0.0)) * p.f1_clearance;
             let eps = epsilon_from_heights(p.h, dd, elv as f64 + f1c, p.radius_km);
             if eps > eps_min {
                 eps_min = eps;
@@ -208,13 +222,37 @@ impl PropagationEngine {
         cancel: Option<&AtomicBool>,
         progress: &(dyn Fn(usize, &HorizonPoint) + Sync),
     ) -> Result<Option<PropagationHorizon>, PropagationError> {
+        let near_field_m = self.near_field_suppression_m();
+        self.compute_horizon(
+            model,
+            p,
+            local_obstruction,
+            save,
+            cancel,
+            progress,
+            near_field_m,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn compute_horizon(
+        &self,
+        model: ElevationModel,
+        p: &HorizonParams,
+        local_obstruction: Option<&LocalObstruction>,
+        save: bool,
+        cancel: Option<&AtomicBool>,
+        progress: &(dyn Fn(usize, &HorizonPoint) + Sync),
+        near_field_m: f64,
+    ) -> Result<Option<PropagationHorizon>, PropagationError> {
+        let near_field_km = near_field_m / 1000.0;
         let results: Vec<Option<(HorizonPoint, bool)>> = (0..360usize)
             .into_par_iter()
             .map(|az| {
                 if cancelled(cancel) {
                     return Ok(None);
                 }
-                let r = self.horizon_azimuth(model, p, az, cancel)?;
+                let r = self.horizon_azimuth(model, p, az, near_field_km, cancel)?;
                 if let Some((hp, _)) = &r {
                     progress(az, hp);
                 }
@@ -234,8 +272,8 @@ impl PropagationEngine {
             valid &= v;
         }
         let hor = PropagationHorizon::new(*p, horizon, valid, local_obstruction);
-        if hor.valid && save {
-            self.insert_horizon_if_newer(model, &hor)?;
+        if hor.valid && save && !near_field_m.is_nan() {
+            self.insert_horizon_if_newer(model, &hor, near_field_m)?;
         }
         Ok(Some(hor))
     }
@@ -250,10 +288,21 @@ impl PropagationEngine {
         cancel: Option<&AtomicBool>,
         progress: &(dyn Fn(usize, &HorizonPoint) + Sync),
     ) -> Result<Option<PropagationHorizon>, PropagationError> {
-        if let Some(h) = self.find_horizon(model, p, local_obstruction)? {
+        let near_field_m = self.near_field_suppression_m();
+        if let Some(h) =
+            self.find_horizon_with_near_field(model, p, local_obstruction, near_field_m)?
+        {
             return Ok(Some(h));
         }
-        self.create_horizon(model, p, local_obstruction, save, cancel, progress)
+        self.compute_horizon(
+            model,
+            p,
+            local_obstruction,
+            save,
+            cancel,
+            progress,
+            near_field_m,
+        )
     }
 
     /// `PropagationHorizonFind`; loaded horizons are valid.
@@ -263,12 +312,27 @@ impl PropagationEngine {
         p: &HorizonParams,
         local_obstruction: Option<&LocalObstruction>,
     ) -> Result<Option<PropagationHorizon>, PropagationError> {
+        self.find_horizon_with_near_field(
+            model,
+            p,
+            local_obstruction,
+            self.near_field_suppression_m(),
+        )
+    }
+
+    fn find_horizon_with_near_field(
+        &self,
+        model: ElevationModel,
+        p: &HorizonParams,
+        local_obstruction: Option<&LocalObstruction>,
+        near_field_m: f64,
+    ) -> Result<Option<PropagationHorizon>, PropagationError> {
         let conn = self.conn(model)?;
         let row = conn
             .query_row(
                 "SELECT Horizon, LastUpdated FROM PropagationHorizon
                  WHERE Lat = ?1 AND Lon = ?2 AND h = ?3 AND Dist = ?4 AND QRG = ?5 AND Radius = ?6
-                   AND F1_Clearance = ?7 AND StepWidth = ?8",
+                   AND F1_Clearance = ?7 AND StepWidth = ?8 AND NearField = ?9 AND AlgorithmVersion = ?10",
                 params![
                     p.lat,
                     p.lon,
@@ -277,7 +341,9 @@ impl PropagationEngine {
                     p.qrg_ghz,
                     p.radius_km,
                     p.f1_clearance,
-                    p.step_width_m
+                    p.step_width_m,
+                    near_field_m,
+                    HORIZON_ALGORITHM_VERSION
                 ],
                 |r| Ok((r.get::<_, Vec<u8>>(0)?, r.get::<_, i64>(1)?)),
             )
@@ -299,16 +365,34 @@ impl PropagationEngine {
         &self,
         model: ElevationModel,
         h: &PropagationHorizon,
+        near_field_m: f64,
     ) -> Result<(), PropagationError> {
         let p = &h.params;
         let lu = h.last_updated.timestamp_nanos_opt().unwrap_or(i64::MAX);
         self.conn(model)?.execute(
-            "INSERT INTO PropagationHorizon (Lat, Lon, h, Dist, QRG, Radius, F1_Clearance, StepWidth, Horizon, LastUpdated)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
-             ON CONFLICT (Lat, Lon, h, Dist, QRG, Radius, F1_Clearance, StepWidth) DO UPDATE SET
-               Horizon = excluded.Horizon, LastUpdated = excluded.LastUpdated
-             WHERE excluded.LastUpdated > PropagationHorizon.LastUpdated",
-            params![p.lat, p.lon, p.h, p.dist_km, p.qrg_ghz, p.radius_km, p.f1_clearance, p.step_width_m, horizon_to_blob(&h.horizon), lu],
+            "INSERT INTO PropagationHorizon
+               (Lat, Lon, h, Dist, QRG, Radius, F1_Clearance, StepWidth, NearField,
+                Horizon, LastUpdated, AlgorithmVersion)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+             ON CONFLICT (Lat, Lon, h, Dist, QRG, Radius, F1_Clearance, StepWidth, NearField)
+             DO UPDATE SET Horizon = excluded.Horizon, LastUpdated = excluded.LastUpdated,
+               AlgorithmVersion = excluded.AlgorithmVersion
+             WHERE excluded.AlgorithmVersion != PropagationHorizon.AlgorithmVersion
+                OR excluded.LastUpdated > PropagationHorizon.LastUpdated",
+            params![
+                p.lat,
+                p.lon,
+                p.h,
+                p.dist_km,
+                p.qrg_ghz,
+                p.radius_km,
+                p.f1_clearance,
+                p.step_width_m,
+                near_field_m,
+                horizon_to_blob(&h.horizon),
+                lu,
+                HORIZON_ALGORITHM_VERSION
+            ],
         )?;
         Ok(())
     }

@@ -239,7 +239,7 @@ impl Run<'_> {
     fn srtm(&self, src: &Source, data: &[u8], n: &mut Counts) -> Result<(), String> {
         let outcomes = srtm_tiles(src, data, self.now, &|i| self.exists(i))
             .map_err(|e| format!("{}: {e}", src.path.display()))?;
-        // filtered after the whole file, so `all_void` follows the file (finding 3)
+        // filtered after the whole file: `srtm_tiles` decides void per tile (#293)
         for o in outcomes.iter().filter(|o| self.wanted(o.index())) {
             match o {
                 Outcome::Tile(t) => self.write(t, n)?,

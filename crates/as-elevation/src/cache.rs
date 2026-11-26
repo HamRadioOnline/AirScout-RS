@@ -5,13 +5,9 @@ use crate::ElevationTile;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
-/// Reproduce `logic-findings.md` #5: when the cache is over capacity, evict the oldest entry
-/// and do NOT insert the new tile (C# `if (cache.Count > size) cache.RemoveAt(0); else cache.Add`).
-pub(crate) const LEGACY_CACHE_BEHAVIOUR: bool = true;
-
 #[derive(Default)]
 pub(crate) struct TileCache {
-    pub(crate) last: Option<Arc<ElevationTile>>,
+    last: Option<Arc<ElevationTile>>,
     order: VecDeque<String>,
     map: HashMap<String, Arc<ElevationTile>>,
     capacity: usize,
@@ -25,23 +21,32 @@ impl TileCache {
         }
     }
 
-    pub(crate) fn get(&self, loc: &str) -> Option<Arc<ElevationTile>> {
-        self.map.get(loc).cloned()
+    pub(crate) fn get(&mut self, loc: &str) -> Option<Arc<ElevationTile>> {
+        if let Some(tile) = &self.last {
+            if tile.index == loc {
+                return Some(tile.clone());
+            }
+        }
+        let tile = self.map.get(loc)?.clone();
+        self.last = Some(tile.clone());
+        Some(tile)
     }
 
     /// Called after a tile was loaded from the database.
     pub(crate) fn offer(&mut self, loc: &str, tile: Arc<ElevationTile>) {
-        if self.map.len() > self.capacity {
-            if let Some(old) = self.order.pop_front() {
-                self.map.remove(&old);
-            }
-            if LEGACY_CACHE_BEHAVIOUR {
-                return;
-            }
+        if self.capacity == 0 {
+            return;
         }
-        if self.map.insert(loc.to_string(), tile).is_none() {
+        if !self.map.contains_key(loc) {
+            if self.map.len() >= self.capacity {
+                if let Some(old) = self.order.pop_front() {
+                    self.map.remove(&old);
+                }
+            }
             self.order.push_back(loc.to_string());
         }
+        self.last = Some(tile.clone());
+        self.map.insert(loc.to_string(), tile);
     }
 
     pub(crate) fn len(&self) -> usize {

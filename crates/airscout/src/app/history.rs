@@ -281,7 +281,7 @@ impl AppState {
         (h.min, h.max) = (min, max);
         let at = self.settings.time.offline.clamp(min, max);
         self.settings.time.offline = at;
-        self.history_tick(Utc::now(), false);
+        self.history_tick(false);
         Ok(())
     }
 
@@ -291,7 +291,7 @@ impl AppState {
     pub fn scroll_to(&mut self, secs: i64) {
         let Some(h) = &self.history else { return };
         self.settings.time.offline = player::advance(h.min, secs, h.min, h.max);
-        self.history_tick(Utc::now(), false);
+        self.history_tick(false);
     }
 
     /// True if the `ti_Progress` timer runs: playing in LIFE, a non-zero step width in HISTORY.
@@ -307,8 +307,7 @@ impl AppState {
 
     /// `ti_Progress_Tick`, HISTORY branch (MapDlg.cs:5370-5395): advance the time, refill the
     /// snapshot (the last report of every hex in `[min, offline]`) and update the planes.
-    /// `wall` is the wall clock, passed to `GetNearestPlanes` as in the original (MapDlg.cs:5140).
-    pub(super) fn history_tick(&mut self, wall: DateTime<Utc>, advance: bool) {
+    pub(super) fn history_tick(&mut self, advance: bool) {
         let ttl = self.settings.planes_position_ttl_min;
         if !self
             .history
@@ -332,7 +331,7 @@ impl AppState {
         }
         let planes = h.cache.get_all(offline, ttl);
         self.settings.time.offline = offline;
-        self.run_tick(planes, offline, wall, false);
+        self.run_tick(planes, offline, false);
     }
 
     /// `PlayMode == FORWARD` (MapDlg.cs:6094): playing in LIFE, a positive step width in HISTORY

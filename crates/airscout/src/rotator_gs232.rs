@@ -6,7 +6,7 @@
 //! never panics.
 
 use crate::track_outputs::{OutputError, OutputGroup, TrackOutput};
-use as_wintest::dotnet::zero3;
+use as_wintest::dotnet::{clamp_elevation, wrap_azimuth, zero3};
 use std::io::{self, Read, Write};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -54,11 +54,17 @@ pub fn query(k: Gs232) -> &'static str {
     }
 }
 
-/// The set command (`:7932`, `:7957`); `ToString("000")` is `zero3` (L9, 1:1).
+/// The set command (`:7932`, `:7957`); `ToString("000")` is `zero3`. Round to a whole degree,
+/// then wrap azimuth mod 360 and clamp elevation 0..=90 before formatting (`#236`), so a real
+/// GS-232A rotator never receives `360` or a negative elevation (non-finite inputs become 0).
 pub fn set_command(k: Gs232, az: f64, el: f64) -> String {
     match k {
-        Gs232::Az => format!("M{}", zero3(az)),
-        Gs232::AzEl => format!("W{} {}", zero3(az), zero3(el)),
+        Gs232::Az => format!("M{}", zero3(wrap_azimuth(az))),
+        Gs232::AzEl => format!(
+            "W{} {}",
+            zero3(wrap_azimuth(az)),
+            zero3(clamp_elevation(el))
+        ),
     }
 }
 
@@ -253,7 +259,9 @@ impl TrackOutput for Gs232Output {
                 self.open_error
             )));
         };
-        let fail = |e: io::Error| OutputError::Failed(e.to_string());
+        // Serial timeouts and I/O errors (`WriteLine`/`ReadLine`) are counted toward the
+        // switch-off (`#239`), unlike the open failure above (`#238`).
+        let fail = |e: io::Error| OutputError::SerialIo(e.to_string());
         write_line(io.as_mut(), query(self.kind)).map_err(fail)?;
         let reply = read_reply(io.as_mut(), Instant::now() + IO_TIMEOUT).map_err(fail)?;
         if !reply_ok(&reply) {

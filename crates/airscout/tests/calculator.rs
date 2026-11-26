@@ -1,6 +1,8 @@
 //! Background path calculator: fills the path database, throttles, cancels (no network).
 use airscout::calculator::{Calculator, RunOutcome, Timing};
-use airscout::services::{open_data, MyStation, Paths};
+use airscout::jobs::{JobCtx, JobEvent};
+use airscout::maintenance::{self, MaintenanceJob};
+use airscout::services::{open_data, MyStation, Paths, ServiceEvent};
 use as_elevation::{ElevationModel, ElevationTile};
 use as_geo::band::Band;
 use as_geo::latlon::{GPoint, EARTH_RADIUS_KM};
@@ -10,6 +12,7 @@ use as_settings::{BandSettings, ElevationEnabled, Settings};
 use as_stations::{GeoSource, Location};
 use chrono::{DateTime, TimeZone, Utc};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -163,7 +166,7 @@ fn expected(c: &Calculator, a: GPoint, h1: f64, b: GPoint, h2: f64, band: Band) 
         qrg_ghz: band.to_ghz(),
         radius_km: EARTH_RADIUS_KM * c.settings.band_settings[&band].k_factor,
         f1_clearance: 0.6,
-        step_width_m: 1000.0,
+        step_width_m: MODEL.default_step_width_m(),
         local_obstruction: f64::MIN,
     }
 }
@@ -561,4 +564,96 @@ fn calculator_reruns_after_a_user_qrv_edit() {
         as_stations::Qrv::new("DL2ALF", "JO50MM", Band::B144M, 25.0, 0.0, 0.0, Utc::now()).unwrap();
     assert_eq!(svc.qrv_write(&[q]).unwrap(), 1);
     assert!(matches!(run(&c).0, RunOutcome::Finished { .. }));
+}
+
+/// End to end through `RealServices`: after `stop_background` the background count drains to
+/// zero once the real workers exit, and a `DeletePropagationPaths` then leaves nothing and no
+/// path is written back (#155). The race itself (a worker still in flight keeps the count above
+/// zero, across restarts, and the destructive job is refused meanwhile) is pinned by the
+/// rendezvous unit tests `stop_is_signal_only`, `background_jobs_is_cumulative_across_generations`
+/// and `maintenance_refused_while_background_workers_run`; this test does not catch a mid-write
+/// worker.
+#[test]
+fn delete_all_paths_after_cancel_leaves_nothing() {
+    use airscout::app::{RealServices, Services};
+    let f = fixture();
+    let d1 = GPoint::new(50.61, 10.71);
+    let d2 = GPoint::new(50.43, 10.32);
+    let d3 = GPoint::new(50.7, 11.0);
+    for (call, p) in [("DL1AAA", d1), ("DL1BBB", d2), ("DL1CCC", d3)] {
+        station(&f.paths, call, p);
+    }
+    // one band keeps the run short; the fixture's flat tiles make the elevation area complete
+    // without a download, so the calculator stores its paths through the real background service
+    let mut s = settings(my());
+    s.band_settings.retain(|b, _| *b == Band::B144M);
+    s.background.calculations_enable = true;
+    s.background.update_on_startup = true;
+    s.background.update_periodically = false;
+    s.background.stations_url = "http://127.0.0.1:1/x".into();
+    s.background.aircraft_url = "http://127.0.0.1:1/x".into();
+    s.gui.elevation_base_url = "http://127.0.0.1:1/x".into();
+    s.gui.elevation_download = false;
+
+    let (tx, rx) = channel();
+    let mut svc = RealServices::new(f.paths.clone(), tx);
+    svc.set_my(s.my_call.as_str(), s.my_lat, s.my_lon);
+    svc.start_background(&s, 1);
+
+    // wait for the calculator to store its paths (the channel reports the finish)
+    let deadline = std::time::Instant::now() + Duration::from_secs(30);
+    loop {
+        match rx.recv_timeout(Duration::from_secs(5)) {
+            Ok(ServiceEvent::Calculations { text, .. }) if text.ends_with("finished.") => break,
+            Ok(_) => {}
+            Err(_) => {}
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "calculator never finished"
+        );
+    }
+    // the calculator stored one path per station: the delete has something to remove
+    let n = f
+        .paths
+        .engine
+        .with_conn(MODEL, |c| as_db::row_count(c, "PropagationPath").unwrap())
+        .unwrap();
+    assert_eq!(n, 3, "the calculator stored one path per station");
+
+    // stop is signal-only: the workers (including the always-on maintainer) are still counted
+    // until they actually exit
+    svc.stop_background();
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    while svc.background_jobs() > 0 {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "workers never stopped"
+        );
+        std::thread::sleep(Duration::from_millis(2));
+    }
+
+    // the workers are gone: the delete runs with nothing in flight and leaves nothing
+    let (tx, rx) = channel();
+    let ctx = JobCtx::new(1, Arc::new(AtomicBool::new(false)), tx);
+    maintenance::run(&ctx, &f.paths, MaintenanceJob::DeletePropagationPaths);
+    let events: Vec<ServiceEvent> = rx.try_iter().collect();
+    assert!(
+        events.iter().any(|e| matches!(
+            e,
+            ServiceEvent::Job {
+                event: JobEvent::Done(_),
+                ..
+            }
+        )),
+        "delete did not complete: {events:?}"
+    );
+
+    // nothing was written back after the delete
+    let n = f
+        .paths
+        .engine
+        .with_conn(MODEL, |c| as_db::row_count(c, "PropagationPath").unwrap())
+        .unwrap();
+    assert_eq!(n, 0);
 }

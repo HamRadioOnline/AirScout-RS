@@ -19,7 +19,7 @@ pub struct PlaneRow {
     pub cat: String,
     pub alt_m: i64,
     pub dist_km: f64,
-    pub minutes: i32,
+    pub minutes: Option<i32>,
     pub potential: i32,
     pub squint_deg: f64,
     pub color: [u8; 3],
@@ -111,7 +111,9 @@ pub fn show(ui: &mut egui::Ui, state: &mut AppState) {
                     r.cat.clone(),
                     r.alt_m.to_string(),
                     format!("{:.0}", r.dist_km),
-                    r.minutes.to_string(),
+                    r.minutes
+                        .map(|m| m.to_string())
+                        .unwrap_or_else(|| "-".to_string()),
                     r.potential.to_string(),
                     format!("{:.1}", r.squint_deg),
                 ];

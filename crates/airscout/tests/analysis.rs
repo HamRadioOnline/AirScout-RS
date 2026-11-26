@@ -6,7 +6,7 @@ use airscout::jobs::{JobCtx, JobEvent};
 use airscout::services::ServiceEvent;
 use as_aircraft::db::{Aircraft, AircraftDb, AircraftType};
 use as_aircraft::positions::{AircraftPosition, PositionDb};
-use as_aircraft::{PlaneCategory, PlaneInfo, PlaneInfoCache};
+use as_aircraft::{AltitudeProvenance, PlaneCategory, PlaneInfo, PlaneInfoCache};
 use as_settings::Settings;
 use chrono::{DateTime, Duration, TimeZone, Utc};
 use std::cell::RefCell;
@@ -109,6 +109,7 @@ fn load_history_enriches_and_sorts() {
         .collect();
     assert_eq!(times, [0, 10, 20]);
     let a = &d.positions[0];
+    assert_eq!(a.altitude_provenance, AltitudeProvenance::Unknown);
     assert_eq!(
         (a.hex.as_str(), a.reg.as_str(), a.type_code.as_str()),
         ("AAAAAA", "D-TEST", "A320")

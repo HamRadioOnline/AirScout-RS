@@ -3,14 +3,14 @@
 
 use crate::best_case::ui_position;
 use crate::services::{ground_elevation, local_obstruction, Paths};
-use as_aircraft::crossing::get_nearest_planes;
+use as_aircraft::crossing::{get_nearest_planes, minutes_to_crossing};
 use as_aircraft::{PlaneInfo, PlaneInfoCache};
 use as_geo::band::Band;
 use as_geo::latlon::{GPoint, EARTH_RADIUS_KM};
 use as_geo::maidenhead;
 use as_propagation::{PathParams, PropagationPath};
 use as_settings::{BandSettings, ElevationEnabled, Settings};
-use as_stations::{callsign, default_antenna_height};
+use as_stations::{callsign, default_antenna_height, GeoSource};
 use as_wintest::encode;
 use as_wintest::track::as_nearest;
 use chrono::{DateTime, Utc};
@@ -94,42 +94,48 @@ pub fn parse_set_path(src: &str, data: &str) -> Option<SetPathRequest> {
     })
 }
 
-/// `MapDlg.LocationFindOrCreate`: the station position, moved to the best case if enabled
-/// (not stored).
+/// `MapDlg.LocationFindOrCreate`: the station position, moved to the best case if enabled.
+/// Read-only (#265): an un-stored station resolves to its in-memory locator centre and is not
+/// written to the `Location` table.
 fn station(
     paths: &Paths,
     n: &NearestSettings,
     call: &str,
     loc: &str,
     req_band: Band,
-) -> Result<(GPoint, f64), String> {
+) -> Result<(GPoint, GPoint, f64), String> {
     let l = paths
         .stations
-        .location_find_or_create(call, loc)
+        .location_find_or_locator(call, loc)
         .map_err(|e| format!("station database: {e}"))?
         .ok_or_else(|| format!("no station {call} {loc}"))?;
-    let mut pos = GPoint::new(l.lat, l.lon);
+    // a stored station position (not a `FromLoc` centre) is trusted and may derive the
+    // six-character QRV key from a coarse locator (#13); capture it before the best-case move.
+    let raw = GPoint::new(l.lat, l.lon);
+    let trusted = (l.source != GeoSource::FromLoc).then_some(raw);
+    let mut pos = raw;
     if n.best_case {
         let store = &paths.store;
         pos = ui_position(&n.elevation_enabled, pos, |m, l| {
             store.max_elv_loc(m, l).ok().flatten()
         })?;
     }
-    // the QRV row of the requested band, the default height of the GUI band (1:1)
+    // the QRV row of the requested band, the default height of the requested band (#200)
     let q = paths
         .stations
-        .qrv_find_or_create_default(call, loc, req_band)
+        .qrv_find_or_create_default(call, loc, req_band, trusted)
         .map_err(|e| format!("station database: {e}"))?;
     let h = if q.antenna_height == 0.0 {
-        default_antenna_height(n.band)
+        default_antenna_height(req_band)
     } else {
         q.antenna_height
     };
-    Ok((pos, h))
+    Ok((raw, pos, h))
 }
 
-/// `MapDlg.cs:7222-7262`. The path of the request, computed with the GUI band's propagation
-/// settings and the settings' elevation model (1:1: the request's band only picks the QRV rows).
+/// `MapDlg.cs:7222-7262`. The path of the request, computed with the requested band's
+/// propagation settings and the settings' elevation model (#200: the request's band resolves the
+/// whole path, not just the QRV rows).
 pub fn set_path_path(
     paths: &Paths,
     n: &NearestSettings,
@@ -142,11 +148,12 @@ pub fn set_path_path(
     }
     let bs = n
         .band_settings
-        .get(&n.band)
-        .ok_or_else(|| format!("no band settings for {}", n.band.to_ghz()))?;
-    let (my, h_my) = station(paths, n, &r.my_call, &r.my_loc, r.band)?;
-    let (dx, h_dx) = station(paths, n, &r.dx_call, &r.dx_loc, r.band)?;
-    let obstruction = local_obstruction(&paths.store, model, my, dx, h_my)?;
+        .get(&r.band)
+        .ok_or_else(|| format!("no band settings for {}", r.band.to_ghz()))?;
+    let (my_raw, my, h_my) = station(paths, n, &r.my_call, &r.my_loc, r.band)?;
+    let (dx_raw, dx, h_dx) = station(paths, n, &r.dx_call, &r.dx_loc, r.band)?;
+    // the obstruction is stored at the settings position, not at the shifted one (#105)
+    let obstruction = local_obstruction(&paths.store, model, my_raw, dx_raw, h_my)?;
     let en = &n.elevation_enabled;
     let p = PathParams {
         lat1: my.lat,
@@ -155,7 +162,7 @@ pub fn set_path_path(
         lat2: dx.lat,
         lon2: dx.lon,
         h2: ground_elevation(&paths.store, en, dx.lat, dx.lon) + h_dx,
-        qrg_ghz: n.band.to_ghz(),
+        qrg_ghz: r.band.to_ghz(),
         radius_km: EARTH_RADIUS_KM * bs.k_factor,
         f1_clearance: bs.f1_clearance,
         step_width_m: model.default_step_width_m(),
@@ -171,7 +178,7 @@ pub fn set_path_path(
 pub fn nearest_data(now: DateTime<Utc>, r: &SetPathRequest, nearest: &[PlaneInfo]) -> String {
     let planes: Vec<&PlaneInfo> = nearest
         .iter()
-        .filter(|p| p.int_point.is_some() && p.potential > 0)
+        .filter(|p| p.potential > 0 && p.forward_qrb.is_some() && minutes_to_crossing(p).is_some())
         .collect();
     let mut s = format!(
         "{},{},{},{},{},{},",
@@ -183,16 +190,13 @@ pub fn nearest_data(now: DateTime<Utc>, r: &SetPathRequest, nearest: &[PlaneInfo
         planes.len()
     );
     for p in planes {
-        let mins = if p.speed_kts > 0.0 {
-            (p.int_qrb / p.speed_kts / 1.852 * 60.0) as i32
-        } else {
-            0
-        };
+        let dist = p.forward_qrb.unwrap_or_default();
+        let mins = minutes_to_crossing(p).unwrap_or(0);
         s.push_str(&format!(
             "{},{},{},{},{},",
             p.call,
             p.category.short(),
-            p.int_qrb as i32,
+            dist as i32,
             p.potential,
             mins
         ));
@@ -210,19 +214,19 @@ pub fn answer(
     now: DateTime<Utc>,
     cancel: &AtomicBool,
 ) -> Result<Option<String>, String> {
-    // before any DB write: an unknown band drops the request silently
-    let (Some(req_bs), Some(_)) = (n.band_settings.get(&r.band), n.band_settings.get(&n.band))
-    else {
+    // before any DB write: a requested band the settings do not define drops the request
+    // silently (#200). Only the requested band is looked up; the GUI band is irrelevant here.
+    let Some(req_bs) = n.band_settings.get(&r.band) else {
         return Ok(None);
     };
     let Some(path) = set_path_path(paths, n, r, cancel)? else {
         return Ok(None);
     };
-    let mut planes = cache.get_all(now, n.ttl_min);
+    let planes = cache.get_all(now, n.ttl_min);
     let nearest = get_nearest_planes(
         now,
         &path,
-        &mut planes,
+        &planes,
         n.max_circumcircle_km,
         req_bs.max_distance,
         n.max_alt_m,

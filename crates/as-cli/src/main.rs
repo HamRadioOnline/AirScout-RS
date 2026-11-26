@@ -190,26 +190,8 @@ fn parse_model(s: &str) -> Res<ElevationModel> {
 
 /// Bounding box of `pts`, padded by 0.01°.
 fn bbox(pts: impl IntoIterator<Item = GPoint>) -> Res<GRect> {
-    let (mut a, mut b, mut c, mut d) = (90.0f64, 180.0f64, -90.0f64, -180.0f64);
-    for p in pts {
-        a = a.min(p.lat);
-        b = b.min(p.lon);
-        c = c.max(p.lat);
-        d = d.max(p.lon);
-    }
-    // DestinationPoint does not wrap longitude (logic-findings #15): points beyond ±180° cannot be
-    // looked up, and a box spanning more than half the globe means the area wraps around.
-    if b < -180.0 || d > 180.0 || d - b > 180.0 {
-        return Err(
-            "area crosses the antimeridian (±180°), not supported yet (logic-findings #15)".into(),
-        );
-    }
-    Ok(GRect::new(
-        (a - 0.01).max(-90.0),
-        (b - 0.01).max(-180.0),
-        (c + 0.01).min(90.0),
-        (d + 0.01).min(180.0),
-    ))
+    GRect::bounding_points(pts, 0.01)
+        .ok_or_else(|| "area has invalid coordinates or spans more than 180° of longitude".into())
 }
 
 /// File listing the 4-character squares the server has no data for (HTTP 404: open sea).
@@ -301,15 +283,16 @@ fn build_path(
 
 fn path_cmd(from: &str, to: &str, h1: f64, h2: f64, c: &Common) -> Res<serde_json::Value> {
     let (pp, p, _) = build_path(from, to, h1, h2, c)?;
+    let distance_km = pp.distance();
     let info: Vec<_> = pp
         .info_points()
         .unwrap_or_default()
         .iter()
         .enumerate()
-        .map(|(i, x)| json!({"dist_km": i, "lat": x.lat, "lon": x.lon, "h1": x.h1, "h2": x.h2, "f1": x.f1}))
+        .map(|(i, x)| json!({"dist_km": (i as f64).min(distance_km), "lat": x.lat, "lon": x.lon, "h1": x.h1, "h2": x.h2, "f1": x.f1}))
         .collect();
     Ok(json!({
-        "distance_km": pp.distance(),
+        "distance_km": distance_km,
         "bearing12": pp.bearing12(),
         "bearing21": pp.bearing21(),
         "h1": p.h1,
@@ -441,6 +424,7 @@ fn planes_cmd(
         let (k, v) = parse_feed_setting(s)?;
         t.insert(k, v);
     }
+    as_settings::canonicalize_feed_table(feed, &mut t);
     f.load_settings(&t)?;
     let settings = Settings::default();
     let args = FeedArgs {
@@ -492,6 +476,12 @@ fn planes_cmd(
                 }
                 error = Some(e);
             }
+            Ok(FeedEvent::RejectedRecords(count)) => {
+                eprintln!("feed skipped {count} invalid records");
+            }
+            Ok(FeedEvent::DroppedRecords(count)) => {
+                eprintln!("feed dropped {count} pending observations");
+            }
             Ok(FeedEvent::Started) => {}
             Ok(FeedEvent::Stopped) | Err(_) => break,
         }
@@ -515,7 +505,7 @@ fn nearest_cmd(
 ) -> Res<serde_json::Value> {
     let list: Vec<PlaneJson> = serde_json::from_str(&std::fs::read_to_string(file)?)?;
     let now = chrono::Utc::now();
-    let mut planes: Vec<PlaneInfo> = list
+    let planes: Vec<PlaneInfo> = list
         .iter()
         .map(|j| {
             let s = |x: &Option<String>| x.clone().unwrap_or_default();
@@ -544,7 +534,7 @@ fn nearest_cmd(
     let found = get_nearest_planes(
         now,
         &pp,
-        &mut planes,
+        &planes,
         max_radius,
         settings.current_band_settings().max_distance,
         f64::from(settings.planes_max_alt_m),
@@ -558,6 +548,7 @@ fn nearest_cmd(
                 "call": p.call,
                 "potential": p.potential,
                 "int_qrb": p.int_qrb,
+                "forward_distance_km": p.forward_qrb,
                 "minutes": minutes_to_crossing(p),
                 "alt_diff": p.alt_diff,
                 "eps1_deg": p.eps1.to_degrees(),

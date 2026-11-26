@@ -38,8 +38,8 @@ impl AppState {
     }
 
     /// Open the Options dialog on a copy of the settings; refused while playing (the button is
-    /// disabled then, as in the original). The integrations stop while it is open
-    /// (`MapDlg.cs:3893`); [`Self::options_closed`] starts them again.
+    /// disabled then, as in the original). The integrations and the background workers stop while
+    /// it is open (`MapDlg.cs:3893`, #155); [`Self::options_closed`] starts them again.
     pub fn open_options_dlg(&mut self) -> bool {
         if self.is_playing() || self.options_dlg.is_some() {
             return false;
@@ -50,14 +50,18 @@ impl AppState {
         dlg.refresh_qrvs(&mut |call, loc| self.services.qrv_get_all(call, loc));
         self.options_dlg = Some(dlg);
         self.stop_integrations();
+        // #155: the calculators, updaters and preloader must not race a delete or clear that is
+        // issued from the Options dialog while it is open.
+        self.stop_background();
         self.request_sizes();
         true
     }
 
-    /// OK of the Options dialog: take the new settings, save them, restart the background
-    /// workers. The map rebuilds its tile layer and the tick reads its interval from the
-    /// settings, so both follow on the next frame. The window layout fields and the time (the
-    /// dialog does not edit it; in HISTORY it is the replay time) keep their live values.
+    /// OK of the Options dialog: take the new settings, save them. The background workers are
+    /// restarted by [`Self::options_closed`] (which both OK and Cancel call), the map rebuilds its
+    /// tile layer and the tick reads its interval from the settings, so both follow on the next
+    /// frame. The window layout fields and the time (the dialog does not edit it; in HISTORY it is
+    /// the replay time) keep their live values.
     ///
     /// In HISTORY the workers stay stopped (finding #115): OFF restarts them.
     pub fn apply_options(&mut self, mut new: Settings) {
@@ -71,10 +75,6 @@ impl AppState {
         self.sync_loc_texts();
         self.last_tick = None;
         self.sync_services();
-        if self.life_mode != LifeMode::History {
-            let generation = self.reset_background_state();
-            self.services.restart_background(&self.settings, generation);
-        }
         if let Some(path) = self.settings_path.clone() {
             if let Err(e) = self.save_settings(&path) {
                 self.status = format!("cannot save settings: {e}");

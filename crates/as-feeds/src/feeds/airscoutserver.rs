@@ -1,20 +1,17 @@
 //! AirScout Server feed (`AirScout.PlaneFeeds.Plugin.AirScoutServer`): another AirScout
 //! instance's `planes.json` (`List<PlaneJSON>`), or the legacy FR24-style dictionary.
-//!
-//! Faithful to the C# plugin: `Reg` is not mapped; in the legacy branch only keys that
-//! start with `"0"` are read. Unlike most feeds, errors are not swallowed in C# either.
 
-use super::{http_get, parse_err, set_str, set_u64};
-use crate::{vars, FeedArgs, FeedError, FeedPlane, PlaneFeed};
+use super::{client_builder, epoch_seconds, map_records, parse_err, send, set_str, set_u64};
+use crate::{vars, FeedArgs, FeedBatch, FeedError, FeedPlane, PlaneFeed};
 use chrono::{DateTime, Utc};
-use serde_json::{Map, Value};
+use reqwest::{redirect::Policy, Url};
+use serde_json::{value::RawValue, Map, Value};
+use std::collections::BTreeMap;
+use std::net::{IpAddr, SocketAddr, TcpListener, ToSocketAddrs};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 pub const DEFAULT_URL: &str = "http://localhost:9880/planes.json";
-
-/// `UNIXTimeToDateTime(int)`.
-fn unix_s(t: i64) -> Option<DateTime<Utc>> {
-    DateTime::from_timestamp(t, 0)
-}
 
 /// A `PlaneJSON` property, looked up like Newtonsoft does: exact name first, then
 /// case-insensitive. `Ok(None)` if absent.
@@ -44,49 +41,48 @@ fn text(m: &Map<String, Value>, name: &str) -> Result<String, FeedError> {
     }
 }
 
-/// An `int?` property; absent keeps `default`.
+/// An integral property with a separate default for a missing field.
 fn int(m: &Map<String, Value>, name: &str, default: Option<i64>) -> Result<Option<i64>, FeedError> {
     match prop(m, name) {
         None => Ok(default),
-        Some(v) => {
-            let i = super::de_i64(v.clone()).map_err(parse_err)?;
-            match i {
-                Some(x) if i32::try_from(x).is_err() => {
-                    Err(FeedError::Parse(format!("{name}: {x} is not an Int32")))
-                }
-                _ => Ok(i),
-            }
-        }
+        Some(v) => super::de_i64(v.clone()).map_err(parse_err),
     }
 }
 
-fn plane_json(v: &Value, now: DateTime<Utc>) -> Result<FeedPlane, FeedError> {
-    let m = v
-        .as_object()
-        .ok_or_else(|| FeedError::Parse("plane is not an object".into()))?;
+fn plane_json(v: Value, now: DateTime<Utc>) -> Option<FeedPlane> {
+    let m = v.as_object()?;
     let nan = |x: Option<f64>| x.unwrap_or(f64::NAN);
-    // a missing Time keeps the constructor's DateTime.UtcNow
-    let time = int(m, "Time", Some(now.timestamp()))?;
-    Ok(FeedPlane {
-        hex: text(m, "Hex")?,
-        call: text(m, "Call")?,
-        lat: nan(dbl(m, "Lat")?),
-        lon: nan(dbl(m, "Lon")?),
-        alt_ft: nan(dbl(m, "Alt")?),
-        track: nan(dbl(m, "Track")?),
-        speed_kts: nan(dbl(m, "Speed")?),
-        type_code: text(m, "Type")?,
-        category: int(m, "Category", Some(0))?.unwrap_or(0) as i32,
-        manufacturer: text(m, "Manufacturer")?,
-        model: text(m, "Model")?,
-        time: time.and_then(unix_s),
+    let hex = text(m, "Hex").ok()?;
+    let reg = text(m, "Reg").ok()?.trim().to_owned();
+    if hex.trim().is_empty() && reg.is_empty() {
+        return None;
+    }
+    // A missing Time retains the constructor default. An explicit null has no timestamp.
+    let time = match int(m, "Time", Some(now.timestamp())).ok()? {
+        Some(time) => Some(DateTime::from_timestamp(time, 0)?),
+        None => None,
+    };
+    Some(FeedPlane {
+        hex,
+        call: text(m, "Call").ok()?,
+        reg,
+        lat: nan(dbl(m, "Lat").ok()?),
+        lon: nan(dbl(m, "Lon").ok()?),
+        alt_ft: nan(dbl(m, "Alt").ok()?),
+        track: nan(dbl(m, "Track").ok()?),
+        speed_kts: nan(dbl(m, "Speed").ok()?),
+        type_code: text(m, "Type").ok()?,
+        category: i32::try_from(int(m, "Category", Some(0)).ok()?.unwrap_or(0)).ok()?,
+        manufacturer: text(m, "Manufacturer").ok()?,
+        model: text(m, "Model").ok()?,
+        time,
         ..FeedPlane::default()
     })
 }
 
 /// One FR24 array: `[hex, lat, lon, track, alt, speed, squawk, radar, type, reg, time,
 /// from, to, flight, ground, vspeed, call, ...]`. `None` where C# throws and skips it.
-fn fr24(v: &Value) -> Option<FeedPlane> {
+fn fr24(v: Value) -> Option<FeedPlane> {
     let a = v.as_array()?;
     // `!String.IsNullOrEmpty(ac[i]) ? ac[i] : ""` binds only for strings and null
     let s = |i: usize| -> Option<String> {
@@ -97,12 +93,15 @@ fn fr24(v: &Value) -> Option<FeedPlane> {
         }
     };
     let d = |i: usize| a.get(i)?.as_f64();
-    let time = a.get(10)?.as_f64()?.trunc();
-    if time < f64::from(i32::MIN) || time > f64::from(i32::MAX) {
+    let time = epoch_seconds(d(10)?)?;
+    let hex = s(0)?;
+    let reg = s(9)?.trim().to_owned();
+    if hex.trim().is_empty() && reg.is_empty() {
         return None;
     }
     Some(FeedPlane {
-        hex: s(0)?,
+        hex,
+        reg,
         call: s(16)?,
         lat: d(1)?,
         lon: d(2)?,
@@ -110,34 +109,93 @@ fn fr24(v: &Value) -> Option<FeedPlane> {
         track: d(3)?,
         speed_kts: d(5)?,
         type_code: s(8)?,
-        time: unix_s(time as i64),
+        time: Some(time),
         ..FeedPlane::default()
     })
 }
 
 /// Map one response.
 pub fn parse(json: &str, now: DateTime<Utc>) -> Result<Vec<FeedPlane>, FeedError> {
-    if json.encode_utf16().count() < 20 {
-        return Ok(Vec::new());
+    Ok(parse_batch(json, now)?.planes)
+}
+
+fn parse_batch(json: &str, now: DateTime<Utc>) -> Result<FeedBatch, FeedError> {
+    match json.trim_start().as_bytes().first() {
+        Some(b'[') => {
+            let list: Vec<&RawValue> = serde_json::from_str(json).map_err(parse_err)?;
+            map_records(list, |row| plane_json(row, now))
+        }
+        Some(b'{') => {
+            let mut root: BTreeMap<String, &RawValue> =
+                serde_json::from_str(json).map_err(parse_err)?;
+            let version = root
+                .remove("version")
+                .and_then(|raw| raw.get().parse::<u64>().ok());
+            let full_count = root
+                .remove("full_count")
+                .and_then(|raw| raw.get().parse::<u64>().ok());
+            if version != Some(1) || full_count.is_none() {
+                return Err(FeedError::Parse(
+                    "unsupported legacy aircraft envelope".into(),
+                ));
+            }
+            root.remove("stats");
+            map_records(root.into_values(), fr24)
+        }
+        _ => Err(FeedError::Parse("invalid aircraft envelope".into())),
     }
-    if json.contains("\"full_count\":") && json.contains("\"version\":1") {
-        let root: Map<String, Value> = serde_json::from_str(json).map_err(parse_err)?;
-        return Ok(root
-            .iter()
-            .filter(|(k, _)| k.starts_with('0'))
-            .filter_map(|(_, v)| fr24(v))
-            .collect());
+}
+
+fn own_planes_url(url: &Url, listener: SocketAddr) -> bool {
+    if url.port_or_known_default() != Some(listener.port())
+        || !url.path().eq_ignore_ascii_case("/planes.json")
+    {
+        return false;
     }
-    let list: Vec<Value> = serde_json::from_str(json).map_err(parse_err)?;
-    // Newtonsoft fails the whole list on a bad value; the mapping itself cannot throw
-    list.iter().map(|v| plane_json(v, now)).collect()
+
+    let local_ip = |ip: IpAddr| {
+        let ip = ip.to_canonical();
+        let bind = listener.ip().to_canonical();
+        if ip == bind {
+            return true;
+        }
+        let same_family = bind.is_ipv4() == ip.is_ipv4();
+        if ip.is_unspecified() {
+            return same_family && bind.is_loopback();
+        }
+        bind.is_unspecified()
+            && (same_family || bind.is_ipv6())
+            && (ip.is_loopback() || TcpListener::bind((ip, 0)).is_ok())
+    };
+    let Some(host) = url.host_str() else {
+        return false;
+    };
+    let host = host.trim_start_matches('[').trim_end_matches(']');
+    if let Ok(ip) = host.parse() {
+        return local_ip(ip);
+    }
+    (host, listener.port())
+        .to_socket_addrs()
+        .is_ok_and(|mut addresses| addresses.any(|addr| local_ip(addr.ip())))
+}
+
+fn own_feed_error() -> FeedError {
+    FeedError::Config("AirScoutServer feed targets this process’s planes endpoint".into())
 }
 
 /// The AirScout Server feed.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct AirScoutServer {
     pub url: String,
     pub timeout_s: u64,
+}
+
+impl std::fmt::Debug for AirScoutServer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AirScoutServer")
+            .field("timeout_s", &self.timeout_s)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Default for AirScoutServer {
@@ -146,6 +204,31 @@ impl Default for AirScoutServer {
             url: DEFAULT_URL.into(),
             timeout_s: 30,
         }
+    }
+}
+
+impl AirScoutServer {
+    fn request_url(&self, args: &FeedArgs, now: DateTime<Utc>) -> Result<Url, FeedError> {
+        if self.url.is_empty() {
+            return Err(FeedError::Config(
+                "AirScoutServer feed URL is unconfigured".into(),
+            ));
+        }
+        let expanded = vars::substitute(&self.url, args, now, "")?;
+        let url =
+            Url::parse(&expanded).map_err(|_| FeedError::Config("invalid feed URL".into()))?;
+        if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none() {
+            return Err(FeedError::Config(
+                "AirScoutServer requires an HTTP feed URL".into(),
+            ));
+        }
+        if args
+            .airscout_listener
+            .is_some_and(|listener| own_planes_url(&url, listener))
+        {
+            return Err(own_feed_error());
+        }
+        Ok(url)
     }
 }
 
@@ -178,14 +261,39 @@ impl PlaneFeed for AirScoutServer {
         set_u64(t, "timeout_s", &mut self.timeout_s)
     }
 
-    fn start(&mut self, _args: &FeedArgs) -> Result<(), FeedError> {
+    fn start(&mut self, args: &FeedArgs) -> Result<(), FeedError> {
+        self.request_url(args, Utc::now())?;
         Ok(())
     }
 
     fn get_planes(&mut self, args: &FeedArgs) -> Result<Vec<FeedPlane>, FeedError> {
+        Ok(self.get_batch(args)?.planes)
+    }
+
+    fn get_batch(&mut self, args: &FeedArgs) -> Result<FeedBatch, FeedError> {
         let now = Utc::now();
-        let url = vars::substitute(&self.url, args, now, "")?;
-        parse(&http_get(&url, self.timeout_s, None)?, now)
+        let url = self.request_url(args, now)?;
+        let mut builder = client_builder(self.timeout_s, false);
+        let blocked = Arc::new(AtomicBool::new(false));
+        if let Some(listener) = args.airscout_listener {
+            let rejected = blocked.clone();
+            let follow = Policy::limited(10);
+            builder = builder.redirect(Policy::custom(move |attempt| {
+                if own_planes_url(attempt.url(), listener) {
+                    rejected.store(true, Ordering::Relaxed);
+                    return attempt.error("redirect targets this process’s planes endpoint");
+                }
+                follow.redirect(attempt)
+            }));
+        }
+        let client = builder
+            .build()
+            .map_err(|_| FeedError::Http("could not initialize HTTP client".into()))?;
+        let body = send(client.get(url));
+        if blocked.load(Ordering::Relaxed) {
+            return Err(own_feed_error());
+        }
+        parse_batch(&String::from_utf8_lossy(&body?), now)
     }
 
     fn stop(&mut self, _args: &FeedArgs) -> Result<(), FeedError> {

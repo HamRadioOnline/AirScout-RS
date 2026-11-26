@@ -22,6 +22,9 @@ pub struct MaintState {
     seq: u64,
     /// Id of the running job.
     pub running: Option<u64>,
+    /// The running job removes data (`MaintenanceJob::destructive`): the Options OK/Cancel stay
+    /// disabled until it ends, so the restarted workers cannot race the delete/clear (#155).
+    pub destructive: bool,
     /// File path and size [MB] of every database, as of the last `Sizes` job.
     pub sizes: Vec<(DbId, String, f64)>,
     /// The job that waits for Yes or No.
@@ -38,14 +41,23 @@ pub struct MaintState {
 impl AppState {
     /// True if a job may start now (the maintenance buttons are enabled).
     pub fn maintenance_allowed(&self) -> bool {
-        self.maintenance_blocked().is_none()
+        self.maintenance_blocked(true).is_none()
     }
 
     /// Give the Options dialog what its Database tab shows.
     pub fn feed_options_dlg(&self, dlg: &mut OptionsDlg) {
         dlg.sizes.clone_from(&self.maint.sizes);
         dlg.maint_enabled = self.maintenance_allowed();
+        dlg.maint_running = self.maint.running.is_some() && self.maint.destructive;
+        dlg.maint_waiting = self.background_workers_waiting();
         dlg.web_state = self.services.web_state();
+    }
+
+    /// The number of background workers still stopping, if any; the Database tab shows it while
+    /// the destructive maintenance buttons stay disabled (#155).
+    fn background_workers_waiting(&self) -> Option<usize> {
+        let n = self.services.background_jobs();
+        (n > 0).then_some(n)
     }
 
     /// A button of the Database tab: the delete buttons ask first.
@@ -62,14 +74,18 @@ impl AppState {
         }
     }
 
-    /// Why no maintenance job may start now.
-    fn maintenance_blocked(&self) -> Option<&'static str> {
+    /// Why no maintenance job may start now. A read-only job (`destructive == false`, such as
+    /// `Sizes`) is not refused just because background workers are still stopping, so reading the
+    /// database sizes never fails silently (#155).
+    fn maintenance_blocked(&self, destructive: bool) -> Option<&'static str> {
         if self.is_playing() {
             Some("pause before database maintenance")
         } else if self.maint.running.is_some() {
             Some("a maintenance job is running")
         } else if self.history.as_ref().is_some_and(|h| h.loading || h.busy) {
             Some("a history job is running")
+        } else if destructive && self.services.background_jobs() > 0 {
+            Some("wait for the background workers to stop")
         } else {
             None
         }
@@ -79,6 +95,7 @@ impl AppState {
         self.maint.seq += 1;
         let id = MAINT_ID_BASE + self.maint.seq;
         self.maint.running = Some(id);
+        self.maint.destructive = job.destructive();
         self.services.run_maintenance(id, job);
     }
 
@@ -86,7 +103,7 @@ impl AppState {
     /// asks first: [`Self::confirm_maintenance`] starts it. Refused while playing, while a job
     /// runs and in HISTORY with a job running.
     pub fn request_maintenance(&mut self, job: MaintenanceJob) -> Result<(), String> {
-        if let Some(why) = self.maintenance_blocked() {
+        if let Some(why) = self.maintenance_blocked(job.destructive()) {
             return Err(why.into());
         }
         if job.confirmation().is_some() {
@@ -100,7 +117,7 @@ impl AppState {
     /// Yes: send the job that was asked about. The state is checked again.
     pub fn confirm_maintenance(&mut self) -> Result<(), String> {
         let job = self.maint.confirm.take().ok_or("nothing to confirm")?;
-        if let Some(why) = self.maintenance_blocked() {
+        if let Some(why) = self.maintenance_blocked(job.destructive()) {
             self.status = why.into();
             return Err(why.into());
         }
@@ -271,5 +288,6 @@ impl AppState {
             _ => {}
         }
         self.maint.running = None;
+        self.maint.destructive = false;
     }
 }

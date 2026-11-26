@@ -103,21 +103,26 @@ pub fn tooltip_lines(
     }
     let detailed = matches!(p.potential, 100 | 75 | 50);
     if info.alt {
+        let estimate = if p.altitude_estimate() {
+            " [estimated]"
+        } else {
+            ""
+        };
         if !detailed {
             if info.metric {
-                l.push(format!("Alt: {}m", p.alt_m() as i64));
+                l.push(format!("Alt: {}m{estimate}", p.alt_m() as i64));
             } else {
-                l.push(format!("Alt: {}ft", p.alt_ft as i64));
+                l.push(format!("Alt: {}ft{estimate}", p.alt_ft as i64));
             }
         } else if info.metric {
             l.push(format!(
-                "Alt: {}m [{}m]",
+                "Alt: {}m{estimate} [{}m]",
                 p.alt_m() as i64,
                 signed(p.alt_diff)
             ));
         } else {
             l.push(format!(
-                "Alt: {}ft [{}ft]",
+                "Alt: {}ft{estimate} [{}ft]",
                 p.alt_ft as i64,
                 signed(m_ft(p.alt_diff))
             ));
@@ -142,7 +147,6 @@ pub fn tooltip_lines(
         ));
     }
     if detailed {
-        let mins = minutes_to_crossing(p);
         if info.dist {
             if info.metric {
                 l.push(format!("Dist: {}km", f0(p.int_qrb)));
@@ -151,8 +155,12 @@ pub fn tooltip_lines(
             }
         }
         if info.time {
-            let t = now + Duration::minutes(i64::from(mins));
-            l.push(format!("Time: {} [ {mins}min]", t.format("%H:%M")));
+            if let Some(mins) = minutes_to_crossing(p) {
+                let t = now + Duration::minutes(i64::from(mins));
+                l.push(format!("Time: {} [ {mins}min]", t.format("%H:%M")));
+            } else {
+                l.push("Time: n/a".to_string());
+            }
         }
         if info.angle {
             l.push(format!("Angle: {}°", f0(p.angle.to_degrees())));

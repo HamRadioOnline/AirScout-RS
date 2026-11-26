@@ -23,7 +23,7 @@ pub struct AirbornePosition {
     pub cpr_lat: u32,
     pub cpr_lon: u32,
     pub has_position: bool,
-    /// `Altitude` when `HasValidAltitude`. TC 20-22 report 0 (GNSS height is not decoded).
+    /// `Altitude` when `HasValidAltitude`.
     pub alt_ft: Option<i32>,
     pub surveillance_status: u8,
     pub nic_suppl_b: bool,
@@ -142,13 +142,11 @@ fn gray_to_bin(gray: i32, bitlength: u32) -> i32 {
 }
 
 /// `AirbornePositionMsg.Altitude` for the 12-bit altitude field.
-pub fn altitude(tc: u8, enc: i32) -> i32 {
-    if tc >= 20 {
-        return 0;
-    }
+pub fn altitude(tc: u8, enc: i32) -> Option<i32> {
+    let _ = tc;
     if enc & 0x10 != 0 {
         let n = (enc & 0xF) | ((enc & 0xFE0) >> 1);
-        return (f64::from(25 * n - 1000) + 0.5) as i32;
+        return Some(25 * n - 1000);
     }
     let bit = |mask: i32, shift: u32| (enc & mask) >> shift;
     let (c1, a1, c2, a2, c4, a4) = (
@@ -170,14 +168,18 @@ pub fn altitude(tc: u8, enc: i32) -> i32 {
         d2 << 7 | d4 << 6 | a1 << 5 | a2 << 4 | a4 << 3 | b1 << 2 | b2 << 1 | b4,
         8,
     );
-    let mut n100 = gray_to_bin(c1 << 2 | c2 << 1 | c4, 3) - 1;
+    let c = gray_to_bin(c1 << 2 | c2 << 1 | c4, 3);
+    if c == 0 || c == 5 || c == 6 {
+        return None;
+    }
+    let mut n100 = c - 1;
     if n100 == 6 {
         n100 = 4;
     }
     if n500 % 2 != 0 {
         n100 = 4 - n100;
     }
-    (f64::from(-1200 + n500 * 500 + n100 * 100) + 0.5) as i32
+    Some(-1200 + n500 * 500 + n100 * 100)
 }
 
 fn cpr_fields(m: &[u8; 7]) -> (bool, u32, u32) {
@@ -198,7 +200,7 @@ fn airborne(icao24: u32, tc: u8, m: &[u8; 7]) -> AirbornePosition {
         cpr_lat,
         cpr_lon,
         has_position: tc != 0,
-        alt_ft: (enc != 0).then(|| altitude(tc, enc)),
+        alt_ft: (enc != 0).then(|| altitude(tc, enc)).flatten(),
         surveillance_status: (m[0] >> 1) & 0x3,
         nic_suppl_b: m[0] & 0x1 == 1,
         utc: (m[2] >> 3) & 1 == 1,
@@ -253,18 +255,19 @@ impl SurfacePosition {
     }
 }
 
-/// Shared vertical-rate and geo-minus-baro fields of TC 19. The "not available" sentinels
-/// (-1) can never occur after the shifts and factors (logic-findings #35).
+/// Shared vertical-rate and geo-minus-baro fields of TC 19.
 fn vrate_geo(m: &[u8; 7]) -> (bool, i32, bool, i32, bool) {
     let down = m[4] & 0x08 != 0;
-    let raw = i32::from(m[4] & 0x07) << 6 | i32::from(m[5] >> 2 & 0x3F);
-    let vrate = i32::from(((raw - 1) << 6) as i16);
-    let mut geo = i32::from((((i32::from(m[6] & 0x7F)) - 1) * 25) as i16);
-    let geo_valid = geo != -1;
+    let raw_vrate = i32::from(m[4] & 0x07) << 6 | i32::from(m[5] >> 2 & 0x3F);
+    let vrate_valid = raw_vrate != 0;
+    let vrate = i32::from((((raw_vrate - 1).max(0)) << 6) as i16);
+    let raw_geo = i32::from(m[6] & 0x7F);
+    let geo_valid = raw_geo != 0;
+    let mut geo = i32::from((((raw_geo - 1).max(0)) * 25) as i16);
     if m[6] & 0x80 != 0 {
         geo = -geo;
     }
-    (vrate != -1, vrate, geo_valid, geo, down)
+    (vrate_valid, vrate, geo_valid, geo, down)
 }
 
 fn velocity(icao24: u32, subtype: u8, m: &[u8; 7]) -> VelocityOverGround {
@@ -287,10 +290,8 @@ fn velocity(icao24: u32, subtype: u8, m: &[u8; 7]) -> VelocityOverGround {
         ns <<= 2;
     }
     let (vrate_valid, vrate, geo_valid, geo, down) = vrate_geo(m);
-    // `(int)(x + 0.5)` truncates toward zero, so negative components come out one too small in
-    // magnitude (logic-findings #33).
-    let ew_out = (f64::from(if west { ew } else { -ew }) + 0.5) as i32;
-    let ns_out = (f64::from(if south { ns } else { -ns }) + 0.5) as i32;
+    let ew_out = if west { ew } else { -ew };
+    let ns_out = if south { ns } else { -ns };
     let angle =
         (f64::from(-ew_out).atan2(f64::from(-ns_out)) * 180.0 / std::f64::consts::PI) as i32;
     VelocityOverGround {
@@ -309,17 +310,17 @@ fn velocity(icao24: u32, subtype: u8, m: &[u8; 7]) -> VelocityOverGround {
 }
 
 fn airspeed(icao24: u32, subtype: u8, m: &[u8; 7]) -> AirspeedHeading {
-    let mut airspeed =
-        i32::from(((i32::from(m[3] & 0x7F) << 3 | i32::from(m[4] >> 5 & 0x07)) - 1) as i16);
-    // C# tests subtype 2 here, which never reaches this message type (logic-findings #34).
-    if subtype == 2 {
+    let raw = i32::from((i32::from(m[3] & 0x7F) << 3 | i32::from(m[4] >> 5 & 0x07)) as i16);
+    let airspeed_valid = raw != 0;
+    let mut airspeed = raw - 1;
+    if subtype == 4 {
         airspeed <<= 2;
     }
     let (vrate_valid, vrate, geo_valid, geo, _) = vrate_geo(m);
     AirspeedHeading {
         icao24,
         supersonic: subtype == 4,
-        airspeed_valid: false,
+        airspeed_valid,
         airspeed_kts: airspeed,
         true_airspeed: m[3] & 0x80 != 0,
         heading_valid: m[1] & 0x4 != 0,

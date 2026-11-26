@@ -57,27 +57,23 @@ pub fn check_lat_lon(lat: f64, lon: f64) -> bool {
 
 /// Checks if a string is a valid Maidenhead locator (`MaidenheadLocator.Check`).
 pub fn check(loc: &str) -> bool {
-    if loc.is_empty() {
-        return false;
-    }
-    let up: Vec<char> = loc.to_uppercase().chars().collect();
-    let len = up.len() as i32;
+    let len = loc.len() as i32;
     if len % 2 != 0 || len / 2 < MIN_PRECISION || len / 2 > MAX_PRECISION {
         return false;
     }
-    up.iter().enumerate().all(|(i, &ch)| {
-        if i % 4 <= 1 {
-            ('A'..='X').contains(&ch)
+    loc.bytes().enumerate().all(|(i, ch)| {
+        let ch = ch.to_ascii_uppercase();
+        if i < 2 {
+            (b'A'..=b'R').contains(&ch)
+        } else if i % 4 <= 1 {
+            (b'A'..=b'X').contains(&ch)
         } else {
-            ch.is_numeric()
+            ch.is_ascii_digit()
         }
     })
 }
 
 /// `MaidenheadLocator.IsPrecise(lat, lon, precision)`.
-///
-/// `Err` where C# throws: e.g. lat = 90 produces a locator character outside the valid zone
-/// range, which the reverse conversion rejects.
 pub fn is_precise(lat: f64, lon: f64, precision: i32) -> Result<bool, LocatorError> {
     let Some(loc) = loc_from_lat_lon_fixed(lat, lon, false, precision) else {
         return Ok(false);
@@ -156,9 +152,9 @@ fn loc_from_lat_lon_fixed(lat: f64, lon: f64, small: bool, precision: i32) -> Op
         let (zones, first) = retrieve_step_values(step, small);
         height /= zones as f64;
         width /= zones as f64;
-        let lon_zone = get_zone(lon_work, width);
+        let lon_zone = get_zone(lon_work, width).min(zones - 1);
         chars.push(char::from_u32(first as u32 + lon_zone as u32).unwrap_or('?'));
-        let lat_zone = get_zone(lat_work, height);
+        let lat_zone = get_zone(lat_work, height).min(zones - 1);
         chars.push(char::from_u32(first as u32 + lat_zone as u32).unwrap_or('?'));
         if step < MAX_PRECISION {
             lat_work -= lat_zone as f64 * height;

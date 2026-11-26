@@ -3,6 +3,7 @@
 
 use crate::{ElevationError, ElevationModel, ElevationStore, ELV_MISSING, TILE_MISSING};
 use as_geo::latlon::{self, GRect};
+use as_geo::maidenhead::check_lat_lon;
 use chrono::{DateTime, Utc};
 use rusqlite::{params, OptionalExtension};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -120,10 +121,19 @@ pub(crate) fn moving_average(values: &[i16], periods: usize) -> Option<Vec<i16>>
     Some(averages)
 }
 
-pub(crate) const PATH_SCHEMA: &str = "CREATE TABLE IF NOT EXISTS ElevationPath (
+const PATH_ALGORITHM_VERSION: i64 = 3;
+
+pub(crate) const LEGACY_PATH_SCHEMA: &str = "CREATE TABLE IF NOT EXISTS ElevationPath (
     Lat1 REAL NOT NULL, Lon1 REAL NOT NULL, Lat2 REAL NOT NULL, Lon2 REAL NOT NULL,
     StepWidth REAL NOT NULL, Count INTEGER NOT NULL, Path BLOB NOT NULL, LastUpdated INTEGER NOT NULL,
     PRIMARY KEY (Lat1, Lon1, Lat2, Lon2, StepWidth))";
+
+pub(crate) const PATH_CACHE_MIGRATION: &str = "DROP TABLE ElevationPath;
+    CREATE TABLE ElevationPath (
+        Lat1 REAL NOT NULL, Lon1 REAL NOT NULL, Lat2 REAL NOT NULL, Lon2 REAL NOT NULL,
+        StepWidth REAL NOT NULL, Count INTEGER NOT NULL, Path BLOB NOT NULL, LastUpdated INTEGER NOT NULL,
+        AlgorithmVersion INTEGER NOT NULL,
+        PRIMARY KEY (Lat1, Lon1, Lat2, Lon2, StepWidth))";
 
 fn cancelled(cancel: Option<&AtomicBool>) -> bool {
     cancel.is_some_and(|c| c.load(Ordering::Relaxed))
@@ -178,6 +188,11 @@ impl ElevationStore {
                 bounds: self.bounds(),
             })
         };
+        for (lat, lon) in [(lat1, lon1), (lat2, lon2)] {
+            if !check_lat_lon(lat, lon) {
+                return Err(ElevationError::InvalidCoordinate { lat, lon });
+            }
+        }
         // C# throws (overflow / out of memory) on such inputs; reject them before allocating.
         let points = latlon::distance(lat1, lon1, lat2, lon2) * 1000.0 / step_width_m;
         if !step_width_m.is_finite()
@@ -217,17 +232,31 @@ impl ElevationStore {
                 }
             }
         } else {
-            let mut raw = vec![0i16; ep.path.len() + avperiod - 1];
-            // integer division as in C#: -(avperiod / 2) * stepwidth
-            let mut d = -((avperiod / 2) as f64) * step;
-            for v in raw.iter_mut() {
-                *v = sample(d, &mut tile_missing)?;
-                d += step;
-                if cancelled(cancel) {
-                    return Ok(None);
+            // At the halved ASTER default, interleave two copies of the
+            // original moving average, centred half a step apart. The even
+            // lane samples the old positions in the same order and with the
+            // same arithmetic, so every old filtered height is preserved.
+            let stride = if step_width_m == model.default_step_width_m() {
+                2
+            } else {
+                1
+            };
+            let filter_step = step * stride as f64;
+            for phase in 0..stride.min(ep.count) {
+                let output = ep.path[phase..].iter_mut().step_by(stride);
+                let mut raw = vec![0i16; output.len() + avperiod - 1];
+                let mut d = -((avperiod / 2) as f64) * filter_step + phase as f64 * step;
+                for v in &mut raw {
+                    *v = sample(d, &mut tile_missing)?;
+                    d += filter_step;
+                    if cancelled(cancel) {
+                        return Ok(None);
+                    }
+                }
+                for (v, average) in output.zip(moving_average(&raw, avperiod).unwrap_or_default()) {
+                    *v = average;
                 }
             }
-            ep.path = moving_average(&raw, avperiod).unwrap_or_default();
         }
         if complete {
             complete = current().complete;
@@ -235,15 +264,7 @@ impl ElevationStore {
         ep.valid = complete;
         if tile_missing && complete {
             let b = current().bounds;
-            if lat1 < b.min_lat
-                || lat1 > b.max_lat
-                || lon1 < b.min_lon
-                || lon1 > b.max_lon
-                || lat2 < b.min_lat
-                || lat2 > b.max_lat
-                || lon2 < b.min_lon
-                || lon2 > b.max_lon
-            {
+            if !b.contains(lat1, lon1) || !b.contains(lat2, lon2) {
                 ep.valid = false;
             }
         }
@@ -320,8 +341,9 @@ impl ElevationStore {
             let row = conn
                 .query_row(
                     "SELECT Count, Path, LastUpdated FROM ElevationPath
-                     WHERE Lat1 = ?1 AND Lon1 = ?2 AND Lat2 = ?3 AND Lon2 = ?4 AND StepWidth = ?5",
-                    params![lat1, lon1, lat2, lon2, step_width_m],
+                     WHERE Lat1 = ?1 AND Lon1 = ?2 AND Lat2 = ?3 AND Lon2 = ?4 AND StepWidth = ?5
+                       AND AlgorithmVersion = ?6",
+                    params![lat1, lon1, lat2, lon2, step_width_m, PATH_ALGORITHM_VERSION],
                     |r| {
                         Ok((
                             r.get::<_, i64>(0)?,
@@ -377,12 +399,15 @@ impl ElevationStore {
         self.with_conn(model, |conn| {
             let lu = ep.last_updated.timestamp_nanos_opt().unwrap_or(i64::MAX);
             conn.execute(
-                "INSERT INTO ElevationPath (Lat1, Lon1, Lat2, Lon2, StepWidth, Count, Path, LastUpdated)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                "INSERT INTO ElevationPath (Lat1, Lon1, Lat2, Lon2, StepWidth, Count, Path, LastUpdated, AlgorithmVersion)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
                  ON CONFLICT (Lat1, Lon1, Lat2, Lon2, StepWidth) DO UPDATE SET
-                   Count = excluded.Count, Path = excluded.Path, LastUpdated = excluded.LastUpdated
-                 WHERE excluded.LastUpdated > ElevationPath.LastUpdated",
-                params![ep.lat1, ep.lon1, ep.lat2, ep.lon2, ep.step_width_m, ep.count as i64, ep.to_blob(), lu],
+                   Count = excluded.Count, Path = excluded.Path, LastUpdated = excluded.LastUpdated,
+                   AlgorithmVersion = excluded.AlgorithmVersion
+                 WHERE excluded.AlgorithmVersion != ElevationPath.AlgorithmVersion
+                    OR excluded.LastUpdated > ElevationPath.LastUpdated",
+                params![ep.lat1, ep.lon1, ep.lat2, ep.lon2, ep.step_width_m, ep.count as i64,
+                    ep.to_blob(), lu, PATH_ALGORITHM_VERSION],
             )?;
             Ok(())
         })

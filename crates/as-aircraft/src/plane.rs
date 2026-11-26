@@ -5,17 +5,46 @@ use crate::PlaneCategory;
 use as_geo::latlon::GPoint;
 use chrono::{DateTime, Utc};
 
+/// Whether an aircraft altitude is a geometric height or an estimate with an unknown datum.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum AltitudeProvenance {
+    Geometric,
+    PressureEstimate,
+    PressurePlusCorrectionEstimate,
+    #[default]
+    Unknown,
+}
+
+impl AltitudeProvenance {
+    /// Pressure and unknown heights remain usable but must be presented as estimates.
+    pub fn altitude_estimate(self) -> bool {
+        !matches!(self, Self::Geometric)
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Geometric => "Geometric",
+            Self::PressureEstimate => "PressureEstimate",
+            Self::PressurePlusCorrectionEstimate => "PressurePlusCorrectionEstimate",
+            Self::Unknown => "Unknown",
+        }
+    }
+}
+
 /// Complete aircraft info: report, crossing results and the previous report.
 /// Altitude in ft and speed in kts, as in the original.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PlaneInfo {
     pub time: DateTime<Utc>,
+    /// Inclusive expiry for a report assembled from separate observations.
+    pub components_valid_until: Option<DateTime<Utc>>,
     pub call: String,
     pub reg: String,
     pub hex: String,
     pub lat: f64,
     pub lon: f64,
     pub alt_ft: f64,
+    pub altitude_provenance: AltitudeProvenance,
     pub track: f64,
     pub speed_kts: f64,
     pub type_code: String,
@@ -29,6 +58,8 @@ pub struct PlaneInfo {
     // results of the crossing prediction
     pub int_point: Option<GPoint>,
     pub int_qrb: f64,
+    /// Forward distance to a genuine crossing on the current track [km], if available.
+    pub forward_qrb: Option<f64>,
     pub alt_diff: f64,
     pub potential: i32,
     pub eps1: f64,
@@ -55,12 +86,14 @@ impl Default for PlaneInfo {
     fn default() -> Self {
         Self {
             time: Utc::now(),
+            components_valid_until: None,
             call: String::new(),
             reg: String::new(),
             hex: String::new(),
             lat: 0.0,
             lon: 0.0,
             alt_ft: 0.0,
+            altitude_provenance: AltitudeProvenance::Unknown,
             track: 0.0,
             speed_kts: 0.0,
             type_code: String::new(),
@@ -72,6 +105,7 @@ impl Default for PlaneInfo {
             vspeed: 0,
             int_point: None,
             int_qrb: f64::MAX,
+            forward_qrb: None,
             alt_diff: 0.0,
             potential: 0,
             eps1: 0.0,
@@ -132,6 +166,11 @@ impl PlaneInfo {
     /// `Alt_m`.
     pub fn alt_m(&self) -> f64 {
         ft_m(self.alt_ft)
+    }
+
+    /// Pressure and unknown altitude sources are estimates, not geometric heights.
+    pub fn altitude_estimate(&self) -> bool {
+        self.altitude_provenance.altitude_estimate()
     }
 
     /// `Speed_kmh`.

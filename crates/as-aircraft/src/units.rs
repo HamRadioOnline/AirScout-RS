@@ -16,11 +16,11 @@ pub fn kts_kmh(kts: f64) -> f64 {
 pub fn kmh_kts(kmh: f64) -> f64 {
     kmh / 1.852
 }
-/// "km to miles". Multiplies instead of dividing, as in the original (logic-findings #16).
+/// km to statute miles.
 pub fn km_mi(km: f64) -> f64 {
-    km * 1.609
+    km / 1.609344
 }
-/// "Miles to km". Divides instead of multiplying, as in the original (logic-findings #16).
+/// Statute miles to km.
 pub fn mi_km(mi: f64) -> f64 {
-    mi / 1.609
+    mi * 1.609344
 }

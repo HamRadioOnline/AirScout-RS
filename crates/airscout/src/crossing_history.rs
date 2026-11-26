@@ -2,33 +2,16 @@
 //! loaded position history, the ambiguity pass and the CSV export. Pure functions plus the two
 //! job bodies; the dialog is `ui/dialogs/crossing_history.rs`.
 //!
-//! Ported 1:1, also where it is wrong (prediction-affecting):
-//! - the plane cache of one step holds *references* into the pre-selected positions, and
-//!   `InsertOrUpdateIfNewer` overwrites the first object of a hex with newer reports (:162-181).
-//!   [`crossing_history`] keeps the cache as indices and writes into `positions`, so the later
-//!   steps see the overwritten objects. This happens in the dialog's own copy only;
-//! - the crossings carry the time and the position of the *step* (`GetAll` extrapolates every
-//!   plane to it), duplicates per step stay;
-//! - the signal level is looked up for every crossing, the option only decides whether planes
-//!   without one are dropped (:198-212);
-//! - the ambiguity pass of `crossing_csv::mark_ambiguous` with its quirks (:311-336).
-//!
-//! The path set-up ([`crossing_path`], :59-127) differs from `UpdatePaths` and the port keeps the
-//! differences:
-//! - the stations come from `LocationFindOrCreate(call, 6-char locator)` of the *station
-//!   database*: the stored position of that locator, else the centre of its square (stored). The
-//!   settings position is used for the locator only (`UpdatePaths` updates the stored location
-//!   to the settings position);
-//! - best case: only the selected model is asked and the position moves whenever its tile is
-//!   stored, whatever the maximum is ([`calculator_shift`]); `UpdatePaths` walks all enabled
-//!   models and needs a real maximum;
-//! - the ground elevation is that of the selected model alone, 0 if missing (`ElevationData
-//!   [lat, lon, model]`); `UpdatePaths` walks the models (`GetElevation`);
-//! - the selected model is the best enabled one (`effective_model`), as everywhere in the port.
+//! Stage-6 fixes:
+//! - the replay scan keeps an owned per-hex sliding window, pre-rolls one TTL, evaluates at
+//!   `from` and then every step through `to` (inclusive), and never mutates source reports;
+//! - midpoint-range preselection is removed so configured radius filtering is applied by crossing
+//!   prediction at every step, including motion into range;
+//! - the history path uses the same effective-position and elevation resolver as live paths for
+//!   matching stations, settings and terrain availability.
 //!
 //! Not reproduced (GUI):
-//! - `ref AllPositions` hands the dialog the main history, and the aliasing above corrupts it.
-//!   The job works on a copy;
+//! - `ref AllPositions` hands the dialog the main history; the job works on a copy.
 //! - `startindex == -1` (no pre-selected report is younger than `time - ttl`) throws in C# and
 //!   ends the run without a chart. The port ends the loop and keeps the crossings found so far;
 //! - the progress flood per plane becomes one report per step;
@@ -36,16 +19,15 @@
 
 use crate::history::HistoryData;
 use crate::jobs::{JobCtx, JobEvent};
-use crate::services::{antenna_of_loc, local_obstruction, open_data, Paths};
+use crate::services::{antenna_of_loc, ground_elevation, local_obstruction, open_data, Paths};
 use as_aircraft::crossing::get_nearest_planes;
-use as_aircraft::{update_if_newer, PlaneInfo, PlaneInfoCache};
+use as_aircraft::{PlaneInfo, PlaneInfoCache};
 use as_elevation::ElevationModel;
-use as_geo::latlon::{self, GPoint};
-use as_geo::maidenhead::{self, PositionInRectangle};
+use as_geo::latlon::GPoint;
+use as_geo::maidenhead;
 use as_propagation::{PathParams, PropagationPath};
 use as_settings::Settings;
 use as_signals::SignalDb;
-use as_stations::{GeoSource, Location};
 use chrono::{DateTime, Duration, TimeZone, Utc};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -127,16 +109,7 @@ pub fn crossing_range(
     (from, to, step_s.max(1))
 }
 
-/// One station of the path: its stored location of the 6-character locator (created at the centre
-/// of the square if there is none), the best-case position and the antenna height [m].
-fn station(
-    paths: &Paths,
-    s: &Settings,
-    model: ElevationModel,
-    call: &str,
-    lat: f64,
-    lon: f64,
-) -> Result<(GPoint, f64), String> {
+fn station(call: &str, lat: f64, lon: f64) -> Result<(GPoint, String), String> {
     if call.trim().is_empty() {
         return Err("no call sign".into());
     }
@@ -144,35 +117,7 @@ fn station(
         .ok()
         .flatten()
         .ok_or_else(|| format!("invalid position {lat}, {lon}"))?;
-    let db_err = |e: as_stations::StationError| format!("station database: {e}");
-    let found = paths
-        .stations
-        .location_find(call, Some(&loc))
-        .map_err(db_err)?;
-    let ld = match found {
-        Some(l) => l,
-        None => {
-            let c = maidenhead::gpoint_from_loc(&loc, PositionInRectangle::MiddleMiddle)
-                .map_err(|e| format!("locator {loc}: {e}"))?;
-            let l = Location::new(call, &loc, c.lat, c.lon, GeoSource::FromLoc, 0, Utc::now());
-            paths
-                .stations
-                .location_insert_or_update_if_newer(&l)
-                .map_err(db_err)?;
-            l
-        }
-    };
-    let (height, _) = antenna_of_loc(&paths.stations, &ld.call, &ld.loc, s.band)?;
-    let mut pos = GPoint::new(ld.lat, ld.lon);
-    if s.path_best_case_elevation {
-        let shift = crate::best_case::calculator_shift(model, pos, |m, loc| {
-            paths.store.max_elv_loc(m, loc).ok().flatten()
-        })?;
-        if let Some(info) = shift {
-            pos = GPoint::new(info.max_lat, info.max_lon);
-        }
-    }
-    Ok((pos, height))
+    Ok((GPoint::new(lat, lon), loc))
 }
 
 /// The path of the dialog (:59-127), found in the propagation database or created and stored.
@@ -187,24 +132,22 @@ pub fn crossing_path(
     if model == ElevationModel::None {
         return Err("no elevation model enabled".into());
     }
-    let (my, h_my) = station(paths, s, model, &s.my_call, s.my_lat, s.my_lon)?;
-    let (dx, h_dx) = station(paths, s, model, &s.dx_call, s.dx_lat, s.dx_lon)?;
-    let ground = |p: GPoint| {
-        paths
-            .store
-            .elevation(model, p.lat, p.lon, true)
-            .map(f64::from)
-            .map_err(|e| format!("elevation: {e}"))
-    };
-    let obstruction = local_obstruction(&paths.store, model, my, dx, h_my)?;
+    let (my_raw, my_loc) = station(&s.my_call, s.my_lat, s.my_lon)?;
+    let (dx_raw, dx_loc) = station(&s.dx_call, s.dx_lat, s.dx_lon)?;
+    let (h_my, _) = antenna_of_loc(&paths.stations, &s.my_call, &my_loc, s.band, Some(my_raw))?;
+    let (h_dx, _) = antenna_of_loc(&paths.stations, &s.dx_call, &dx_loc, s.band, Some(dx_raw))?;
+    let my = crate::best_case::effective_position(&paths.store, s, my_raw)?;
+    let dx = crate::best_case::effective_position(&paths.store, s, dx_raw)?;
+    // the obstruction is stored at the settings position, not at the shifted one (#105)
+    let obstruction = local_obstruction(&paths.store, model, my_raw, dx_raw, h_my)?;
     let bs = s.current_band_settings();
     let p = PathParams {
         lat1: my.lat,
         lon1: my.lon,
-        h1: ground(my)? + h_my,
+        h1: ground_elevation(&paths.store, &s.elevation_enabled, my.lat, my.lon) + h_my,
         lat2: dx.lat,
         lon2: dx.lon,
-        h2: ground(dx)? + h_dx,
+        h2: ground_elevation(&paths.store, &s.elevation_enabled, dx.lat, dx.lon) + h_dx,
         qrg_ghz: s.band.to_ghz(),
         radius_km: s.radius_km(),
         f1_clearance: bs.f1_clearance,
@@ -217,35 +160,9 @@ pub fn crossing_path(
         .map_err(|e| format!("path calculation: {e}"))
 }
 
-/// Borrow `positions[a]` mutably and `positions[b]` shared (`a != b`).
-fn pair(positions: &mut [PlaneInfo], a: usize, b: usize) -> (&mut PlaneInfo, &PlaneInfo) {
-    if a < b {
-        let (lo, hi) = positions.split_at_mut(b);
-        (&mut lo[a], &hi[0])
-    } else {
-        let (lo, hi) = positions.split_at_mut(a);
-        (&mut hi[0], &lo[b])
-    }
-}
-
-/// `PlaneInfoCache.InsertOrUpdateIfNewer` on references: a hex seen before keeps its first
-/// object, which a newer report overwrites in place.
-fn cache_insert(cache: &mut BTreeMap<String, usize>, positions: &mut [PlaneInfo], idx: usize) {
-    match cache.get(&positions[idx].hex).copied() {
-        None => {
-            cache.insert(positions[idx].hex.clone(), idx);
-        }
-        Some(first) if first != idx => {
-            let (old, new) = pair(positions, first, idx);
-            update_if_newer(old, new);
-        }
-        Some(_) => {}
-    }
-}
-
 /// The worker of the dialog (:137-217). `positions` is the dialog's copy of the history, sorted
-/// by time; the aliasing of the cache changes it (see the module doc). `progress` gets the number
-/// of crossings so far once per step. Cancel returns what was found.
+/// by time. `progress` gets the number of crossings so far once per step. Cancel returns what was
+/// found.
 pub fn crossing_history(
     positions: &mut [PlaneInfo],
     path: &PropagationPath,
@@ -256,61 +173,53 @@ pub fn crossing_history(
 ) -> Vec<PlaneInfo> {
     let mut crossings = Vec::new();
     let cancelled = || cancel.load(Ordering::Relaxed);
-    // pre-select the positions near the path (:111-130)
-    let mid = path.mid_point();
-    let max_dist = path.distance() / 2.0;
+    let step = Duration::try_seconds(p.step_s.max(1)).unwrap_or(Duration::seconds(1));
+    let ttl = Duration::try_minutes(p.ttl_min.max(0)).unwrap_or(Duration::zero());
+    let pre_roll_from = p
+        .from
+        .checked_sub_signed(ttl)
+        .unwrap_or(DateTime::<Utc>::MIN_UTC);
     let mut nearest = Vec::new();
     for (i, info) in positions.iter().enumerate() {
-        if info.time >= p.from
-            && info.time <= p.to
-            && latlon::distance(info.lat, info.lon, mid.lat, mid.lon) <= max_dist
-        {
+        if info.time >= pre_roll_from && info.time <= p.to {
             nearest.push(i);
         }
         if i % 4096 == 0 && cancelled() {
             return crossings;
         }
     }
-    if nearest.is_empty() {
-        return crossings;
-    }
-    let step = Duration::try_seconds(p.step_s.max(1)).unwrap_or(Duration::seconds(1));
-    let ttl = Duration::try_minutes(p.ttl_min);
-    let mut start = Some(0usize);
-    let mut time = positions[nearest[0]].time;
+    let mut next = 0usize;
+    let mut cache: BTreeMap<String, PlaneInfo> = BTreeMap::new();
+    let mut time = p.from;
     while !cancelled() && time <= p.to {
         progress(crossings.len());
-        // C# starts at index -1 and throws (:170-172): the loop ends
-        let Some(first) = start else { break };
-        let from = ttl
-            .and_then(|d| time.checked_sub_signed(d))
-            .unwrap_or(DateTime::<Utc>::MIN_UTC);
-        let mut cache: BTreeMap<String, usize> = BTreeMap::new();
-        start = None;
-        let mut i = first;
-        while !cancelled() && i < nearest.len() {
-            let idx = nearest[i];
-            if positions[idx].time >= from {
-                // the first index of the cache fill is where the next step starts
-                if start.is_none() {
-                    start = Some(i);
-                }
-                cache_insert(&mut cache, positions, idx);
-            }
-            if positions[idx].time > time {
+        while !cancelled() && next < nearest.len() {
+            let idx = nearest[next];
+            let report = &positions[idx];
+            if report.time > time {
                 break;
             }
-            i += 1;
+            let replace = cache
+                .get(&report.hex)
+                .is_none_or(|current| report.time >= current.time);
+            if replace {
+                cache.insert(report.hex.clone(), report.clone());
+            }
+            next += 1;
         }
+        let from = time
+            .checked_sub_signed(ttl)
+            .unwrap_or(DateTime::<Utc>::MIN_UTC);
+        cache.retain(|_, report| report.time >= from);
         let planes = PlaneInfoCache::new();
-        for &idx in cache.values() {
-            planes.set(positions[idx].clone());
+        for report in cache.values() {
+            planes.set(report.clone());
         }
-        let mut all = planes.get_all(time, p.ttl_min);
+        let all = planes.get_all(time, p.ttl_min);
         let near = get_nearest_planes(
             time,
             path,
-            &mut all,
+            &all,
             p.max_radius_km,
             p.max_distance_km,
             p.max_alt_m,

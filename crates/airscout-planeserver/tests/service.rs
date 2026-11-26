@@ -564,3 +564,27 @@ fn restart_on_same_port() {
     assert_eq!(get(second.local_addr().unwrap(), "/").status(), 200);
     second.stop();
 }
+
+#[test]
+fn finding_329_planeserver_worker_rejects_its_listener() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut cfg = PlaneServerConfig {
+        bind: IpAddr::V4(Ipv4Addr::LOCALHOST),
+        data_dir: Some(dir.path().to_path_buf()),
+        feeds: vec!["AirScoutServer".into()],
+        ..Default::default()
+    };
+    let reservation = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    cfg.port = reservation.local_addr().unwrap().port();
+    cfg.feed_settings.get_mut("AirScoutServer").unwrap()["url"] =
+        format!("http://127.0.0.1:{}/planes.json", cfg.port).into();
+    drop(reservation);
+    let server = Service::start(&cfg, make_feeds(&cfg)).unwrap();
+    wait_until("self-feed error", WAIT, || {
+        server.status().feeds[0]
+            .last_error
+            .as_deref()
+            .is_some_and(|e| e.contains("this process"))
+    });
+    server.stop();
+}

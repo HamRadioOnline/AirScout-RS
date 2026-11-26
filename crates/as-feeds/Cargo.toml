@@ -13,7 +13,7 @@ as-net.workspace = true
 chrono.workspace = true
 reqwest.workspace = true
 serde.workspace = true
-serde_json.workspace = true
+serde_json = { workspace = true, features = ["raw_value"] }
 thiserror.workspace = true
 toml.workspace = true
 zstd.workspace = true

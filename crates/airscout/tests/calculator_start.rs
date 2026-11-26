@@ -2,7 +2,7 @@
 use airscout::background::BackgroundService;
 use airscout::services::{open_data, ServiceEvent};
 use as_settings::{ElevationEnabled, Settings};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{channel, Receiver};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -66,7 +66,14 @@ fn start(
     let paths = open_data(dir.path()).unwrap();
     let (tx, rx) = channel();
     let cancel = Arc::new(AtomicBool::new(false));
-    let svc = BackgroundService::start(paths, s, tx, cancel.clone(), 7);
+    let svc = BackgroundService::start(
+        paths,
+        s,
+        tx,
+        cancel.clone(),
+        7,
+        Arc::new(AtomicUsize::new(0)),
+    );
     (dir, svc, rx, cancel)
 }
 
@@ -156,7 +163,14 @@ fn background_calculator_stores_paths_after_the_download() {
     });
     let (tx, rx) = channel();
     let cancel = Arc::new(AtomicBool::new(false));
-    let svc = BackgroundService::start(paths.clone(), &s, tx, cancel.clone(), 7);
+    let svc = BackgroundService::start(
+        paths.clone(),
+        &s,
+        tx,
+        cancel.clone(),
+        7,
+        Arc::new(AtomicUsize::new(0)),
+    );
     let got = calculations(&rx, Duration::from_secs(30), true);
     cancel.store(true, Ordering::Relaxed);
     drop(svc);

@@ -1,0 +1,10 @@
+group	case	field	C# value	new value	findings
+callsign	19	result	"dl2alf"	"DL2ALF"	#14
+callsign	22	result	" DL2ALF "	"DL2ALF"	#14
+callsign	23	result	"???"	"DL"	#14
+callsign	57	result	false	true	#14
+callsign	58	result	""	"AB1"	#14
+feed_json	0	result	{"error":"JsonReaderException"}	{"decoded":7,"mapped":6,"ground":1}	#52
+feed_json	2	result	{"error":"JsonReaderException"}	{"decoded":7,"mapped":6,"ground":1}	#52
+bincraft	0	aircraft	[{"age_s":12.0,"alt_ft":37000,"ground":false,"hex":"3C6589","lat":50.612345,"lon":10.987654,"speed_kts":260.0,"time_ms":1795435188699,"track":26.666666666666668},{"age_s":12.1,"alt_ft":37025,"ground":false,"hex":"3C658A","lat":50.613345,"lon":10.988654,"speed_kts":260.1,"time_ms":1795435188599,"track":26.677777777777777},{"age_s":12.2,"alt_ft":37050,"ground":false,"hex":"3C658B","lat":50.614345,"lon":10.989654,"speed_kts":260.2,"time_ms":1795435188499,"track":26.68888888888889}]	[{"age_s":1.2,"alt_ft":37000.0,"ground":false,"hex":"3C6589","lat":50.612345,"lon":10.987654,"speed_kts":482.3,"time_ms":1795435199500,"track":245.7111111111111},{"age_s":1.3,"alt_ft":37025.0,"ground":true,"hex":"3C658A","lat":50.613345,"lon":10.988654,"speed_kts":482.4,"time_ms":1795435199400,"track":245.72222222222223}]	#61
+bincraft	2	aircraft	[{"age_s":12.0,"alt_ft":37000,"ground":false,"hex":"3C6589","lat":50.612345,"lon":10.987654,"speed_kts":260.0,"time_ms":1795435188699,"track":26.666666666666668},{"age_s":12.1,"alt_ft":37025,"ground":false,"hex":"3C658A","lat":50.613345,"lon":10.988654,"speed_kts":260.1,"time_ms":1795435188599,"track":26.677777777777777}]	[{"age_s":1.2,"alt_ft":37000.0,"ground":false,"hex":"3C6589","lat":50.612345,"lon":10.987654,"speed_kts":482.3,"time_ms":1795435199500,"track":245.7111111111111},{"age_s":1.3,"alt_ft":37025.0,"ground":true,"hex":"3C658A","lat":50.613345,"lon":10.988654,"speed_kts":482.4,"time_ms":1795435199400,"track":245.72222222222223}]	#61

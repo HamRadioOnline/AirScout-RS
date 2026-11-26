@@ -75,13 +75,26 @@ pub type TrackInputCell = Arc<Mutex<TrackInput>>;
 /// What the Track worker showed last; the UI reads it.
 pub type TrackShownCell = Arc<Mutex<TrackShown>>;
 
-/// `oldvalues` of the C# loop: the last valid step. Survives Pause and Play.
+/// Tracking baseline (`oldvalues`): the last valid adjacent TRACK sample for one source/geometry.
 #[derive(Default)]
 pub struct Tracker {
     old: Option<TrackValues>,
+    baseline: Option<Baseline>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct Baseline {
+    hex: String,
+    params: TrackParams,
+    heights: (f64, f64),
 }
 
 impl Tracker {
+    fn clear(&mut self) {
+        self.old = None;
+        self.baseline = None;
+    }
+
     /// One step. `None` outside LIFE or without params; otherwise the step for the Track worker
     /// (`values` only when [`valid`]) and what the UI shows.
     pub fn step(
@@ -91,17 +104,18 @@ impl Tracker {
         cache: &PlaneInfoCache,
     ) -> Option<(TrackStep, TrackShown)> {
         if !input.life {
+            self.clear();
             return None;
         }
-        let p = input.params.as_ref()?;
+        let p = match input.params.as_ref() {
+            Some(p) => p,
+            None => {
+                self.clear();
+                return None;
+            }
+        };
         let mode = input.mode;
         let hex = input.hex.as_deref();
-        // `oldvalues` is dropped as soon as a step runs for another plane, valid or not (:8064-8067)
-        if let (TrackMode::Track, Some(hex)) = (mode, hex) {
-            if self.old.as_ref().is_some_and(|o| o.hex != hex) {
-                self.old = None;
-            }
-        }
         let shown = |values: Option<TrackValues>, status| TrackShown {
             rev: input.rev,
             values,
@@ -118,6 +132,7 @@ impl Tracker {
                 Some(h) => h,
                 // the worker has not answered yet: no values, nothing blocks
                 None => {
+                    self.clear();
                     return Some((
                         TrackStep { values: None, mode },
                         shown(None, TrackStatus::Stopped),
@@ -125,10 +140,28 @@ impl Tracker {
                 }
             }
         } else {
+            self.clear();
             (0.0, 0.0)
         };
-        let mut v = track_values(time, plane.as_ref(), mode, p, my_h, dx_h, self.old.as_ref());
+        let baseline = if let (TrackMode::Track, Some(hex)) = (mode, hex) {
+            Some(Baseline {
+                hex: hex.to_string(),
+                params: p.clone(),
+                heights: (my_h, dx_h),
+            })
+        } else {
+            None
+        };
+        if baseline.as_ref() != self.baseline.as_ref() {
+            self.old = None;
+        }
+        let old = self.old.as_ref().filter(|o| {
+            let dt = (time - o.timestamp).as_seconds_f64();
+            dt > 0.0 && dt <= 1.0
+        });
+        let mut v = track_values(time, plane.as_ref(), mode, p, my_h, dx_h, old);
         if !valid(&v) {
+            self.clear();
             return Some((
                 TrackStep { values: None, mode },
                 shown(None, TrackStatus::Stopped),
@@ -140,7 +173,12 @@ impl Tracker {
             TrackMode::Track => TrackStatus::Tracking,
             _ => TrackStatus::Stopped,
         };
-        self.old = Some(v.clone());
+        if mode == TrackMode::Track {
+            self.old = Some(v.clone());
+            self.baseline = baseline;
+        } else {
+            self.clear();
+        }
         Some((
             TrackStep {
                 values: Some(v.clone()),

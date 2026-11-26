@@ -107,6 +107,8 @@ fn plane_default() -> PlaneInfoJson {
         from: String::new(),
         to: String::new(),
         v_speed: 0,
+        altitude_estimate: None,
+        altitude_provenance: None,
     }
 }
 
@@ -160,6 +162,8 @@ fn plane_info() {
         from: "XXAA".into(),
         to: "XXBB".into(),
         v_speed: -640,
+        altitude_estimate: None,
+        altitude_provenance: None,
     };
     // the C# setters: Alt_m = Alt / 3.28084, Speed_kmh = Speed * 1.852
     assert_eq!(p.alt_m, Num(35000.0 / 3.28084));

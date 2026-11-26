@@ -14,6 +14,7 @@ use crate::wintest_nearest::NearestSettings;
 use crate::wintest_service::{WinTestConfig, WinTestCtx, WinTestService};
 use as_web::server::WebConfig;
 use std::net::SocketAddr;
+use std::sync::atomic::AtomicUsize;
 use std::sync::RwLock;
 
 /// The real services: path thread plus feed worker, events into one channel.
@@ -23,6 +24,9 @@ pub struct RealServices {
     feed: Option<FeedService>,
     horizon: Option<HorizonHandle>,
     background: Option<BackgroundService>,
+    /// Running-worker counter shared by every `BackgroundService` generation: it only decreases
+    /// when a worker actually exits, so a restart never loses a still-running older worker (#155).
+    background_running: Arc<AtomicUsize>,
     speclab: Option<SpecLabService>,
     /// Cancel flag of the running analysis job.
     analysis: Option<Arc<AtomicBool>>,
@@ -61,6 +65,7 @@ impl RealServices {
             feed: None,
             horizon: None,
             background: None,
+            background_running: Arc::new(AtomicUsize::new(0)),
             speclab: None,
             analysis: None,
             maintenance: Vec::new(),
@@ -132,8 +137,17 @@ impl Services for RealServices {
         cache: Arc<PlaneInfoCache>,
     ) -> Result<(), String> {
         self.stop_feed();
-        let f = FeedService::start(&self.paths, settings, cache, self.tx.clone(), feed_id)
-            .map_err(|e| e.to_string())?;
+        let listener = web_config(settings, self.net)
+            .map(|config| self.web_local_addr().unwrap_or(config.bind));
+        let f = FeedService::start_with_listener(
+            &self.paths,
+            settings,
+            cache,
+            self.tx.clone(),
+            feed_id,
+            listener,
+        )
+        .map_err(|e| e.to_string())?;
         self.feed = Some(f);
         Ok(())
     }
@@ -160,21 +174,29 @@ impl Services for RealServices {
 
     fn start_background(&mut self, settings: &Settings, generation: u64) {
         self.elevation = settings.elevation_enabled;
-        // the old service is cancelled and detached; a fresh flag keeps it silent for good
+        // the old service is cancelled and detached; a fresh flag keeps it silent for good. The
+        // new generation shares `background_running`, so a worker of the old one that is still
+        // inside a request stays counted until it exits (#155).
         self.stop_background();
-        self.background = Some(BackgroundService::start(
+        let svc = BackgroundService::start(
             self.paths.clone(),
             settings,
             self.tx.clone(),
             Arc::new(AtomicBool::new(false)),
             generation,
-        ));
+            self.background_running.clone(),
+        );
+        self.background = Some(svc);
     }
 
     fn stop_background(&mut self) {
         if let Some(b) = self.background.take() {
             b.stop();
         }
+    }
+
+    fn background_jobs(&self) -> usize {
+        self.background_running.load(Ordering::SeqCst)
     }
 
     fn restart_background(&mut self, settings: &Settings, generation: u64) {

@@ -116,17 +116,52 @@ fn watchlist_insert_capped_and_sort() {
     assert!(w.insert_capped(item("DL2ALF", "JN58"), 3));
     assert!(!w.insert_capped(item("DL2ALF", "JN58"), 3), "duplicate");
     assert!(w.insert_capped(item("AA1A", "FN42"), 3));
-    assert!(!w.insert_capped(item("ZZ9Z", "AA00"), 3), "full");
+    // full: the new station is still inserted at the front and the oldest is dropped
+    assert!(
+        w.insert_capped(item("ZZ9Z", "AA00"), 3),
+        "full inserts at front"
+    );
     assert_eq!(w.0.len(), 3);
+    // newest-first: ZZ9Z, AA1A, DL2ALF/JN58; the oldest DL2ALF/JO50 is dropped
+    assert_eq!(w.0[0].call, "ZZ9Z");
+    assert_eq!(w.index_of_loc("DL2ALF", "JO50"), None, "oldest dropped");
     w.sort();
     let order: Vec<_> = w.0.iter().map(|i| (&*i.call, &*i.loc)).collect();
     assert_eq!(
         order,
-        [("AA1A", "FN42"), ("DL2ALF", "JN58"), ("DL2ALF", "JO50")]
+        [("AA1A", "FN42"), ("DL2ALF", "JN58"), ("ZZ9Z", "AA00")]
     );
     assert_eq!(w.index_of("DL2ALF"), Some(1));
-    assert_eq!(w.index_of_loc("DL2ALF", "JO50"), Some(2));
+    assert_eq!(w.index_of_loc("DL2ALF", "JN58"), Some(1));
     assert_eq!(w.index_of_loc("DL2ALF", "XX00"), None);
+}
+
+#[test]
+fn full_watchlist_inserts_dx_at_front_and_drops_oldest() {
+    let mut w = Watchlist::default();
+    for i in 0..20 {
+        assert!(w.insert_capped(item(&format!("C{i:02}"), "JO50AA"), 20));
+    }
+    assert_eq!(w.0.len(), 20);
+    // a full list still gains the new DX station at the top; the oldest (C00) is dropped
+    assert!(w.insert_capped(item("DX9DX", "JO70AA"), 20));
+    assert_eq!(w.0.len(), 20);
+    assert_eq!(w.0[0].call, "DX9DX");
+    assert_eq!(w.0[0].loc, "JO70AA");
+    assert_eq!(w.0[19].call, "C01");
+    assert!(w.index_of_loc("C00", "JO50AA").is_none(), "oldest dropped");
+    assert!(w.index_of_loc("C19", "JO50AA").is_some());
+}
+
+#[test]
+fn watchlist_insert_capped_zero_keeps_nothing() {
+    let mut w = Watchlist::default();
+    assert!(w.insert_capped(item("AA1A", "FN42"), 3));
+    assert!(
+        !w.insert_capped(item("ZZ9Z", "AA00"), 0),
+        "cap 0 keeps nothing"
+    );
+    assert!(w.0.is_empty());
 }
 
 #[test]

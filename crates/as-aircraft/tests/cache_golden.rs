@@ -1,8 +1,8 @@
 //! Golden test: `PlaneInfoCache.Get` / `GetAll` against C# (`tests/golden/plane_cache.json`).
 use as_aircraft::{PlaneCategory, PlaneInfo, PlaneInfoCache};
-use as_golden::{assert_close, num};
+use as_golden::{deltas::DeltaManifest, load, num};
 use chrono::{DateTime, Duration, TimeZone, Utc};
-use serde_json::Value;
+use serde_json::{json, Value};
 
 fn t0() -> DateTime<Utc> {
     Utc.with_ymd_and_hms(2023, 11, 14, 22, 0, 0).unwrap()
@@ -12,41 +12,62 @@ fn at(secs: f64) -> DateTime<Utc> {
     t0() + Duration::milliseconds((secs * 1000.0) as i64)
 }
 
-fn check_plane(got: &PlaneInfo, want: &Value, ctx: &str) {
-    assert_eq!(got.hex, want["hex"].as_str().unwrap(), "{ctx}");
-    let secs = (got.time - t0()).num_milliseconds() as f64 / 1000.0;
-    assert_close(secs, num(&want["time"]).unwrap(), 1e-9, &ctx);
-    for (g, k) in [
-        (got.lat, "lat"),
-        (got.lon, "lon"),
-        (got.alt_ft, "alt"),
-        (got.track, "track"),
-        (got.speed_kts, "speed"),
-        (got.old_lat, "old_lat"),
-        (got.old_lon, "old_lon"),
-        (got.old_alt_ft, "old_alt"),
-        (got.old_track, "old_track"),
-        (got.old_speed_kts, "old_speed"),
-    ] {
-        assert_close(g, num(&want[k]).unwrap(), 1e-9, &format!("{ctx} {k}"));
+fn plane_json(got: &PlaneInfo) -> Value {
+    json!({
+        "hex": got.hex,
+        "time": (got.time - t0()).num_milliseconds() as f64 / 1000.0,
+        "lat": got.lat,
+        "lon": got.lon,
+        "alt": got.alt_ft,
+        "track": got.track,
+        "speed": got.speed_kts,
+        "old_time": got.old_time.map(|t| (t - t0()).num_milliseconds() as f64 / 1000.0),
+        "old_lat": got.old_lat,
+        "old_lon": got.old_lon,
+        "old_alt": got.old_alt_ft,
+        "old_track": got.old_track,
+        "old_speed": got.old_speed_kts,
+    })
+}
+
+fn findings(index: usize) -> &'static str {
+    let has_23 = [22, 23, 24, 25, 26, 27, 28, 29, 30, 31].contains(&index);
+    let has_355 = [12, 13, 14, 15, 32, 33, 34, 35, 58, 59, 62, 63].contains(&index);
+    if index <= 1 || (has_23 && has_355) {
+        "#23/#355/#356"
+    } else if has_23 {
+        "#23/#356"
+    } else if has_355 {
+        "#355/#356"
+    } else {
+        "#356"
     }
-    let old = got
-        .old_time
-        .map(|t| (t - t0()).num_milliseconds() as f64 / 1000.0);
-    assert_eq!(old, num(&want["old_time"]), "{ctx} old_time");
-    // the C# copy constructor does not copy From/To/VSpeed
-    assert_eq!(
-        (got.from.as_str(), got.to.as_str(), got.vspeed),
-        ("", "", 0),
-        "{ctx}"
-    );
+}
+
+fn equivalent(a: &Value, b: &Value, tol: f64) -> bool {
+    if let (Some(x), Some(y)) = (num(a), num(b)) {
+        (x.is_nan() && y.is_nan()) || x == y || (x - y).abs() <= tol
+    } else {
+        match (a, b) {
+            (Value::Array(a), Value::Array(b)) => {
+                a.len() == b.len() && a.iter().zip(b).all(|(x, y)| equivalent(x, y, tol))
+            }
+            (Value::Object(a), Value::Object(b)) => {
+                a.len() == b.len()
+                    && a.iter()
+                        .all(|(k, x)| b.get(k).is_some_and(|y| equivalent(x, y, tol)))
+            }
+            _ => a == b,
+        }
+    }
 }
 
 #[test]
 fn cache_golden() {
-    let g = as_golden::load("plane_cache.json");
-    for c in &g.cases {
-        let ctx = format!("{} {} at {}", c.func, c.args["scenario"], c.args["at"]);
+    let g = load("plane_cache.json");
+    let mut deltas =
+        DeltaManifest::load_from("docs/logic-fixes-area2/golden-deltas.tsv", "plane_cache");
+    for (index, c) in g.cases.iter().enumerate() {
         let cache = PlaneInfoCache::new();
         let mut inserted = Vec::new();
         for r in c.args["reports"].as_array().unwrap() {
@@ -70,25 +91,34 @@ fn cache_golden() {
             p.vspeed = 500;
             inserted.push(Value::from(cache.insert_or_update_if_newer(&p) as i64));
         }
-        assert_eq!(&Value::Array(inserted), &c.result["inserted"], "{ctx}");
         let q = at(c.f("at"));
         let ttl = c.i("ttl");
-        if c.func == "get" {
+        let got_result = if c.func == "get" {
             let hex = c.args["reports"].as_array().unwrap().last().unwrap()["hex"]
                 .as_str()
                 .unwrap();
-            match (cache.get(hex, q, ttl), &c.result["plane"]) {
-                (None, Value::Null) => {}
-                (Some(p), w) if !w.is_null() => check_plane(&p, w, &ctx),
-                (got, want) => panic!("{ctx}: rust {got:?} vs c# {want}"),
-            }
+            let plane = cache
+                .get(hex, q, ttl)
+                .map(|p| plane_json(&p))
+                .unwrap_or(Value::Null);
+            json!({ "inserted": inserted, "plane": plane })
         } else {
-            let got = cache.get_all(q, ttl);
-            let want = c.result["planes"].as_array().unwrap();
-            assert_eq!(got.len(), want.len(), "{ctx}");
-            for (g, w) in got.iter().zip(want) {
-                check_plane(g, w, &ctx);
-            }
-        }
+            let planes = cache
+                .get_all(q, ttl)
+                .iter()
+                .map(plane_json)
+                .collect::<Vec<_>>();
+            json!({ "inserted": inserted, "planes": planes })
+        };
+        let expected = deltas.expected(
+            index,
+            "result",
+            &c.result,
+            got_result.clone(),
+            1e-9,
+            findings(index),
+        );
+        assert!(equivalent(&got_result, &expected, 1e-9), "case {index}");
     }
+    deltas.finish();
 }

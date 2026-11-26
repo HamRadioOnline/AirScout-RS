@@ -1,11 +1,9 @@
 //! `/elevationpath.json`, `/propagationpath.json` and `/nearestplanes.json` of the C# web
 //! server (`AirScout/Webserver.cs:621-1048`).
 //!
-//! The routes read stored elevation tiles only: no tile is downloaded. As in C#, a GET
-//! writes to the databases (1:1):
-//! - a computed elevation or propagation path is saved when it is valid;
-//! - `/propagationpath.json` stores a missing station (`LocationFindOrCreate`, `:848`,
-//!   `:869`).
+//! The routes read stored elevation tiles only: no tile is downloaded. A GET writes the
+//! computed elevation or propagation path when it is valid (1:1, #386); the station lookups
+//! are read-only (#265), so no `Location` row is written.
 //!
 //! Requests that never complete in C# answer here (L8 deviation): no elevation model, a
 //! band without band settings, a position without a locator, and every exception
@@ -18,9 +16,7 @@
 
 use crate::services::local_obstruction;
 use crate::web_api::WebCtx;
-use crate::web_stations::{
-    location_find, location_find_or_create, qrv_defaulted, qrv_json, web_elevation, WebLocation,
-};
+use crate::web_stations::{location_find, qrv_defaulted, qrv_json, web_elevation, WebLocation};
 use as_aircraft::crossing::get_nearest_planes;
 use as_aircraft::PlaneInfo;
 use as_elevation::{ElevationModel, ElevationPath};
@@ -29,7 +25,7 @@ use as_geo::latlon::{GPoint, EARTH_RADIUS_KM};
 use as_geo::maidenhead;
 use as_propagation::{PathParams, PropagationPath};
 use as_settings::{BandSettings, Settings};
-use as_stations::{callsign, Qrv};
+use as_stations::{callsign, GeoSource, Qrv};
 use as_web::dto::{
     ElevationPathJson, GPointJson, LocationJson, PlaneInfoJson, PropagationPathJson,
 };
@@ -154,6 +150,38 @@ fn loc6(p: GPoint) -> Result<String, String> {
         .ok_or_else(|| format!("Error: no Maidenhead locator for {}, {}!", p.lat, p.lon))
 }
 
+/// The trusted station position for a six-character QRV key (#13), or `None` when the location
+/// is a `FromLoc` midpoint or a terrain-selected (`FromBest`) point — positional fallback only.
+fn trusted_point(l: &WebLocation) -> Option<GPoint> {
+    match l.loc.source {
+        GeoSource::FromLoc | GeoSource::FromBest => None,
+        _ => Some(GPoint::new(l.loc.lat, l.loc.lon)),
+    }
+}
+
+/// The locator and trusted position for a station's QRV lookup (#13). Supplied coordinates are
+/// trusted and give their six-character locator; otherwise the original supplied locator is kept
+/// (a coarse locator stays coarse), with a trusted position only for a stored station whose
+/// source is not `FromLoc`. `loc` is `None` when the coordinates were supplied.
+fn qrv_lookup(
+    st: &StationQuery,
+    loc: Option<&WebLocation>,
+) -> Result<(String, Option<GPoint>), String> {
+    if let (Some(lat), Some(lon)) = (st.lat, st.lon) {
+        return Ok((loc6(GPoint::new(lat, lon))?, None));
+    }
+    let Some(l) = loc else {
+        return Ok((st.loc.clone(), None));
+    };
+    // an empty supplied locator means "the latest stored location", whose own locator is the key
+    let key_loc = if st.loc.is_empty() {
+        l.loc.loc.clone()
+    } else {
+        st.loc.clone()
+    };
+    Ok((key_loc, trusted_point(l)))
+}
+
 /// `PropagationPathFindOrCreateFromLatLon` with the arguments of `:897-910` and
 /// `:1003-1016`: the band's GHz, K factor and F1 clearance, the model's step width and
 /// the local obstruction at My for the antenna height of My.
@@ -165,10 +193,14 @@ fn propagation(
     bs: &BandSettings,
     (my, h1): (GPoint, f64),
     (dx, h2): (GPoint, f64),
+    my_raw: GPoint,
+    dx_raw: GPoint,
     my_antenna_height: f64,
 ) -> Result<Option<PropagationPath>, String> {
     let store = &ctx.paths.store;
-    let obstruction = local_obstruction(store, model, my, dx, my_antenna_height).map_err(error)?;
+    // the obstruction is stored at the settings position, not at the shifted one (#105)
+    let obstruction =
+        local_obstruction(store, model, my_raw, dx_raw, my_antenna_height).map_err(error)?;
     let p = PathParams {
         lat1: my.lat,
         lon1: my.lon,
@@ -197,12 +229,12 @@ fn elevation_path_answer(ctx: &WebCtx, s: &Settings, q: &Query) -> Answer {
     let (my_q, dx_q) = path_query(q)?;
     let model = model(s)?;
     let (my, my_loc) = position(ctx, s, &my_q, MY_NOT_FOUND)?;
-    let my_loc6 = loc6(my)?;
+    let (my_qrv_loc, my_trusted) = qrv_lookup(&my_q, my_loc.as_ref())?;
     let (dx, dx_loc) = position(ctx, s, &dx_q, DX_NOT_FOUND)?;
-    let dx_loc6 = loc6(dx)?;
+    let (dx_qrv_loc, dx_trusted) = qrv_lookup(&dx_q, dx_loc.as_ref())?;
     let db = &ctx.paths.stations;
-    let my_qrv = qrv_defaulted(db, &my_q.call, &my_loc6, s.band).map_err(error)?;
-    let dx_qrv = qrv_defaulted(db, &dx_q.call, &dx_loc6, s.band).map_err(error)?;
+    let my_qrv = qrv_defaulted(db, &my_q.call, &my_qrv_loc, s.band, my_trusted).map_err(error)?;
+    let dx_qrv = qrv_defaulted(db, &dx_q.call, &dx_qrv_loc, s.band, dx_trusted).map_err(error)?;
     let step = model.default_step_width_m();
     let found = ctx
         .paths
@@ -230,7 +262,9 @@ fn elevation_path_answer(ctx: &WebCtx, s: &Settings, q: &Query) -> Answer {
 
 /// `/propagationpath.json` (`Webserver.cs:765-921`).
 ///
-/// L12 1:1: the `band` parameter is never read; the settings band is used.
+/// The requested `band` parameter drives the QRG, the F1 clearance and the QRV defaults; an empty
+/// `band` uses the settings band, and an invalid, `None` or `All` value answers the standard band
+/// error text (#262). The station lookups are read-only (#265).
 pub fn propagation_path(ctx: &WebCtx, s: &Settings, q: &Query) -> String {
     propagation_path_answer(ctx, s, q).unwrap_or_else(|e| e)
 }
@@ -238,22 +272,32 @@ pub fn propagation_path(ctx: &WebCtx, s: &Settings, q: &Query) -> String {
 fn propagation_path_answer(ctx: &WebCtx, s: &Settings, q: &Query) -> Answer {
     let (my_q, dx_q) = path_query(q)?;
     let model = model(s)?;
-    let band = s.band;
-    // before any location is stored
+    let band_text = param(q, "BAND");
+    let band = if band_text.is_empty() {
+        s.band
+    } else {
+        Band::parse(&band_text)
+    };
+    if band == Band::None || band == Band::All {
+        return Err(format!("Error: {band_text} is not a valid band value!"));
+    }
+    // before any location is looked up
     let bs = band_settings(s, band)?;
-    let (my, _) = position(ctx, s, &my_q, MY_NOT_FOUND)?;
+    let (my, my_found) = position(ctx, s, &my_q, MY_NOT_FOUND)?;
     let my_loc6 = loc6(my)?;
-    let my_loc = location_find_or_create(ctx, s, &my_q.call, &my_loc6)
+    let my_loc = location_find(ctx, s, &my_q.call, &my_loc6, "")
         .map_err(error)?
         .ok_or_else(|| MY_NOT_FOUND.to_string())?;
-    let (dx, _) = position(ctx, s, &dx_q, DX_NOT_FOUND)?;
+    let (dx, dx_found) = position(ctx, s, &dx_q, DX_NOT_FOUND)?;
     let dx_loc6 = loc6(dx)?;
-    let dx_loc = location_find_or_create(ctx, s, &dx_q.call, &dx_loc6)
+    let dx_loc = location_find(ctx, s, &dx_q.call, &dx_loc6, "")
         .map_err(error)?
         .ok_or_else(|| DX_NOT_FOUND.to_string())?;
     let db = &ctx.paths.stations;
-    let my_qrv = qrv_defaulted(db, &my_q.call, &my_loc6, band).map_err(error)?;
-    let dx_qrv = qrv_defaulted(db, &dx_q.call, &dx_loc6, band).map_err(error)?;
+    let (my_qrv_loc, my_trusted) = qrv_lookup(&my_q, my_found.as_ref())?;
+    let (dx_qrv_loc, dx_trusted) = qrv_lookup(&dx_q, dx_found.as_ref())?;
+    let my_qrv = qrv_defaulted(db, &my_q.call, &my_qrv_loc, band, my_trusted).map_err(error)?;
+    let dx_qrv = qrv_defaulted(db, &dx_q.call, &dx_qrv_loc, band, dx_trusted).map_err(error)?;
     let at = |l: &WebLocation, q: &Qrv| {
         (
             GPoint::new(l.loc.lat, l.loc.lon),
@@ -267,6 +311,8 @@ fn propagation_path_answer(ctx: &WebCtx, s: &Settings, q: &Query) -> Answer {
         &bs,
         at(&my_loc, &my_qrv),
         at(&dx_loc, &dx_qrv),
+        my_loc.raw,
+        dx_loc.raw,
         my_qrv.antenna_height,
     )?;
     let Some(pp) = path else {
@@ -315,8 +361,10 @@ fn nearest_planes_answer(ctx: &WebCtx, s: &Settings, q: &Query, now: DateTime<Ut
         .map_err(error)?
         .ok_or_else(|| DX_NOT_FOUND.to_string())?;
     let db = &ctx.paths.stations;
-    let my_qrv = qrv_defaulted(db, &my.loc.call, &my.loc.loc, band).map_err(error)?;
-    let dx_qrv = qrv_defaulted(db, &dx.loc.call, &dx.loc.loc, band).map_err(error)?;
+    let my_qrv =
+        qrv_defaulted(db, &my.loc.call, &my.loc.loc, band, trusted_point(&my)).map_err(error)?;
+    let dx_qrv =
+        qrv_defaulted(db, &dx.loc.call, &dx.loc.loc, band, trusted_point(&dx)).map_err(error)?;
     let en = &s.elevation_enabled;
     let at = |l: &WebLocation, q: &Qrv| {
         let elv = web_elevation(&ctx.paths.store, en, l.loc.lat, l.loc.lon);
@@ -332,16 +380,18 @@ fn nearest_planes_answer(ctx: &WebCtx, s: &Settings, q: &Query, now: DateTime<Ut
         &bs,
         at(&my, &my_qrv),
         at(&dx, &dx_qrv),
+        my.raw,
+        dx.raw,
         my_qrv.antenna_height,
     )?;
     let Some(pp) = path else {
         return Err(CANCELLED.to_string());
     };
-    let mut planes = ctx.cache.get_all(now, s.planes_position_ttl_min);
+    let planes = ctx.cache.get_all(now, s.planes_position_ttl_min);
     let nearest = get_nearest_planes(
         now,
         &pp,
-        &mut planes,
+        &planes,
         s.gui.planes_filter_max_circumcircle_km,
         bs.max_distance,
         f64::from(s.planes_max_alt_m),
@@ -456,5 +506,7 @@ pub fn plane_json(p: &PlaneInfo) -> PlaneInfoJson {
         from: p.from.clone(),
         to: p.to.clone(),
         v_speed: p.vspeed,
+        altitude_estimate: Some(p.altitude_estimate()),
+        altitude_provenance: Some(p.altitude_provenance.as_str().into()),
     }
 }

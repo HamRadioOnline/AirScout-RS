@@ -1,5 +1,5 @@
 //! Mode-S / ADS-B decoding, ported from `LibADSB` (itself a port of the Java library by
-//! Matthias Schäfer). Bugs of the original are kept and listed in `docs/logic-findings.md`.
+//! Matthias Schäfer), with stage-6 correctness fixes tracked in `docs/logic-findings.md`.
 #![forbid(unsafe_code)]
 
 pub mod cpr;

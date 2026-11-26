@@ -100,10 +100,20 @@ fn sorted_prefixes() -> &'static [(&'static str, &'static str, &'static str, &'s
     })
 }
 
-/// `Callsign.Cut`: removes a portable suffix (`/P`, `/MM`, `/QRP`: up to 3 chars after the last
-/// `/`) and a country prefix (`PA/`). The original's `Trim().ToUpper()` result is discarded, so
-/// the input is *not* trimmed or upper-cased. Inputs that make the C# `Remove` throw give `""`.
+/// Normalize the callsign and remove its portable suffix and country prefix.
 pub fn cut(call: &str) -> String {
+    let call = call.trim().to_uppercase();
+    if let Some((_, right)) = call.split_once('/').filter(|(left, right)| {
+        right.len() == 3
+            && right.bytes().all(|b| b.is_ascii_alphanumeric())
+            && !check_base(left)
+            && check_base(right)
+            && PREFIXES.iter().any(|&(_, _, start, stop)| {
+                left.len() == start.len() && (start..=stop).contains(left)
+            })
+    }) {
+        return right.to_owned();
+    }
     let mut c: Vec<char> = call.chars().collect();
     let idx = |c: &[char]| c.iter().position(|&x| x == '/').map_or(-1, |i| i as i64);
     if idx(&c) >= 0 {
@@ -141,13 +151,17 @@ pub fn check(call: &str) -> bool {
     {
         return false;
     }
-    if call.starts_with('/') || call.ends_with('/') {
+    if call.split('/').any(str::is_empty) {
         return false;
     }
     if call.matches('/').count() > 2 {
         return false;
     }
-    let c: Vec<char> = cut(&call).chars().collect();
+    check_base(&cut(&call))
+}
+
+fn check_base(call: &str) -> bool {
+    let c: Vec<char> = call.chars().collect();
     if c.len() < 3 {
         return false;
     }
@@ -168,7 +182,7 @@ pub fn check(call: &str) -> bool {
 
 /// `Callsign.Prefix`: country prefix of a call, `"???"` if unknown.
 pub fn prefix(call: &str) -> String {
-    let s: Vec<char> = cut(call).to_uppercase().chars().collect();
+    let s: Vec<char> = cut(call).chars().collect();
     for (prefix, _, start, stop) in sorted_prefixes() {
         let n = start.chars().count();
         // C#: S = S.Substring(0, n) throws for short calls -> entry skipped. Truncation is

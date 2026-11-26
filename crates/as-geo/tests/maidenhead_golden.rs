@@ -1,6 +1,6 @@
 use as_geo::latlon;
 use as_geo::maidenhead::{self, PositionInRectangle, SubGridsFilter};
-use as_golden::{assert_close_v, load, Case};
+use as_golden::{assert_close_v, deltas::DeltaManifest, load, Case};
 
 const TOL: f64 = 1e-9;
 
@@ -49,9 +49,15 @@ fn check_str<E: std::fmt::Debug>(r: Result<Option<String>, E>, c: &Case) {
 #[test]
 fn maidenhead_matches_original() {
     let g = load("maidenhead.json");
+    let mut deltas = DeltaManifest::load("maidenhead");
     let mut seen = std::collections::BTreeSet::new();
-    for c in &g.cases {
+    for (i, c) in g.cases.iter().enumerate() {
         seen.insert(c.func.clone());
+        // #346: the north-east corner takes the last digit of each grid.
+        if (693..=747).contains(&i) {
+            check_northeast_corner(c, i, &mut deltas);
+            continue;
+        }
         match c.func.as_str() {
             "check" => assert_eq!(
                 Some(maidenhead::check(&c.s("loc"))),
@@ -114,6 +120,7 @@ fn maidenhead_matches_original() {
             other => panic!("unhandled golden fn {other}"),
         }
     }
+    deltas.finish();
     assert_eq!(seen.len(), 8, "fns seen: {seen:?}");
 }
 
@@ -149,4 +156,49 @@ fn latlon_locator_variants_match_original() {
         n += 1;
     }
     assert!(n > 40, "too few locator cases: {n}");
+}
+
+fn check_northeast_corner(c: &Case, index: usize, deltas: &mut DeltaManifest) {
+    let precision = c.i("precision") as i32;
+    if c.func == "is_precise" {
+        // Half a cell's width drops below 1e-5 degrees at precision 7.
+        let expected = deltas.expected(
+            index,
+            "result",
+            &c.result,
+            (precision <= 6).into(),
+            0.0,
+            "#346",
+        );
+        assert_eq!(
+            Some(maidenhead::is_precise(90.0, 180.0, precision).unwrap()),
+            expected.as_bool(),
+            "{c:?}"
+        );
+    } else {
+        let autolength = c.b("autolength");
+        let small = c.b("small");
+        let pairs = if autolength {
+            precision.clamp(3, 7)
+        } else {
+            precision.clamp(1, 9)
+        };
+        let top_right = if small {
+            "RR99xx99xx99xx99xx"
+        } else {
+            "RR99XX99XX99XX99XX"
+        };
+        let r = maidenhead::loc_from_lat_lon(90.0, 180.0, small, precision, autolength);
+        let reference = &top_right[..2 * pairs as usize];
+        let expected = deltas.expected(index, "result", &c.result, reference.into(), 0.0, "#346");
+        assert_eq!(r.unwrap().as_deref(), expected.as_str(), "{c:?}");
+    }
+}
+
+#[test]
+fn finding_347_locator_alphabet_is_ascii_and_field_is_bounded() {
+    assert!(maidenhead::check("RR99XX"));
+    assert!(!maidenhead::check("SS00AA"));
+    assert!(!maidenhead::check("JO５0AA"));
+    assert!(!maidenhead::check("JO²0AA"));
 }

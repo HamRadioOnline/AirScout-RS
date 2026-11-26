@@ -1,7 +1,7 @@
 //! The planeserver config file (`planeserver.toml`). Values and names follow the C# PlaneServer
 //! settings (`Settings.settings`), with the app's feed settings and disclaimer list.
 
-use as_settings::FeedSettings;
+use as_settings::{format_profile, FeedSettings, SettingsHost, SettingsVersion};
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::{Path, PathBuf};
@@ -65,7 +65,7 @@ impl Default for PlaneServerConfig {
             lifetime_min: 5,
             interval_s: 60,
             feeds: Vec::new(),
-            feed_settings: FeedSettings::default(),
+            feed_settings: FeedSettings::for_host(SettingsHost::PlaneServer),
             feeds_disclaimer_accepted: Vec::new(),
             extended_plausibility: true,
             max_error_dist: 30.0,
@@ -75,7 +75,7 @@ impl Default for PlaneServerConfig {
     }
 }
 
-// `feed_settings` holds credentials; `FeedSettings` prints only its key names.
+// `FeedSettings` hides arbitrary keys and values in diagnostics.
 impl std::fmt::Debug for PlaneServerConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PlaneServerConfig")
@@ -142,7 +142,19 @@ impl PlaneServerConfig {
                 })
             }
         };
-        toml::from_str(&text).map_err(|_| ConfigError::Parse { path: path.into() })
+        let parse = |_| ConfigError::Parse { path: path.into() };
+        let raw: toml::Table = toml::from_str(&text).map_err(parse)?;
+        let version =
+            SettingsVersion::read(&raw).ok_or_else(|| ConfigError::Parse { path: path.into() })?;
+        let has_feeds = raw.contains_key("feed_settings");
+        let mut config: Self = raw.try_into().map_err(parse)?;
+        if !has_feeds {
+            config.feed_settings = FeedSettings::default();
+        }
+        config
+            .feed_settings
+            .resolve(SettingsHost::PlaneServer, version);
+        Ok(config)
     }
 
     /// Save atomically and owner-only on Unix (see `as_settings::write_private_atomic`).
@@ -151,7 +163,7 @@ impl PlaneServerConfig {
             path: path.into(),
             source,
         };
-        let text = toml::to_string_pretty(self)
+        let text = format_profile(self, SettingsHost::PlaneServer)
             .map_err(|_| ConfigError::Serialize { path: path.into() })?;
         as_settings::write_private_atomic(path, &text).map_err(io)
     }

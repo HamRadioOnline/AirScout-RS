@@ -46,7 +46,8 @@ struct Slot {
 /// The step logic without a thread.
 pub struct TrackFanout {
     slots: Vec<Slot>,
-    /// Counted errors per group; never reset while the fanout lives (1:1).
+    /// Counted errors per group; reset on a successful step (#203), so only a sustained run of
+    /// failures switches the output off.
     errors: BTreeMap<OutputGroup, u32>,
     rot: RotStatus,
 }
@@ -91,23 +92,40 @@ impl TrackFanout {
                 let _ = slot.out.connect();
             }
             match slot.out.send(v.my_azimuth, v.my_elevation) {
-                Ok(()) => {}
+                Ok(()) => {
+                    // #203: a successful step resets the group's error counter.
+                    self.errors.remove(&slot.out.group());
+                }
                 Err(OutputError::Failed(t)) => {
+                    // an open failure (`"Track error: …"`, #238) or another uncounted error:
+                    // shown, not counted; the output reconnects on the next step.
                     ev.push(TrackEvent::Text(t));
                     slot.out.close();
+                }
+                Err(OutputError::SerialIo(t)) => {
+                    // #239: a serial timeout or I/O error is shown, closes to reconnect, and
+                    // counts toward the same switch-off counter as a format error.
+                    ev.push(TrackEvent::Text(t));
+                    slot.out.close();
+                    let g = slot.out.group();
+                    let n = self.errors.entry(g).or_insert(0);
+                    *n += 1;
+                    if *n > MAX_ERRORS {
+                        slot.disabled = true;
+                        ev.push(TrackEvent::Text(format!(
+                            "Tracking via {} disabled.",
+                            group_name(g)
+                        )));
+                        self.set_rot(RotStatus::Error, &mut ev);
+                        ev.push(TrackEvent::Disabled(g));
+                    }
                 }
                 Err(OutputError::NotConnected(t)) => {
                     ev.push(TrackEvent::Text(t));
                     let g = slot.out.group();
                     let n = self.errors.entry(g).or_insert(0);
                     *n += 1;
-                    let off = *n > MAX_ERRORS;
-                    if g == OutputGroup::Serial {
-                        // the C# counts a serial error twice (:8232-8247, L18, 1:1): the
-                        // switch-off comes with the 6th error
-                        *n += 1;
-                    }
-                    if off {
+                    if *n > MAX_ERRORS {
                         slot.out.close();
                         slot.disabled = true;
                         ev.push(TrackEvent::Text(format!(

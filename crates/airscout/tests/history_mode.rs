@@ -1,6 +1,6 @@
 //! HISTORY mode: player, snapshot tick, enter/leave, range handling.
 use airscout::analysis::AnalysisJob;
-use airscout::app::{AppState, RunMode, Services};
+use airscout::app::{AppState, PathEntry, RunMode, Services};
 use airscout::history::{HistoryData, HistoryIndex};
 use airscout::jobs::JobEvent;
 use airscout::player::{advance, marker_bins, step, PlayerButton};
@@ -285,6 +285,35 @@ fn history_tick_uses_latest_per_hex_up_to_offline_time() {
     st.settings.time.offline = secs(115);
     st.on_tick(Utc::now(), &PlaneInfoCache::new());
     assert!(st.tick.shown.is_empty());
+}
+
+#[test]
+fn finding_109_history_tick_uses_replay_instant_for_all_paths() {
+    let rec = Rec::default();
+    let mut st = loaded(&rec, crossing_data());
+    let p = st.paths[0].path.clone();
+    st.paths = vec![
+        PathEntry {
+            index: 0,
+            call: "DX1".into(),
+            path: p.clone(),
+            terrain: vec![],
+            my_gain_dbi: 0.0,
+            dx_gain_dbi: 0.0,
+        },
+        PathEntry {
+            index: 1,
+            call: "DX2".into(),
+            path: p,
+            terrain: vec![],
+            my_gain_dbi: 0.0,
+            dx_gain_dbi: 0.0,
+        },
+    ];
+    st.settings.time.offline = secs(60);
+    st.history.as_mut().unwrap().interval_s = 0;
+    st.on_tick(secs(60) + Duration::days(1), &PlaneInfoCache::new());
+    assert_eq!(st.tick.per_path_potential, vec![100, 100]);
 }
 
 #[test]

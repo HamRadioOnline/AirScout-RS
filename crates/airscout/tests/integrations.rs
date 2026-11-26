@@ -41,6 +41,9 @@ struct Log {
     nearest: Vec<NearestSettings>,
     /// `my_call` of every `set_web_settings` push.
     web: Vec<String>,
+    /// `stop_background` / `restart_background` calls around the Options dialog (#155).
+    bg_stops: usize,
+    bg_restarts: usize,
 }
 
 #[derive(Clone, Default)]
@@ -60,6 +63,12 @@ impl Services for Rec {
     }
     fn stop_integrations(&mut self) {
         self.0.borrow_mut().stops += 1;
+    }
+    fn stop_background(&mut self) {
+        self.0.borrow_mut().bg_stops += 1;
+    }
+    fn restart_background(&mut self, _s: &Settings, _generation: u64) {
+        self.0.borrow_mut().bg_restarts += 1;
     }
     fn track_input(&mut self, i: TrackInput) {
         self.0.borrow_mut().inputs.push(i);
@@ -213,6 +222,21 @@ fn options_close_in_history_restarts_integrations() {
     st.leave_history();
     assert_eq!(rec.0.borrow().starts, vec![1, 4, 5]);
     assert_eq!(rec.0.borrow().stops, 2);
+}
+
+#[test]
+fn options_open_stops_background_and_close_restarts() {
+    let rec = Rec::default();
+    let mut st = state(settings(), &rec);
+    st.startup();
+    assert_eq!(rec.0.borrow().bg_stops, 0);
+    assert!(st.open_options_dlg());
+    // #155: opening Options pauses the background workers too, not only the integrations
+    assert_eq!(rec.0.borrow().bg_stops, 1);
+    assert_eq!(rec.0.borrow().bg_restarts, 0);
+    st.options_dlg = None;
+    st.options_closed();
+    assert_eq!(rec.0.borrow().bg_restarts, 1);
 }
 
 fn track(generation: u64, event: TrackEvent) -> ServiceEvent {

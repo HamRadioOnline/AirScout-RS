@@ -22,6 +22,7 @@ fn args() -> FeedArgs {
         dx_lat: 52.05626084,
         dx_lon: 1.28022909,
         keep_history: false,
+        airscout_listener: None,
     }
 }
 

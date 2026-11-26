@@ -79,7 +79,11 @@ pub fn distance_from_epsilon(h: f64, big_h: f64, eps: f64, radius: f64) -> f64 {
 
 /// Radius [m] of the first Fresnel zone; `qrg` in GHz, distances in km.
 pub fn f1_radius(qrg: f64, dist1: f64, dist2: f64) -> f64 {
-    (300.0 / qrg * dist1 * dist2 / (dist1 + dist2)).sqrt()
+    let distance = dist1 + dist2;
+    if distance == 0.0 {
+        return 0.0;
+    }
+    (300.0 / qrg * dist1 * dist2 / distance).sqrt()
 }
 
 /// Radio visibility distance [km] between heights `h1`, `h2` [m] on radius `re` [km].

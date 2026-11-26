@@ -147,6 +147,24 @@ fn other_destination_is_ignored() {
 }
 
 #[test]
+fn corrupt_datagram_is_dropped_before_any_handler() {
+    let r = rig(false);
+    // Encode a valid SHOW path, then corrupt only bit 7 of the trailing checksum byte. The
+    // receiver must drop it before any handler runs (#194).
+    let mut bytes = msg(WtKind::AsShowPath, "KST", "AS", SHOW);
+    *bytes.last_mut().unwrap() &= 0x7F;
+    assert!(!decode(&bytes).unwrap().checksum_ok);
+    send(&r, &bytes);
+    assert_eq!(next_cmd(&r, 1), None);
+    // The correct datagram is handled.
+    send(&r, &msg(WtKind::AsShowPath, "KST", "AS", SHOW));
+    assert!(matches!(
+        next_cmd(&r, 10),
+        Some(WinTestCommand::ShowPath(_))
+    ));
+}
+
+#[test]
 fn malformed_datagrams_do_not_stop_receiver() {
     let r = rig(false);
     send(&r, b"");
@@ -170,12 +188,18 @@ fn malformed_datagrams_do_not_stop_receiver() {
     if c.send_to(&vec![b'A'; 65_000], r.addr).is_err() {
         c.send_to(&vec![b'A'; 9_000], r.addr).unwrap();
     }
-    send(&r, &msg(WtKind::AsShowPath, "KST", "AS", SHOW));
-    // the garbage produces nothing (an Error/Status event would panic in next_cmd)
-    assert!(matches!(
-        next_cmd(&r, 10),
-        Some(WinTestCommand::ShowPath(_))
-    ));
+    // the garbage produces nothing (an Error/Status event would panic in next_cmd). Under
+    // load the burst can overflow the localhost UDP receive buffer and drop the valid
+    // datagram, so resend it until the receiver answers.
+    let mut got = None;
+    for _ in 0..10 {
+        send(&r, &msg(WtKind::AsShowPath, "KST", "AS", SHOW));
+        got = next_cmd(&r, 1);
+        if got.is_some() {
+            break;
+        }
+    }
+    assert!(matches!(got, Some(WinTestCommand::ShowPath(_))));
 }
 
 fn stored(call: &str, loc: &str, lat: f64, lon: f64) -> Location {
@@ -285,7 +309,8 @@ fn set_path_reply_received() {
         "{}",
         d.msg.data
     );
-    assert_eq!(r.paths.stations.location_count().unwrap(), 2);
+    // read-only ASSETPATH (#265): the answer uses the locator centres and stores nothing
+    assert_eq!(r.paths.stations.location_count().unwrap(), 0);
 }
 
 #[test]

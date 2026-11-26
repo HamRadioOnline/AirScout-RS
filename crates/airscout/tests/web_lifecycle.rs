@@ -76,7 +76,7 @@ fn body(addr: SocketAddr, target: &str) -> String {
     String::from_utf8(body).unwrap()
 }
 
-/// A path request between two unknown stations: it stores both locations (as in C#).
+/// A path request between two unknown stations: read-only lookups (#265) store nothing.
 const PATH: &str = "/propagationpath.json?mycall=TE1ST&myloc=JO50AA&dxcall=TE2ND&dxloc=JO60AA";
 
 #[test]
@@ -87,10 +87,10 @@ fn stopped_api_writes_nothing() {
     api.ctx.stop.store(true, Ordering::SeqCst);
     assert_eq!(answer(&api, PATH), "Error: web server stopped");
     assert_eq!(locations(&api), 0);
-    // The same request on a running server stores the locations.
+    // The same request on a running server still stores no station (#265, read-only).
     api.ctx.stop.store(false, Ordering::SeqCst);
     answer(&api, PATH);
-    assert_eq!(locations(&api), 2);
+    assert_eq!(locations(&api), 0);
 }
 
 #[test]

@@ -202,7 +202,10 @@ fn malformed_loc_rolls_back_whole_square() {
         None,
         &mut |_| {},
     );
-    assert!(matches!(r, Err(ElevationError::Parse(_))), "{r:?}");
+    assert!(
+        matches!(r, Err(ElevationError::ArchiveTile { .. })),
+        "{r:?}"
+    );
     assert_eq!(store.count(ElevationModel::Srtm3).unwrap(), 0);
 }
 
@@ -262,4 +265,116 @@ fn catalogue_with_non_ascii_name_does_not_panic() {
     )
     .unwrap();
     assert_eq!(cat.files.keys().collect::<Vec<_>>(), ["JO50AA"]);
+}
+
+#[test]
+fn finding_289_uses_closed_square_bounds() {
+    for (rect, expected) in [
+        (
+            GRect::new(50.6, 11.6, 51.4, 12.4),
+            &["JO50", "JO60", "JO51", "JO61"][..],
+        ),
+        (GRect::new(50.99, 10.5, 51.5, 11.5), &["JO50", "JO51"][..]),
+        (
+            GRect::new(9.99, 179.49, 10.01, -179.49),
+            &["RJ99", "AJ09", "RK90", "AK00"][..],
+        ),
+    ] {
+        assert_eq!(get_locs_from_rect(rect, 2).unwrap(), expected);
+    }
+    assert_eq!(
+        get_locs_from_rect(GRect::new(35.0, -15.0, 60.0, 30.0), 2)
+            .unwrap()
+            .len(),
+        624
+    );
+    assert_eq!(
+        get_locs_from_rect(GRect::new(89.99, 179.99, 90.0, 180.0), 3).unwrap(),
+        ["RR99XX", "AR09AX"]
+    );
+}
+
+#[test]
+fn finding_289_closed_antimeridian_edge_uses_the_sampled_square() {
+    use as_elevation::{prepare_area, TILE_MISSING};
+
+    let dir = tempfile::tempdir().unwrap();
+    let store = ElevationStore::open(dir.path()).unwrap();
+    let model = ElevationModel::Globe;
+    let sea = dir.path().join("sea.txt");
+    let east = GRect::new(10.1, 179.9, 10.2, 180.0);
+    let west = GRect::new(10.1, -180.0, 10.2, -179.9);
+    let client = client();
+    let prepare = |rect| {
+        prepare_area(
+            &store,
+            &client,
+            "http://localhost",
+            model,
+            rect,
+            &sea,
+            false,
+            &mut |_| {},
+        )
+        .unwrap()
+    };
+    let path = |lon| {
+        store
+            .create_path(model, 10.15, lon, 10.15, lon, 500.0, false, None)
+            .unwrap()
+            .unwrap()
+    };
+
+    // The east interior is in RK90. Both aliases of the edge sample AK00.
+    std::fs::write(&sea, "RK90\n").unwrap();
+    let status = prepare(east);
+    assert_eq!(status.missing, ["AK00"]);
+    assert!(!status.complete);
+    for lon in [-180.0, 180.0] {
+        assert_eq!(
+            store.elevation(model, 10.15, lon, false).unwrap(),
+            TILE_MISSING
+        );
+        assert!(!path(lon).valid);
+    }
+
+    // Once the canonical edge square is known sea, treating its samples as
+    // zero is valid from either side of the edge and for both aliases.
+    std::fs::write(&sea, "RK90\nAK00\n").unwrap();
+    for rect in [east, west] {
+        assert!(prepare(rect).complete);
+        for lon in [-180.0, 180.0] {
+            assert!(rect.contains(10.15, lon));
+            let p = path(lon);
+            assert!(p.valid);
+            assert_eq!(p.path, [0]);
+        }
+    }
+}
+
+#[test]
+fn finding_374_download_error_omits_url_path_and_userinfo() {
+    let mut server = mockito::Server::new();
+    let request = server
+        .mock("GET", "/SyntheticCredential/GLOBE/JO/JO50.zip")
+        .with_status(500)
+        .create();
+    let base = server
+        .url()
+        .replacen("http://", "http://user:SyntheticCredential@", 1);
+    let dir = tempfile::tempdir().unwrap();
+    let store = ElevationStore::open(dir.path()).unwrap();
+    let error = update_square(
+        &client(),
+        &format!("{base}/SyntheticCredential"),
+        ElevationModel::Globe,
+        "JO50",
+        &store,
+        None,
+        &mut |_| {},
+    )
+    .unwrap_err();
+    request.assert();
+    assert!(!format!("{error} {error:?}").contains("SyntheticCredential"));
+    assert!(std::error::Error::source(&error).is_none());
 }

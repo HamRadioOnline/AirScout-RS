@@ -1,5 +1,10 @@
 use as_geo::band::Band;
-use as_stations::{GeoSource, Location, Qrv, StationDb};
+use as_geo::latlon::GPoint;
+use as_geo::maidenhead::{self, PositionInRectangle};
+use as_stations::{
+    default_antenna_gain, default_antenna_height, default_power, GeoSource, Location, Qrv,
+    StationDb,
+};
 use chrono::{DateTime, Duration, TimeZone, Utc};
 
 fn t(s: i64) -> DateTime<Utc> {
@@ -160,7 +165,7 @@ fn qrv_locator_is_cut_to_six_chars() {
 fn qrv_defaults_like_original() {
     let db = StationDb::open_in_memory().unwrap();
     let d = db
-        .qrv_find_or_create_default("DL2ALF", "JO50WC", Band::B24G)
+        .qrv_find_or_create_default("DL2ALF", "JO50WC", Band::B24G, None)
         .unwrap();
     assert_eq!(
         (d.antenna_height, d.antenna_gain, d.power),
@@ -169,6 +174,79 @@ fn qrv_defaults_like_original() {
     assert_eq!(as_stations::default_antenna_gain(Band::B144M), 12.0);
     assert_eq!(as_stations::default_power(Band::B1_2G), 50.0);
     assert_eq!(as_stations::default_power(Band::None), 0.0);
+}
+
+/// #13: a coarse locator is a valid Maidenhead locator but can never match a stored
+/// six-character QRV key. Only the exact six-character locator, or a trusted position inside the
+/// coarse cell, selects the stored row; a coarse locator alone uses the band defaults, and a
+/// malformed locator or position cannot select a stored row.
+#[test]
+fn qrv_coarse_locator_resolution() {
+    let db = StationDb::open_in_memory().unwrap();
+    let row = Qrv::new("TE1ST", "JO50AA", Band::B144M, 20.0, 15.0, 500.0, t(0)).unwrap();
+    db.qrv_insert_or_update_if_newer(&row).unwrap();
+
+    // the exact six-character locator matches the stored row
+    assert_eq!(
+        db.qrv_find("TE1ST", "JO50AA", Band::B144M).unwrap(),
+        Some(row.clone())
+    );
+    assert_eq!(
+        db.qrv_find_or_create_default("TE1ST", "JO50AA", Band::B144M, None)
+            .unwrap(),
+        row
+    );
+
+    // a valid coarse locator is no match, not an error
+    assert!(db.qrv_find("TE1ST", "JO50", Band::B144M).unwrap().is_none());
+    assert!(db.qrv_get_all("TE1ST", "JO50").unwrap().is_empty());
+
+    // a trusted position inside JO50AA derives the six-character key and matches the row
+    let inside = maidenhead::gpoint_from_loc("JO50AA", PositionInRectangle::MiddleMiddle).unwrap();
+    let via = db
+        .qrv_find_or_create_default("TE1ST", "JO50", Band::B144M, Some(inside))
+        .unwrap();
+    assert_eq!(via, row.clone());
+
+    // the coarse locator alone uses the band defaults even with the row present, and stores nothing
+    let before = db.qrv_count().unwrap();
+    let d = db
+        .qrv_find_or_create_default("TE1ST", "JO50", Band::B144M, None)
+        .unwrap();
+    assert_eq!(d.loc, "JO50");
+    assert_eq!(
+        (d.antenna_height, d.antenna_gain, d.power),
+        (
+            default_antenna_height(Band::B144M),
+            default_antenna_gain(Band::B144M),
+            default_power(Band::B144M)
+        )
+    );
+    assert_eq!(db.qrv_count().unwrap(), before);
+
+    // a position outside the coarse cell cannot select a stored row
+    let outside = maidenhead::gpoint_from_loc("JO51AA", PositionInRectangle::MiddleMiddle).unwrap();
+    let d = db
+        .qrv_find_or_create_default("TE1ST", "JO50", Band::B144M, Some(outside))
+        .unwrap();
+    assert_eq!(d.antenna_height, default_antenna_height(Band::B144M));
+
+    // malformed locator text cannot select a stored row
+    assert!(db.qrv_find("TE1ST", "JO50AAXX", Band::B144M).is_err());
+    assert!(db
+        .qrv_find_or_create_default("TE1ST", "JO50AAXX", Band::B144M, None)
+        .is_err());
+
+    // a malformed trusted position cannot select a stored row
+    let d = db
+        .qrv_find_or_create_default(
+            "TE1ST",
+            "JO50",
+            Band::B144M,
+            Some(GPoint::new(f64::NAN, 10.0)),
+        )
+        .unwrap();
+    assert_eq!(d.antenna_height, default_antenna_height(Band::B144M));
 }
 
 #[test]
@@ -198,4 +276,64 @@ fn table_timestamps_roundtrip() {
     assert_eq!(db.table_timestamp("Location").unwrap(), None);
     db.set_table_timestamp("Location", t(5)).unwrap();
     assert_eq!(db.table_timestamp("Location").unwrap(), Some(t(5)));
+}
+
+/// #385: the three station-import bookkeeping tables are internal and a clear is refused, so
+/// the maintenance dialog cannot wipe the import state by mistake.
+#[test]
+fn clear_internal_table_is_refused() {
+    let db = StationDb::open_in_memory().unwrap();
+    for table in [
+        "StationImportState",
+        "StationArchiveValidators",
+        "StationImport",
+    ] {
+        let err = db.clear_table(table).unwrap_err();
+        assert!(err.to_string().contains(table), "{table}: {err}");
+    }
+    // the user tables still clear
+    db.location_insert_or_update_if_newer(&loc("TE1ST", "JO50AA", 50.0, 8.0, 0, 0))
+        .unwrap();
+    assert_eq!(db.clear_table("Location").unwrap(), 1);
+    assert_eq!(db.location_count().unwrap(), 0);
+}
+
+#[test]
+fn finding_372_station_db_guards_schema_version() {
+    let mem = StationDb::open_in_memory().unwrap();
+    let ver: i64 = mem.with_conn(|c| {
+        c.query_row("PRAGMA user_version", [], |r| r.get(0))
+            .unwrap()
+    });
+    assert_eq!(ver, 2);
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("stations.db3");
+    let raw = rusqlite::Connection::open(&path).unwrap();
+    raw.execute_batch(
+        "CREATE TABLE Location (Call TEXT PRIMARY KEY);
+         INSERT INTO Location VALUES ('TE1ST');
+         PRAGMA user_version = 3;",
+    )
+    .unwrap();
+    drop(raw);
+    let before = std::fs::read(&path).unwrap();
+
+    let err = StationDb::open(&path).err().unwrap();
+    assert!(
+        matches!(
+            err,
+            as_stations::StationError::SchemaAhead {
+                actual: 3,
+                supported: 2
+            }
+        ),
+        "unexpected error: {err:?}"
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), before);
+    let check = rusqlite::Connection::open(&path).unwrap();
+    let journal: String = check
+        .query_row("PRAGMA journal_mode", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(journal.to_lowercase(), "delete");
 }

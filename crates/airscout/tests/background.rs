@@ -4,7 +4,7 @@ use airscout::services::{open_data, ServiceEvent};
 use as_elevation::ElevationModel;
 use as_settings::{ElevationEnabled, Settings};
 use eframe::egui::Color32;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{channel, Receiver};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -85,7 +85,14 @@ fn start_with_store(s: &Settings) -> (Started, Arc<as_elevation::ElevationStore>
     let paths = open_data(dir.path()).unwrap();
     let store = paths.store.clone();
     let (tx, rx) = channel();
-    let svc = BackgroundService::start(paths, s, tx, Arc::new(AtomicBool::new(false)), 7);
+    let svc = BackgroundService::start(
+        paths,
+        s,
+        tx,
+        Arc::new(AtomicBool::new(false)),
+        7,
+        Arc::new(AtomicUsize::new(0)),
+    );
     ((dir, svc, rx), store)
 }
 

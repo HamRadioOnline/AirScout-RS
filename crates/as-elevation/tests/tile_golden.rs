@@ -61,12 +61,12 @@ fn elv_shape_mismatch_is_err() {
 }
 
 #[test]
-fn model_constants_match_original() {
-    assert_eq!(ElevationModel::Srtm1.default_step_width_m(), 30.0);
-    assert_eq!(ElevationModel::Aster1.default_step_width_m(), 30.0);
-    assert_eq!(ElevationModel::Srtm3.default_step_width_m(), 90.0);
-    assert_eq!(ElevationModel::Aster3.default_step_width_m(), 90.0);
-    assert_eq!(ElevationModel::Globe.default_step_width_m(), 1000.0);
+fn finding_351_halves_model_step_widths() {
+    assert_eq!(ElevationModel::Srtm1.default_step_width_m(), 15.0);
+    assert_eq!(ElevationModel::Aster1.default_step_width_m(), 15.0);
+    assert_eq!(ElevationModel::Srtm3.default_step_width_m(), 45.0);
+    assert_eq!(ElevationModel::Aster3.default_step_width_m(), 45.0);
+    assert_eq!(ElevationModel::Globe.default_step_width_m(), 500.0);
     assert_eq!(ElevationModel::Aster3.average_period(), 5);
     assert_eq!(ElevationModel::Srtm3.average_period(), 0);
     assert_eq!(ElevationModel::Srtm3.dir_name(), "SRTM3");

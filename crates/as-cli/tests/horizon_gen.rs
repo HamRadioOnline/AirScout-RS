@@ -90,7 +90,16 @@ fn te1st_path(data: &Path, bearing: f64) -> (f64, Vec<i16>) {
     let m = ElevationModel::Globe;
     let h1 = f64::from(store.elevation(m, p.lat, p.lon, true).unwrap()) + 40.0;
     let ep = store
-        .create_path_from_bearing(m, p.lat, p.lon, bearing, 20.0, 1000.0, false, None)
+        .create_path_from_bearing(
+            m,
+            p.lat,
+            p.lon,
+            bearing,
+            20.0,
+            m.default_step_width_m(),
+            false,
+            None,
+        )
         .unwrap()
         .unwrap();
     (h1, ep.path)
@@ -124,8 +133,7 @@ fn writes_one_csv_per_station() {
     }
 }
 
-/// Guards the CSV wiring and format (band order, F1 per band, degree conversion,
-/// `fixed(…, 8)`), not the maths: the loop below mirrors the tool's shared-path loop.
+/// Guards the CSV order, per-band clearance and formatting against full-profile library results.
 #[test]
 fn columns_match_library() {
     let dir = fixture_data_dir();
@@ -136,16 +144,16 @@ fn columns_match_library() {
     let table = default_band_table();
     let re = 6371.0 * 1.33;
     for j in [0usize, 90, 271] {
-        let (h1, mut elv) = te1st_path(dir.path(), j as f64);
+        let (h1, elv) = te1st_path(dir.path(), j as f64);
         for (i, b) in Band::all_except_none_and_all().iter().enumerate() {
             let hp = epsilon_max_from_path(
                 h1,
-                &mut elv,
+                &mut elv.clone(),
                 20.0,
-                1000.0,
+                ElevationModel::Globe.default_step_width_m(),
                 b.to_ghz(),
                 table[b].f1_clearance,
-                4797.0,
+                0.0,
                 re,
             );
             let want = fixed(hp.eps_min / std::f64::consts::PI * 180.0, 8);
@@ -176,7 +184,16 @@ fn bnone_pass_takes_no_point() {
     let (h1, mut elv) = te1st_path(dir.path(), 90.0);
     let n = elv.len();
     let re = 6371.0 * 1.33;
-    let hp = epsilon_max_from_path(h1, &mut elv, 20.0, 1000.0, 0.0, 0.2, 4797.0, re);
+    let hp = epsilon_max_from_path(
+        h1,
+        &mut elv,
+        20.0,
+        ElevationModel::Globe.default_step_width_m(),
+        0.0,
+        0.2,
+        4797.0,
+        re,
+    );
     assert_eq!(hp.eps_min, f64::MIN);
     assert_eq!(elv.len(), n);
 }

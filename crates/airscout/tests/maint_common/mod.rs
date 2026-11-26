@@ -23,6 +23,8 @@ pub struct Log {
     pub maint: Vec<(u64, MaintenanceJob)>,
     pub analysis: Vec<(u64, AnalysisJob)>,
     pub cancelled: Vec<u64>,
+    /// What `background_jobs` answers: > 0 blocks a delete/clear (#155).
+    pub background_jobs: usize,
 }
 
 #[derive(Clone, Default)]
@@ -44,6 +46,9 @@ impl Services for Rec {
     }
     fn cancel_maintenance(&mut self, id: u64) {
         self.0.borrow_mut().cancelled.push(id);
+    }
+    fn background_jobs(&self) -> usize {
+        self.0.borrow().background_jobs
     }
     fn run_analysis(&mut self, id: u64, job: AnalysisJob) {
         self.0.borrow_mut().analysis.push((id, job));

@@ -13,12 +13,36 @@ use std::sync::{Mutex, MutexGuard};
 pub enum SignalError {
     #[error("database error: {0}")]
     Db(#[from] rusqlite::Error),
+    #[error("database schema version {actual} is newer than supported version {supported}")]
+    SchemaAhead { actual: i64, supported: i64 },
     #[error("cannot parse Spectrum Lab data: {0}")]
     Parse(String),
+    #[error("signal level must be finite")]
+    InvalidLevel,
 }
 
-const SCHEMA: &[&str] =
-    &["CREATE TABLE IF NOT EXISTS SignalLevels (Level DOUBLE, LastUpdated INT32, PRIMARY KEY (LastUpdated))"];
+impl From<as_db::DbError> for SignalError {
+    fn from(err: as_db::DbError) -> Self {
+        match err {
+            as_db::DbError::SchemaAhead { actual, supported } => {
+                Self::SchemaAhead { actual, supported }
+            }
+            as_db::DbError::Sqlite(err) => Self::Db(err),
+        }
+    }
+}
+
+// Use the same validity predicate for migration, lookup and replacement of
+// invalid values inserted by an older writer.
+const VALID_LEVEL: &str =
+    "typeof(Level) IN ('real', 'integer') AND Level BETWEEN -1.7976931348623157e308 AND 1.7976931348623157e308";
+
+const SCHEMA: &[&str] = &[
+    "CREATE TABLE IF NOT EXISTS SignalLevels (Level DOUBLE, LastUpdated INT32, PRIMARY KEY (LastUpdated))",
+    "DELETE FROM SignalLevels
+     WHERE Level IS NULL OR typeof(Level) NOT IN ('real', 'integer')
+        OR Level NOT BETWEEN -1.7976931348623157e308 AND 1.7976931348623157e308",
+];
 
 /// The signal level history: one maximum level per second.
 pub struct SignalDb {
@@ -31,26 +55,26 @@ impl std::fmt::Debug for SignalDb {
     }
 }
 
-fn from_secs(s: i64) -> DateTime<Utc> {
-    DateTime::from_timestamp(s, 0).unwrap_or_default()
-}
-
 impl SignalDb {
     /// Open or create `<dir>/signals.db3`.
     pub fn open(dir: &Path) -> Result<Self, SignalError> {
-        let conn = as_db::open(&dir.join("signals.db3"))?;
-        // C# insists on auto_vacuum FULL; it only takes effect on a fresh database
-        conn.pragma_update(None, "auto_vacuum", "FULL")?;
-        Self::init(conn)
+        // C# insists on auto_vacuum FULL; it only takes effect on a fresh database.
+        let conn = as_db::open_versioned_with(
+            &dir.join("signals.db3"),
+            SCHEMA,
+            as_db::InitOptions::default().with_auto_vacuum_full(),
+        )?;
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// In-memory database (`Database_InMemory`, tests).
     pub fn open_in_memory() -> Result<Self, SignalError> {
-        Self::init(as_db::open_in_memory()?)
-    }
-
-    fn init(conn: Connection) -> Result<Self, SignalError> {
-        as_db::migrate(&conn, SCHEMA)?;
+        let conn = as_db::open_in_memory_versioned_with(
+            SCHEMA,
+            as_db::InitOptions::default().with_auto_vacuum_full(),
+        )?;
         Ok(Self {
             conn: Mutex::new(conn),
         })
@@ -70,30 +94,27 @@ impl SignalDb {
             .execute(params![level, at.timestamp()])
     }
 
-    /// `SignalLevelInsertOrUpdateIfNewer`: insert, or update when the stored time (whole
-    /// seconds) is older than `at`. As the row is found by that very second, only a
-    /// sub-second `at` counts as newer. Returns the rows written.
-    fn upsert_on(conn: &Connection, level: f64, at: DateTime<Utc>) -> rusqlite::Result<usize> {
-        let stored: Option<i64> = conn
-            .prepare_cached("SELECT LastUpdated FROM SignalLevels WHERE LastUpdated = ?1")?
-            .query_row(params![at.timestamp()], |r| r.get(0))
-            .optional()?;
-        match stored {
-            None => Self::insert_on(conn, level, at),
-            Some(s) if from_secs(s) < at => conn
-                .prepare_cached("UPDATE SignalLevels SET Level = ?1 WHERE LastUpdated = ?2")?
-                .execute(params![level, s]),
-            Some(_) => Ok(0),
+    fn upsert_on(conn: &Connection, level: f64, at: DateTime<Utc>) -> Result<usize, SignalError> {
+        if !level.is_finite() {
+            return Err(SignalError::InvalidLevel);
         }
+        let sql = format!(
+            "INSERT INTO SignalLevels (Level, LastUpdated) VALUES (?1, ?2)
+             ON CONFLICT (LastUpdated) DO UPDATE SET Level = excluded.Level
+             WHERE Level IS NULL OR NOT ({VALID_LEVEL}) OR excluded.Level > Level"
+        );
+        Ok(conn
+            .prepare_cached(&sql)?
+            .execute(params![level, at.timestamp()])?)
     }
 
-    /// `SignalLevelInsertOrUpdateIfNewer`.
+    /// Merge the strongest finite signal level for the UTC second containing `at`.
     pub fn insert_or_update_if_newer(
         &self,
         level: f64,
         at: DateTime<Utc>,
     ) -> Result<usize, SignalError> {
-        Ok(Self::upsert_on(&self.conn(), level, at)?)
+        Self::upsert_on(&self.conn(), level, at)
     }
 
     /// `SignalLevelBulkInsertOrUpdateIfNewer` (the poller's path): one transaction, returns
@@ -118,7 +139,7 @@ impl SignalDb {
         let tx = conn.transaction()?;
         let mut errors = 0i32;
         for &(level, at) in rows {
-            if Self::insert_on(&tx, level, at).is_err() {
+            if !level.is_finite() || Self::insert_on(&tx, level, at).is_err() {
                 errors += 1;
             }
         }
@@ -128,12 +149,13 @@ impl SignalDb {
 
     /// `SignalLevelFind`: the level stored for the second of `at`.
     pub fn find(&self, at: DateTime<Utc>) -> Result<Option<f64>, SignalError> {
+        let sql =
+            format!("SELECT Level FROM SignalLevels WHERE LastUpdated = ?1 AND ({VALID_LEVEL})");
         Ok(self
             .conn()
-            .prepare_cached("SELECT Level FROM SignalLevels WHERE LastUpdated = ?1")?
-            .query_row(params![at.timestamp()], |r| r.get::<_, Option<f64>>(0))
-            .optional()?
-            .map(|l| l.unwrap_or(f64::MIN)))
+            .prepare_cached(&sql)?
+            .query_row(params![at.timestamp()], |r| r.get(0))
+            .optional()?)
     }
 
     /// Delete every level before `t` (housekeeping; not in C#). Returns the rows deleted.
@@ -176,59 +198,50 @@ fn perr(msg: &str) -> SignalError {
     SignalError::Parse(msg.to_string())
 }
 
-/// `Double.Parse` of one bin after the C# swaps `,`→`;` and `.`→`,`, in a culture with
-/// `,` as decimal separator (the one the code was written for).
-fn parse_bin(s: &str) -> Option<f64> {
-    let s = s.trim();
-    if s.is_empty() || !s.chars().all(|c| "0123456789+-,eE".contains(c)) {
-        return None;
-    }
-    s.replace(',', ".").parse().ok()
-}
-
-/// Parse a Spectrum Lab `_fft_expt.json` like the poller does: the time stamp (header item
-/// 1, unix seconds, fraction truncated) and the maximum of the bins. The header is the text
-/// between the first and second `[`, split at `:` and `,`; item 13 must be an integer (the
-/// bin count). The bins are the text after the second `[` up to the character *before* the
-/// first `]` (logic-findings: the last character of the last bin is dropped).
+/// Parse an FFT export with a header object and an array of numeric bins.
 pub fn parse_speclab_fft(json: &str) -> Result<(DateTime<Utc>, f64), SignalError> {
-    if !json.starts_with('[') {
-        return Err(perr("Format Exception: Not a JSON file."));
+    // SQLite is already linked by this crate. Its bundled JSON parser handles
+    // key order, escaping and numeric syntax without a second JSON dependency.
+    let conn = as_db::open_in_memory()?;
+    let (secs, count): (f64, i64) = conn
+        .query_row(
+            "SELECT json_extract(?1, '$[0].t_unix'), json_extract(?1, '$[0].nbins')
+             WHERE CASE WHEN json_valid(?1) THEN
+                 json_type(?1) = 'array' AND json_array_length(?1) = 2
+                 AND json_type(?1, '$[0]') = 'object'
+                 AND json_type(?1, '$[1]') = 'array'
+                 AND json_type(?1, '$[0].t_unix') IN ('integer', 'real')
+                 AND json_type(?1, '$[0].nbins') = 'integer'
+             ELSE 0 END",
+            [json],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .map_err(|_| perr("bad FFT header"))?;
+    let secs = secs.trunc();
+    if !(-62_135_596_800.0..253_402_300_800.0).contains(&secs) {
+        return Err(perr("time stamp out of range"));
     }
-    let a: Vec<&str> = json.split('[').collect();
-    let (head, data) = match (a.get(1), a.get(2)) {
-        (Some(h), Some(d)) => (*h, *d),
-        _ => return Err(perr("no header and data arrays")),
-    };
-    let head = head.replace(':', ",");
-    let h: Vec<&str> = head.split(',').collect();
-    let data = data.replace("\r\n", "");
-    // `Remove(IndexOf("]") - 1)`
-    let end = data
-        .chars()
-        .position(|c| c == ']')
-        .and_then(|p| p.checked_sub(1))
-        .ok_or_else(|| perr("bin array not terminated"))?;
-    let bins: String = data.chars().take(end).collect();
-    let bins = bins.replace(',', ";").replace('.', ",");
-    let d = bins
-        .split(';')
-        .map(parse_bin)
-        .collect::<Option<Vec<f64>>>()
+    let at =
+        DateTime::from_timestamp(secs as i64, 0).ok_or_else(|| perr("time stamp out of range"))?;
+
+    let (actual, valid, max): (i64, i64, Option<f64>) = conn
+        .query_row(
+            "SELECT count(*), count(finite), max(finite)
+             FROM (
+                 SELECT CASE WHEN type IN ('integer', 'real')
+                                  AND value BETWEEN -1.7976931348623157e308 AND 1.7976931348623157e308
+                             THEN value END AS finite
+                 FROM json_each(?1, '$[1]')
+             )",
+            [json],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .map_err(|_| perr("bad FFT bins"))?;
+    if count <= 0 || count != actual {
+        return Err(perr("bad bin count"));
+    }
+    let max = max
+        .filter(|level| valid == actual && level.is_finite())
         .ok_or_else(|| perr("bad bin value"))?;
-    let secs = h
-        .get(1)
-        .and_then(|s| s.trim().parse::<f64>().ok())
-        .filter(|x| x.is_finite())
-        .ok_or_else(|| perr("bad time stamp"))?
-        .trunc();
-    let at = DateTime::from_timestamp(secs as i64, 0)
-        .filter(|_| (-62_135_596_800.0..253_402_300_800.0).contains(&secs))
-        .ok_or_else(|| perr("time stamp out of range"))?;
-    h.get(13)
-        .and_then(|s| s.trim().parse::<i32>().ok())
-        .ok_or_else(|| perr("bad bin count"))?;
-    // `Enumerable.Max`; the bins are finite
-    let max = d.iter().copied().fold(f64::NEG_INFINITY, f64::max);
     Ok((at, max))
 }

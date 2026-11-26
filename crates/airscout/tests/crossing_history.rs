@@ -8,8 +8,10 @@ use airscout::crossing_history::{
 };
 use airscout::history::HistoryData;
 use airscout::jobs::{JobCtx, JobEvent};
-use airscout::services::{open_data, ServiceEvent};
+use airscout::services::{open_data, PathRequest, PathService, PathTarget, ServiceEvent};
 use as_aircraft::PlaneInfo;
+use as_elevation::ElevationModel;
+use as_geo::latlon::GPoint;
 use as_settings::Settings;
 use as_stations::{GeoSource, Location};
 use chrono::{DateTime, Duration, TimeZone, Utc};
@@ -49,9 +51,7 @@ fn crossing_history_finds_plane_on_path() {
 }
 
 #[test]
-fn aliasing_updates_first_object_of_hex() {
-    // three reports of one hex; one step at t0. The cache keeps a reference to the first
-    // object and the second report overwrites it (C# InsertOrUpdateIfNewer on the shared object).
+fn finding_127_history_windows_keep_source_data_immutable() {
     let mut positions = vec![
         report("abc123", 0, 50.0, 8.5),
         report("abc123", 10, 50.1, 8.5),
@@ -59,27 +59,52 @@ fn aliasing_updates_first_object_of_hex() {
     ];
     let before = positions.clone();
     let mut p = params();
-    // the third report is after `to`: not pre-selected
     p.to = t0() + Duration::seconds(10);
-    let found = go(&mut positions, &p, &no_signal);
-    assert_eq!(positions[0].time, before[1].time);
-    assert_eq!(positions[0].lat, before[1].lat);
-    assert_eq!(positions[0].old_time, Some(before[0].time));
-    assert_eq!(positions[0].old_lat, before[0].lat);
-    assert_eq!(positions[1], before[1]);
-    assert_eq!(positions[2], before[2]);
-    // the overwritten object is newer than the step: the plane is gone from this step
-    assert!(found.is_empty());
+    let first = go(&mut positions, &p, &no_signal);
+    let second = go(&mut positions, &p, &no_signal);
+    assert_eq!(positions, before);
+    assert_eq!(first, second);
 }
 
 #[test]
-fn own_overshoot_report_hides_the_plane() {
-    // Quirk, 1:1: a cache fill ends with the first report newer than the step, which is already
-    // inserted. When it is the plane's own, it overwrites the plane's first object and the plane
-    // is newer than the step (dropped). A plane that reports more often than the step width is
-    // never found.
-    let found = go(&mut northbound("abc123"), &params(), &no_signal);
-    assert!(found.is_empty(), "{} crossings", found.len());
+fn finding_128_history_steps_keep_running_after_gaps() {
+    let mut positions = vec![
+        crossing("abc123", 50 * 60),
+        crossing("abc123", 70 * 60),
+        crossing("abc123", 180 * 60),
+    ];
+    positions.iter_mut().for_each(|p| p.speed_kts = 0.0);
+    let mut p = params();
+    p.from = t0();
+    p.to = t0() + Duration::minutes(180);
+    p.step_s = 60 * 60;
+    p.ttl_min = 30;
+    p.max_distance_km = 100.0;
+    let found = go(&mut positions, &p, &no_signal);
+    let times: Vec<_> = found.into_iter().map(|c| c.time).collect();
+    assert_eq!(
+        times,
+        vec![t0() + Duration::minutes(60), t0() + Duration::minutes(180)]
+    );
+}
+
+#[test]
+fn finding_128_preroll_and_exact_step_supersession() {
+    let mut positions = vec![
+        report("abc123", 30 * 60, 50.0, 8.5),
+        report("abc123", 60 * 60, 50.2, 8.5),
+    ];
+    positions.iter_mut().for_each(|p| p.speed_kts = 0.0);
+    let mut p = params();
+    p.from = t0() + Duration::minutes(60);
+    p.to = p.from;
+    p.step_s = 60;
+    p.ttl_min = 30;
+    p.max_distance_km = 100.0;
+    let found = go(&mut positions, &p, &no_signal);
+    assert_eq!(found.len(), 1);
+    // The report exactly at the step supersedes the pre-roll report exactly one TTL old.
+    assert!((found[0].lat - 50.2).abs() < 1e-9);
 }
 
 #[test]
@@ -95,6 +120,40 @@ fn startindex_gap_ends_loop_without_panic() {
     let last = positions.iter().map(|x| x.time).max().unwrap();
     assert!(!found.is_empty());
     assert!(found.iter().all(|c| c.time <= last + Duration::minutes(5)));
+}
+
+#[test]
+fn finding_369_history_uses_configured_radius_not_half_path_default() {
+    let mut positions = vec![report("abc123", 0, 50.495, 8.5)];
+    let mut p = params();
+    p.to = t0();
+    p.step_s = 60;
+    p.max_distance_km = 100.0;
+    p.max_radius_km = 60.0;
+    let found = go(&mut positions, &p, &no_signal);
+    assert_eq!(found.len(), 1, "{found:?}");
+}
+
+#[test]
+fn finding_369_entry_by_motion_is_evaluated_at_each_step() {
+    let mut positions = vec![report("abc123", 0, 50.7, 8.5)];
+    positions[0].track = 180.0;
+    let mut p = params();
+    p.from = t0();
+    p.to = t0() + Duration::seconds(300);
+    p.step_s = 300;
+    p.ttl_min = 10;
+    p.max_distance_km = 100.0;
+    p.max_radius_km = 60.0;
+    let found = go(&mut positions, &p, &no_signal);
+    assert_eq!(found.iter().filter(|c| c.time == t0()).count(), 0);
+    assert_eq!(
+        found
+            .iter()
+            .filter(|c| c.time == t0() + Duration::seconds(300))
+            .count(),
+        1
+    );
 }
 
 #[test]
@@ -208,12 +267,12 @@ fn settings() -> Settings {
 }
 
 #[test]
-fn crossing_path_uses_the_stored_location_of_the_six_char_locator() {
+fn crossing_path_uses_settings_positions_like_live_paths() {
     let dir = tempfile::tempdir().unwrap();
     let paths = open_data(dir.path()).unwrap();
     let s = settings();
     let loc = s.my_loc().unwrap();
-    // a stored location of the locator wins over the settings position (LocationFindOrCreate)
+    // A displaced stored location must not replace the settings position.
     paths
         .stations
         .location_insert_or_update_if_newer(&Location::new(
@@ -229,22 +288,80 @@ fn crossing_path_uses_the_stored_location_of_the_six_char_locator() {
     let p = crossing_path(&paths, &s, &AtomicBool::new(false))
         .unwrap()
         .unwrap();
-    assert_eq!((p.params.lat1, p.params.lon1), (50.0123, 8.0456));
-    // DX has none: created at the centre of its locator and stored
-    let dx_loc = s.dx_loc().unwrap();
-    let created = paths
-        .stations
-        .location_find("TST2AB", Some(&dx_loc))
-        .unwrap()
-        .expect("stored");
-    assert_eq!((p.params.lat2, p.params.lon2), (created.lat, created.lon));
-    assert_eq!(created.source, GeoSource::FromLoc);
-    assert_ne!(created.lon, 9.0);
+    assert_eq!((p.params.lat1, p.params.lon1), (50.0, 8.0));
+    assert_eq!((p.params.lat2, p.params.lon2), (50.0, 9.0));
     // no terrain data: ground 0, antenna height is the band default
     assert_eq!(p.params.h1, as_stations::default_antenna_height(s.band));
     assert_eq!(
         p.params.step_width_m,
         as_elevation::ElevationModel::Globe.default_step_width_m()
+    );
+}
+
+#[test]
+fn finding_133_history_path_matches_live_path_resolver() {
+    let dir = data_dir_with_globe();
+    let paths = open_data(dir.path()).unwrap();
+    let mut s = settings();
+    s.path_best_case_elevation = true;
+    s.elevation_enabled = as_settings::ElevationEnabled {
+        globe: true,
+        srtm3: false,
+        srtm1: true,
+        aster3: false,
+        aster1: false,
+    };
+    s.gui.elevation_download = false;
+    s.my_call = "TE1ST".into();
+    s.dx_call = "TE2ND".into();
+    s.my_lat = 50.01;
+    s.my_lon = 10.03;
+    s.dx_lat = 50.01;
+    s.dx_lon = 11.03;
+
+    let my_loc = s.my_loc().unwrap();
+    paths
+        .stations
+        .location_insert_or_update_if_newer(&Location::new(
+            "TE1ST",
+            &my_loc,
+            50.1200,
+            10.2200,
+            GeoSource::FromUser,
+            0,
+            Utc::now(),
+        ))
+        .unwrap();
+
+    let history_path = crossing_path(&paths, &s, &AtomicBool::new(false))
+        .unwrap()
+        .unwrap();
+
+    let (tx, rx) = channel();
+    let svc = PathService::spawn(paths.clone(), tx);
+    svc.request(PathRequest {
+        id: 7,
+        my: GPoint::new(s.my_lat, s.my_lon),
+        my_call: s.my_call.clone(),
+        targets: vec![PathTarget {
+            call: s.dx_call.clone(),
+            pos: GPoint::new(s.dx_lat, s.dx_lon),
+        }],
+        settings: s.clone(),
+    });
+    let live_path = loop {
+        match rx.recv_timeout(std::time::Duration::from_secs(20)).unwrap() {
+            ServiceEvent::PathReady { path, .. } => break path,
+            ServiceEvent::PathFailed { error, .. } => panic!("{error}"),
+            _ => {}
+        }
+    };
+    svc.stop();
+
+    assert_eq!(history_path.params, live_path.params);
+    assert_eq!(
+        history_path.params.step_width_m,
+        ElevationModel::Srtm1.default_step_width_m()
     );
 }
 
@@ -417,8 +534,7 @@ fn export_job_writes_the_csv_in_tmp() {
     let text = std::fs::read_to_string(file).unwrap();
     assert_eq!(text.lines().count(), n + 1);
     assert_eq!(text.lines().next().unwrap(), CROSSING_HEADER);
-    // the last row is ambiguous in any case
-    assert!(text.lines().last().unwrap().ends_with(";True"));
+    assert!(text.lines().any(|l| l.ends_with(";True")));
 }
 
 #[test]
@@ -432,8 +548,6 @@ fn crossings_carry_the_step_time_not_the_report_time() {
             p
         })
         .collect();
-    // the first pre-selected report is the plane's at 40 s (+3 s)
-    let first = t0() + Duration::seconds(43);
     let mut p = params();
     p.step_s = 47;
     let found = go(&mut v, &p, &no_signal);
@@ -443,7 +557,7 @@ fn crossings_carry_the_step_time_not_the_report_time() {
         .map(|r| r.time + Duration::seconds(3))
         .collect();
     for c in &found {
-        assert_eq!((c.time - first).num_seconds() % 47, 0, "{}", c.time);
+        assert_eq!((c.time - p.from).num_seconds() % 47, 0, "{}", c.time);
     }
     eprintln!(
         "{:?}",

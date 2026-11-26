@@ -5,7 +5,7 @@ use airscout::maintenance::{DbId, MaintenanceJob};
 use airscout::services::ServiceEvent;
 use airscout::ui::dialogs::db_maintenance::find_next;
 use airscout::ui::options::OptionsTab;
-use egui_kittest::kittest::Queryable;
+use egui_kittest::kittest::{NodeT, Queryable};
 use maint_common::*;
 #[test]
 fn options_database_tab_buttons_ask_first() {
@@ -202,6 +202,42 @@ fn delete_station_dialog_looks_up_and_asks_first() {
         rec.0.borrow().maint.last().unwrap().1,
         MaintenanceJob::Locations(_)
     ));
+}
+
+#[test]
+fn options_ok_cancel_disabled_while_destructive_job_runs() {
+    let (mut h, rec) = harness();
+    h.get_by_label("Options").click();
+    h.run();
+    // finish the Sizes read (a read never disables OK/Cancel)
+    let id = rec.0.borrow().maint[0].0;
+    h.state_mut().on_event(ServiceEvent::Job {
+        id,
+        event: JobEvent::Sizes(Vec::new()),
+    });
+    h.run();
+    assert!(!h.get_by_label("OK").accesskit_node().is_disabled());
+
+    // a destructive delete disables OK/Cancel until it ends (#155)
+    h.state_mut().options_dlg.as_mut().unwrap().tab = OptionsTab::Database;
+    h.run();
+    h.get_by_label("Delete All Elevation Paths").click();
+    h.run();
+    h.get_by_label("Yes").click();
+    h.run();
+    assert_eq!(rec.0.borrow().maint.len(), 2, "Sizes then the delete");
+    assert!(h.get_by_label("OK").accesskit_node().is_disabled());
+    assert!(h.get_by_label("Cancel").accesskit_node().is_disabled());
+
+    // its answer re-enables them
+    let id = rec.0.borrow().maint[1].0;
+    h.state_mut().on_event(ServiceEvent::Job {
+        id,
+        event: JobEvent::Done("0 elevation paths deleted".into()),
+    });
+    h.run();
+    assert!(!h.get_by_label("OK").accesskit_node().is_disabled());
+    assert!(!h.get_by_label("Cancel").accesskit_node().is_disabled());
 }
 
 #[test]

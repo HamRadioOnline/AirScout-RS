@@ -71,7 +71,10 @@ fn cancel_discards_edits() {
     h.run();
     assert!(h.state().options_dlg.is_none());
     assert_eq!(h.state().settings, before);
-    assert!(restarts.borrow().is_empty());
+    // Cancel still closes the workers that opening the dialog paused (#155): the restart carries
+    // the unchanged settings, not the discarded edits.
+    assert_eq!(restarts.borrow().len(), 1);
+    assert_eq!(restarts.borrow()[0], before);
 }
 
 #[test]

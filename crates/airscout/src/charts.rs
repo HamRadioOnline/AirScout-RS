@@ -49,11 +49,12 @@ pub fn profile(p: &PropagationPath, terrain: &[f64], max_alt_m: f64) -> ProfileS
     }
     let r = p.params.radius_km;
     let (h1, h2) = (p.params.h1, p.params.h2);
-    let eps_los = epsilon_from_heights(h1, p.distance(), h2, r);
+    let distance = p.distance();
+    let eps_los = epsilon_from_heights(h1, distance, h2, r);
     let mut s = ProfileSeries::default();
     let mut maxelv = f64::MIN;
     for (i, (pt, &elv)) in points.iter().zip(terrain).enumerate() {
-        let x = i as f64;
+        let x = (i as f64).min(distance);
         s.elevation.push([x, elv]);
         s.min_h1.push([x, pt.h1]);
         s.min_h2.push([x, pt.h2]);

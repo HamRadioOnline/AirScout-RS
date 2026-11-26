@@ -7,17 +7,7 @@ use chrono::{TimeZone, Utc};
 use common::*;
 
 #[test]
-fn mark_ambiguous_quirks() {
-    // 1. index 0 is never reset
-    let mut c = vec![crossing("aaaaaa", 0), crossing("aaaaaa", 100)];
-    c[0].ambiguous = true;
-    c[1].ambiguous = true;
-    mark_ambiguous(&mut c, 10.0);
-    assert!(c[0].ambiguous, "index 0 keeps its value");
-    // the last item is always ambiguous
-    assert!(c[1].ambiguous);
-
-    // 2. the hex at the gap joins the closed group
+fn finding_136_marks_groups_with_multiple_hexes_only() {
     let mut c = vec![
         crossing("aaaaaa", 0),
         crossing("aaaaaa", 1),
@@ -25,18 +15,9 @@ fn mark_ambiguous_quirks() {
         crossing("bbbbbb", 101),
     ];
     mark_ambiguous(&mut c, 10.0);
-    assert_eq!(flags(&c), [true, true, false, true]);
+    assert_eq!(flags(&c), [false, false, false, false]);
 
-    // 3. the hex of index 0 never counts for the first group
-    let mut c = vec![
-        crossing("aaaaaa", 0),
-        crossing("bbbbbb", 1),
-        crossing("bbbbbb", 2),
-    ];
-    mark_ambiguous(&mut c, 10.0);
-    assert_eq!(flags(&c), [false, false, true]);
-
-    // a gap is strictly greater than the limit: 10 s is none, the groups run together
+    // A threshold-equal gap keeps the same group.
     let mut c = vec![
         crossing("aaaaaa", 0),
         crossing("aaaaaa", 5),
@@ -45,13 +26,32 @@ fn mark_ambiguous_quirks() {
     ];
     mark_ambiguous(&mut c, 10.0);
     assert_eq!(flags(&c), [true, true, true, true]);
-    mark_ambiguous(&mut c, 9.0);
-    assert_eq!(flags(&c), [true, true, false, true]);
 
-    // one item, none
+    // A stricter threshold splits groups, and a trailing singleton stays non-ambiguous.
+    let mut c = vec![
+        crossing("aaaaaa", 0),
+        crossing("aaaaaa", 5),
+        crossing("bbbbbb", 15),
+        crossing("bbbbbb", 16),
+        crossing("cccccc", 30),
+    ];
+    mark_ambiguous(&mut c, 9.0);
+    assert_eq!(flags(&c), [false, false, false, false, false]);
+
+    let mut c = vec![
+        crossing("aaaaaa", 0),
+        crossing("bbbbbb", 1),
+        crossing("bbbbbb", 2),
+        crossing("cccccc", 20),
+    ];
+    mark_ambiguous(&mut c, 10.0);
+    assert_eq!(flags(&c), [true, true, true, false]);
+
+    // One item stays false.
     let mut one = vec![crossing("aaaaaa", 0)];
+    one[0].ambiguous = true;
     mark_ambiguous(&mut one, 10.0);
-    assert_eq!(flags(&one), [true]);
+    assert_eq!(flags(&one), [false]);
     mark_ambiguous(&mut [], 10.0);
 }
 

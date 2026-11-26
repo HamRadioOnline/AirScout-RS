@@ -1,6 +1,6 @@
 //! The web API (stage 4d Task 4): settings, feed settings and table routes.
 use airscout::services::open_data;
-use airscout::web_api::{feed_web_name, strip_userinfo, WebApi, WebCtx};
+use airscout::web_api::{feed_web_name, scrub_public_url, strip_userinfo, WebApi, WebCtx};
 use airscout::web_settings_json::settings_json;
 use as_aircraft::db::{airports_from_json, AircraftDb};
 use as_aircraft::PlaneInfoCache;
@@ -166,7 +166,7 @@ fn settings_json_members_exact() {
     assert_eq!(rows[0]["BAND"], "50M");
     let row = rows.iter().find(|r| r["BAND"] == "144M").unwrap();
     assert_eq!(row["MAXDISTANCE"], 10.0);
-    assert_eq!(row["K-FACTOR"], 1.5);
+    assert_eq!(row["K-FACTOR"], 1.33);
 
     let w = o["Watchlist"].as_array().unwrap();
     assert_eq!(w.len(), 1);
@@ -473,6 +473,38 @@ fn userinfo_never_served() {
     assert_eq!(v["KST_Websocket"], "http://example.invalid/x");
 }
 
+/// A query credential never reaches the LAN, while the page's placeholders survive (`#257`, `#277`).
+#[test]
+fn query_credentials_never_served() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut s = settings();
+    s.feed = "VRSWebServer".into();
+    let mut t = toml::Table::new();
+    t.insert(
+        "url".into(),
+        "http://localhost:7780/AircraftList.json?fSBnd=%MINLAT%&key=SECRET-TEST".into(),
+    );
+    t.insert(
+        "url2".into(),
+        "http://localhost:7780/AircraftList.json?key=SECRET-TEST".into(),
+    );
+    s.feed_settings
+        .insert("VRSWebServer".into(), toml::Value::Table(t));
+    s.web.kst_websocket = "ws://localhost:9881/AirScout?token=SECRET-TEST".into();
+    let a = api(dir.path(), s);
+    let v: serde_json::Value = serde_json::from_str(&get(&a, "/planefeedsettings.json")).unwrap();
+    assert_eq!(
+        v[0]["Value"]["URL"],
+        "http://localhost:7780/AircraftList.json?fSBnd=%MINLAT%"
+    );
+    assert_eq!(
+        v[0]["Value"]["URL2"],
+        "http://localhost:7780/AircraftList.json"
+    );
+    let v: serde_json::Value = serde_json::from_str(&get(&a, "/settings.json")).unwrap();
+    assert_eq!(v["KST_Websocket"], "ws://localhost:9881/AirScout");
+}
+
 #[test]
 fn strip_userinfo_cases() {
     for (raw, served) in [
@@ -533,6 +565,190 @@ fn strip_userinfo_cases() {
         assert_eq!(out, served, "{raw:?}");
         assert!(!out.contains("SECRET-TEST"), "{raw:?}");
     }
+}
+
+#[test]
+fn scrub_public_url_cases() {
+    for (raw, served) in [
+        // no query: userinfo stripped, everything else byte-identical
+        ("http://u:p@host/x", "http://host/x"),
+        (
+            "ws://localhost:9881/AirScout",
+            "ws://localhost:9881/AirScout",
+        ),
+        // placeholder-only query survives (the page substitutes these, #257)
+        (
+            "http://localhost:7780/VirtualRadar/AircraftList.json?fSBnd=%MINLAT%&fNBnd=%MAXLAT%\
+             &fWBnd=%MINLON%&fEBnd=%MAXLON%",
+            "http://localhost:7780/VirtualRadar/AircraftList.json?fSBnd=%MINLAT%&fNBnd=%MAXLAT%\
+             &fWBnd=%MINLON%&fEBnd=%MAXLON%",
+        ),
+        // a literal query token (credential or not) is dropped, the placeholder is kept
+        (
+            "http://localhost/a?lat=%MINLAT%&api_key=SECRET-TEST",
+            "http://localhost/a?lat=%MINLAT%",
+        ),
+        ("http://localhost/a?key=SECRET-TEST", "http://localhost/a"),
+        ("http://localhost/a?age=300", "http://localhost/a"),
+        (
+            "http://localhost/a?bounds=%MINLAT%,%MAXLAT%",
+            "http://localhost/a?bounds=%MINLAT%,%MAXLAT%",
+        ),
+        // a query mixed into the value is dropped (not placeholder-only)
+        (
+            "http://localhost/a?lat=%MINLAT%SECRET-TEST",
+            "http://localhost/a",
+        ),
+        // the fragment is dropped; a `?` inside the fragment is not a query
+        ("http://localhost/a?x=1#frag", "http://localhost/a"),
+        ("http://localhost/a#f?x=1", "http://localhost/a"),
+        // the KST websocket drops its query too (#277)
+        (
+            "ws://localhost:9881/AirScout?token=SECRET-TEST",
+            "ws://localhost:9881/AirScout",
+        ),
+    ] {
+        let out = scrub_public_url(raw);
+        assert_eq!(out, served, "{raw:?}");
+        assert!(!out.contains("SECRET-TEST"), "{raw:?}");
+    }
+    // a path-embedded token still reaches the LAN (owner decision B: warned, not stripped)
+    assert_eq!(
+        scrub_public_url("http://localhost/SECRET-TEST/x?lat=%MINLAT%"),
+        "http://localhost/SECRET-TEST/x?lat=%MINLAT%"
+    );
+}
+
+/// A malformed, non-HTTP/WS or scheme-less value is not served at all, so a query credential
+/// behind an `@` can never reach the LAN; a well-formed URL drops its query credential and its
+/// userinfo (`#257`, `#277`).
+#[test]
+fn scrub_public_url_drops_query_before_userinfo() {
+    for (raw, served) in [
+        // a space in the host makes the parse fail: the value is not served
+        ("http://bad host/AircraftList.json?email=u@SECRET-TEST", ""),
+        // a non-http/ws scheme: the value is not served
+        ("custom://host/a?user=a@SECRET-TEST", ""),
+        // no scheme: the value is not served
+        ("//host/a?email=a@SECRET-TEST", ""),
+        // userinfo plus a query token: both are stripped
+        ("http://u:p@host/x?token=SECRET-TEST", "http://host/x"),
+        ("http://u:p@host?token=SECRET-TEST", "http://host/"),
+        // an `@` outside the userinfo is ambiguous (a password may have ended the authority):
+        // the value is not served
+        ("http://host/x?a=u@SECRET-TEST", ""),
+        // ws/wss with userinfo and a query token
+        ("ws://u:p@host/x?token=SECRET-TEST", "ws://host/x"),
+        ("wss://u:p@host/x?token=SECRET-TEST", "wss://host/x"),
+        // IPv6 host
+        ("http://[::1]/x?token=SECRET-TEST", "http://[::1]/x"),
+    ] {
+        let out = scrub_public_url(raw);
+        assert_eq!(out, served, "{raw:?}");
+        assert!(!out.contains("SECRET-TEST"), "{raw:?}");
+    }
+}
+
+/// A separator-only or empty parameter value never counts as a placeholder, so the parameter
+/// (name and value) is dropped entirely (`#257`).
+#[test]
+fn scrub_public_url_separator_only_value_is_dropped() {
+    for raw in [
+        "http://localhost:7780/AircraftList.json?SECRET-TEST=,",
+        "http://localhost:7780/AircraftList.json?SECRET-TEST= ",
+        "http://localhost:7780/AircraftList.json?SECRET-TEST=\t",
+    ] {
+        let out = scrub_public_url(raw);
+        assert_eq!(out, "http://localhost:7780/AircraftList.json", "{raw:?}");
+        assert!(!out.contains("SECRET-TEST"), "{raw:?}");
+    }
+}
+
+/// The page substitutes placeholders case-insensitively (`scoutbase.core.js` upper-cases), so a
+/// lower-case `%minlat%` is still a placeholder and its parameter survives (`#257`).
+#[test]
+fn scrub_public_url_lower_case_placeholders_kept() {
+    let out = scrub_public_url("http://host/feed?lat=%minlat%&lon=%minlon%&key=SECRET-TEST");
+    assert_eq!(out, "http://host/feed?lat=%minlat%&lon=%minlon%");
+}
+
+/// `KST_Websocket` drops its entire query — even the page placeholders, which `airscout.wtkst.js`
+/// does not substitute (`#277`).
+#[test]
+fn kst_websocket_drops_its_entire_query() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut s = settings();
+    s.web.kst_websocket = "ws://localhost:9881/AirScout?lat=%MINLAT%&token=SECRET-TEST".into();
+    let a = api(dir.path(), s);
+    let v: serde_json::Value = serde_json::from_str(&get(&a, "/settings.json")).unwrap();
+    assert_eq!(v["KST_Websocket"], "ws://localhost:9881/AirScout");
+}
+
+/// The exact served string for a placeholder query: the `url` crate must serialize `%MINLAT%`
+/// literally (not `%25MINLAT%25`) so `airscout.feeds.js` can substitute it (`#257`).
+#[test]
+fn scrub_public_url_serves_the_placeholder_literally() {
+    assert_eq!(
+        scrub_public_url(
+            "http://localhost:7780/AircraftList.json?fSBnd=%MINLAT%&fNBnd=%MAXLAT%\
+             &fWBnd=%MINLON%&fEBnd=%MAXLON%"
+        ),
+        "http://localhost:7780/AircraftList.json?fSBnd=%MINLAT%&fNBnd=%MAXLAT%\
+         &fWBnd=%MINLON%&fEBnd=%MAXLON%"
+    );
+    assert_eq!(
+        scrub_public_url("http://localhost/a?bounds=%MINLAT%,%MAXLAT%"),
+        "http://localhost/a?bounds=%MINLAT%,%MAXLAT%"
+    );
+}
+
+/// A value whose credential boundary is ambiguous — a `?`/`#` inside a password, more than one
+/// `@`, no scheme, or a non-http/ws scheme — is not served (`#257`, `#277`).
+#[test]
+fn scrub_public_url_fails_closed_on_ambiguous_credentials() {
+    for raw in [
+        // a `?` inside the password: the `@` is no longer the userinfo separator, and the
+        // intended userinfo would parse as a host/port — not served
+        "http://user:p?w@host/AircraftList.json",
+        "ws://user:p?w@host/AirScout",
+        // a numeric password makes the truncated prefix parse as `host:port` — not served
+        "http://user:1234?pw@host/AircraftList.json",
+        "ws://user:1234?pw@host/AirScout",
+        "http://user:1234#pw@host/AircraftList.json?token=SECRET-TEST",
+        "ws://user:1234#pw@host/AirScout?token=SECRET-TEST",
+        // a `#` inside the password (or before the `@`): same
+        "http://user:p#w@host/AircraftList.json?token=SECRET-TEST",
+        "ws://user:p#w@host/AirScout?token=SECRET-TEST",
+        // a default, empty or no port: the truncated prefix is a bare host — still not served
+        "http://SECRET-USER:80/SECRET-PASS@host/x",
+        "https://SECRET-USER:443?SECRET-PASS@host/x",
+        "http://SECRET-USER:/SECRET-PASS@host/x",
+        "http://SECRET-USER:?SECRET-PASS@host/x",
+        "ws://SECRET-USER/SECRET-PASS@host/x",
+        "http://SECRET-USER:p\\w@host/x",
+        // an `@` anywhere outside the userinfo is ambiguous: not served
+        "http://host:8080/x?a=b@c",
+        // more than one `@`: a password could hold one
+        "http://u:p@w@localhost:9881/AirScout",
+        "http://user@host#f@x",
+        // another scheme, or no scheme
+        "ftp://user:pass@host/x",
+        "//SECRET-TEST-U:SECRET-TEST-P@host/x",
+    ] {
+        assert_eq!(scrub_public_url(raw), "", "{raw:?}");
+    }
+}
+
+/// A percent-encoded `@` in the userinfo is cleared; an IPv6 host is served unchanged (`#257`).
+#[test]
+fn scrub_public_url_clears_percent_encoded_userinfo_and_keeps_ipv6() {
+    let out = scrub_public_url("http://SECRET%40TEST:pass@example.invalid/x");
+    assert_eq!(out, "http://example.invalid/x");
+    assert!(!out.contains("SECRET"));
+    assert_eq!(
+        scrub_public_url("http://u:p@[::1]:8080/x"),
+        "http://[::1]:8080/x"
+    );
 }
 
 /// Inputs that leaked credentials through earlier hand parsers (re-reviews 2 and 3).

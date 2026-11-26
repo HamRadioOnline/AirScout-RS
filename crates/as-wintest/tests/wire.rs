@@ -16,10 +16,18 @@ fn encode_set_azimuth_golden() {
 }
 
 #[test]
-fn encode_set_azimuth_rounds_359_6_to_360() {
+fn encode_set_azimuth_wraps_359_6_to_000() {
     assert_eq!(
         encode(&set_azimuth("AS", 359.6)).unwrap(),
-        golden("SETAZIMUTH: \"AS\" \"\" \"AUTO\" 00 360?", 0xB9)
+        golden("SETAZIMUTH: \"AS\" \"\" \"AUTO\" 00 000?", 0xB0)
+    );
+}
+
+#[test]
+fn encode_set_elevation_clamps_negative_to_000() {
+    assert_eq!(
+        encode(&set_elevation("AS", -5.0)).unwrap(),
+        golden("SETELEVATION: \"AS\" \"\" \"AUTO\" 00 000?", 0xB5)
     );
 }
 
@@ -120,6 +128,20 @@ fn decode_reports_bad_checksum_but_parses() {
     assert_eq!(d.msg.data, PATH);
     assert!(!d.checksum_ok);
     assert_eq!(d.checksum, 0x80);
+}
+
+#[test]
+fn decode_bit7_only_corruption_fails_checksum() {
+    // The correct trailing byte is 0xB0 (sum 0x30 | 0x80). A corrupt byte that differs only
+    // in bit 7 (0x30) must not be reported as valid: masking bit 7 back on would accept it.
+    let d = decode(&golden(
+        &format!("ASSETPATH: \"KST\" \"AS\" \"{PATH}\"?"),
+        0x30,
+    ))
+    .unwrap();
+    assert_eq!(d.msg.data, PATH);
+    assert!(!d.checksum_ok);
+    assert_eq!(d.checksum, 0xB0);
 }
 
 #[test]

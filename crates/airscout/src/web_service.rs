@@ -1,61 +1,14 @@
-//! The running web server and the `planes.json` writer (`MapDlg.cs:2402-2414`,
-//! `:8463-8545`).
-//!
-//! C# runs the JSON writer whenever the background workers run: it starts with them
-//! (`:2173-2174`), stops with them (`:2487`) and starts again after Options (`:3979`),
-//! also while `Server_Activate` is off. Here the writer runs exactly while the web server
-//! runs, its only reader. It writes atomically and escapes strings (port deviation, L19).
+//! The desktop web server lifecycle.
 
-use crate::background::sleep_cancellable;
 use crate::net_addrs::NetAddrs;
 use crate::services::ServiceEvent;
 use crate::web_api::{WebApi, WebCtx};
-use as_aircraft::PlaneInfoCache;
 use as_settings::Settings;
 use as_web::server::{Api, WebConfig, WebServer};
-use chrono::{DateTime, Utc};
-use std::io;
 use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex, RwLock};
-use std::time::Duration;
-
-/// The wait between two writes (`MapDlg.cs:8466`).
-pub const PLANES_JSON_PERIOD: Duration = Duration::from_secs(60);
-
-/// The file name in the tmp directory (`MapDlg.cs:8479`).
-pub const PLANES_JSON: &str = "planes.json";
-
-pub use as_web::planes::{planes_json, PLANES_JSON_VERSION};
-
-/// Distinguishes the temp files of writers that overlap during a restart.
-static TEMP_SEQ: AtomicU64 = AtomicU64::new(0);
-
-/// Writes `<tmp_dir>/planes.json` from the planes of `cache` valid at `now`, through a temp
-/// file and a rename, so a reader never sees a partial file. Without planes nothing is
-/// written and the answer is `false` (`MapDlg.cs:8474`).
-pub fn write_planes_json(
-    cache: &PlaneInfoCache,
-    tmp_dir: &Path,
-    now: DateTime<Utc>,
-    ttl_min: i64,
-) -> io::Result<bool> {
-    let planes = cache.get_all(now, ttl_min);
-    if planes.is_empty() {
-        return Ok(false);
-    }
-    std::fs::create_dir_all(tmp_dir)?;
-    let seq = TEMP_SEQ.fetch_add(1, Ordering::Relaxed);
-    let temp = tmp_dir.join(format!("{PLANES_JSON}.{}-{seq}.tmp", std::process::id()));
-    let written = std::fs::write(&temp, planes_json(&planes, PLANES_JSON_VERSION))
-        .and_then(|()| std::fs::rename(&temp, tmp_dir.join(PLANES_JSON)));
-    if written.is_err() {
-        let _ = std::fs::remove_file(&temp);
-    }
-    written.map(|()| true)
-}
+use std::sync::{Arc, Mutex};
 
 /// The web server config the settings ask for: `None` unless `server.activate`
 /// (`MapDlg.cs:2405-2414`); else `<bind ip>:<web.port>`.
@@ -85,29 +38,22 @@ pub fn keeps_server(running: &WebConfig, state: &WebState, want: Option<&WebConf
     Some(running) == want && !matches!(state, WebState::NotListening(_))
 }
 
-/// The web server and the `planes.json` writer. Dropping it stops both.
+/// Dropping the web service stops the server.
 pub struct WebService {
     server: WebServer,
     /// The last error the server reported.
     last_error: Arc<Mutex<Option<String>>>,
-    /// `WebCtx::stop`: cancels the writer and the running path calculations.
+    /// `WebCtx::stop`: cancels running path calculations.
     stop: Arc<AtomicBool>,
 }
 
 impl WebService {
-    /// Starts the server (thread `web`) and the writer (thread `planes-json`). The `web`
+    /// Starts the server on the `web` thread. The `web`
     /// thread opens the aircraft database before the bind when `ctx.aircraft` is `None`,
     /// so the caller does no database I/O. Errors go to `tx` until the service stops.
     pub fn start(cfg: WebConfig, ctx: WebCtx, tx: Sender<ServiceEvent>) -> Self {
         let stop = ctx.stop.clone();
         let report = error_sink(stop.clone(), tx);
-        spawn_writer(
-            ctx.cache.clone(),
-            ctx.live.clone(),
-            ctx.tmp_dir.clone(),
-            stop.clone(),
-            report.clone(),
-        );
         let api_report = report.clone();
         let make_api = move || {
             let api = WebApi::with_errors(ctx, Box::new(move |e| api_report(e)));
@@ -150,7 +96,7 @@ impl WebService {
         self.server.local_addr()
     }
 
-    /// Stops the server and the writer and returns at once. A running request is still
+    /// Stops the server and returns at once. A running request is still
     /// answered; a running path calculation is cancelled.
     pub fn stop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
@@ -176,35 +122,4 @@ fn error_sink(stop: Arc<AtomicBool>, tx: Sender<ServiceEvent>) -> Report {
             let _ = tx.send(ServiceEvent::Error(e));
         }
     })
-}
-
-/// The writer loop: at once, then every [`PLANES_JSON_PERIOD`] until `stop`. A failed write
-/// is reported each time (at most once a period), so a lasting failure stays visible.
-fn spawn_writer(
-    cache: Arc<PlaneInfoCache>,
-    live: Arc<RwLock<Settings>>,
-    tmp_dir: PathBuf,
-    stop: Arc<AtomicBool>,
-    report: Report,
-) {
-    let err_report = report.clone();
-    let spawned = std::thread::Builder::new()
-        .name("planes-json".into())
-        .spawn(move || {
-            while !stop.load(Ordering::Relaxed) {
-                let ttl = live
-                    .read()
-                    .unwrap_or_else(|e| e.into_inner())
-                    .planes_position_ttl_min;
-                if let Err(e) = write_planes_json(&cache, &tmp_dir, Utc::now(), ttl) {
-                    report(format!("{PLANES_JSON}: {e}"));
-                }
-                if sleep_cancellable(PLANES_JSON_PERIOD, &stop) {
-                    break;
-                }
-            }
-        });
-    if let Err(e) = spawned {
-        err_report(format!("{PLANES_JSON}: {e}"));
-    }
 }

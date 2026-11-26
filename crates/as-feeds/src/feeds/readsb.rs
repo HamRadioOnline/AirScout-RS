@@ -1,24 +1,23 @@
 //! Readsb / tar1090 JSON feed (`AirScout.PlaneFeeds.Plugin.Readsb`).
-//!
-//! Faithful to the C# plugin: callsign, type and category are not mapped, and the DTO
-//! declares `alt_baro` as `double?`, so one aircraft reporting `"ground"` makes the whole
-//! response unreadable (`tests/golden/feed_json.json`).
 
-use super::{clean_hex, convert_to_i32, de_f64, de_string, http_get, parse_err};
-use super::{seconds_before, set_str, unix_ms, NO_ALT, WEBCLIENT_TIMEOUT_S};
-use crate::{vars, FeedArgs, FeedError, FeedPlane, PlaneFeed};
+use super::{clean_hex, de_f64, de_string, http_get, parse_err};
+use super::{de_altitude, map_records, WireAltitude};
+use super::{seconds_before, set_str, unix_ms, WEBCLIENT_TIMEOUT_S};
+use crate::{vars, wake, FeedArgs, FeedBatch, FeedError, FeedPlane, PlaneFeed};
+use as_aircraft::AltitudeProvenance;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+use serde_json::value::RawValue;
 
 pub const DEFAULT_URL: &str = "http://localhost/tar1090/data/aircraft.json";
 
 #[derive(Deserialize)]
-struct List {
+struct List<'a> {
     // [DataMember(IsRequired = true)]: must be present, may be null
     #[serde(deserialize_with = "de_f64")]
     now: Option<f64>,
-    #[serde(deserialize_with = "super::required")]
-    aircraft: Option<Vec<Aircraft>>,
+    #[serde(borrow, deserialize_with = "super::required")]
+    aircraft: Option<Vec<&'a RawValue>>,
 }
 
 #[derive(Deserialize)]
@@ -26,8 +25,13 @@ struct Aircraft {
     // required, may be null
     #[serde(deserialize_with = "de_string")]
     hex: Option<String>,
-    #[serde(default, deserialize_with = "de_f64")]
-    alt_baro: Option<f64>,
+    #[serde(default, deserialize_with = "de_string")]
+    // The wire `type` describes the source kind, so it does not supply an ICAO type.
+    category: Option<String>,
+    #[serde(default, deserialize_with = "de_string")]
+    flight: Option<String>,
+    #[serde(default, deserialize_with = "de_altitude")]
+    alt_baro: WireAltitude,
     #[serde(default, deserialize_with = "de_f64")]
     gs: Option<f64>,
     #[serde(default, deserialize_with = "de_f64")]
@@ -40,14 +44,13 @@ struct Aircraft {
     seen_pos: Option<f64>,
 }
 
-/// `filetime.AddMilliseconds((long)Now * 1000)`: the cast truncates `now` to whole seconds
-/// before the multiplication.
+/// Preserve the fractional snapshot clock before subtracting position age.
 pub(crate) fn file_time(now: Option<f64>) -> Option<DateTime<Utc>> {
-    let now = now?;
-    if !now.is_finite() || now.abs() > 1e13 {
+    let milliseconds = (now? * 1000.0).round();
+    if !(i64::MIN as f64..-(i64::MIN as f64)).contains(&milliseconds) {
         return None;
     }
-    unix_ms((now.trunc() as i64).checked_mul(1000)?)
+    unix_ms(milliseconds as i64)
 }
 
 fn map(ac: &Aircraft, filetime: Option<DateTime<Utc>>) -> Option<FeedPlane> {
@@ -56,31 +59,47 @@ fn map(ac: &Aircraft, filetime: Option<DateTime<Utc>>) -> Option<FeedPlane> {
     Some(FeedPlane {
         time: Some(time),
         hex,
+        call: ac.flight.as_deref().map(str::trim).unwrap_or("").into(),
         lat: ac.lat.unwrap_or(f64::NAN),
         lon: ac.lon.unwrap_or(f64::NAN),
-        alt_ft: ac
-            .alt_baro
-            .map_or(NO_ALT, |a| convert_to_i32(a).map_or(0.0, f64::from)),
+        alt_ft: ac.alt_baro.feet()?,
+        ground: ac.alt_baro.ground(),
+        altitude_provenance: if ac.alt_baro.has_measurement() {
+            AltitudeProvenance::PressureEstimate
+        } else {
+            AltitudeProvenance::Unknown
+        },
         track: ac.track.unwrap_or(f64::NAN),
         speed_kts: ac.gs.unwrap_or(f64::NAN),
+        category: wake::category(ac.category.as_deref().unwrap_or(""), ""),
         ..FeedPlane::default()
     })
 }
 
 /// Map one response.
 pub fn parse(json: &str) -> Result<Vec<FeedPlane>, FeedError> {
-    let list: List = serde_json::from_str(json).map_err(parse_err)?;
+    Ok(parse_batch(json)?.planes)
+}
+
+fn parse_batch(json: &str) -> Result<FeedBatch, FeedError> {
+    let list: List<'_> = serde_json::from_str(json).map_err(parse_err)?;
     let ac = list
         .aircraft
         .ok_or_else(|| FeedError::Parse("no aircraft list".into()))?;
     let filetime = file_time(list.now);
-    Ok(ac.iter().filter_map(|a| map(a, filetime)).collect())
+    map_records(ac, |a: Aircraft| map(&a, filetime))
 }
 
 /// The Readsb feed.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Readsb {
     pub url: String,
+}
+
+impl std::fmt::Debug for Readsb {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Readsb").finish_non_exhaustive()
+    }
 }
 
 impl Default for Readsb {
@@ -123,8 +142,12 @@ impl PlaneFeed for Readsb {
     }
 
     fn get_planes(&mut self, args: &FeedArgs) -> Result<Vec<FeedPlane>, FeedError> {
+        Ok(self.get_batch(args)?.planes)
+    }
+
+    fn get_batch(&mut self, args: &FeedArgs) -> Result<FeedBatch, FeedError> {
         let url = vars::substitute(&self.url, args, Utc::now(), "")?;
-        parse(&http_get(&url, WEBCLIENT_TIMEOUT_S, None)?)
+        parse_batch(&http_get(&url, WEBCLIENT_TIMEOUT_S, None)?)
     }
 
     fn stop(&mut self, _args: &FeedArgs) -> Result<(), FeedError> {

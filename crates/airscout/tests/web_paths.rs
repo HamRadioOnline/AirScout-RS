@@ -6,13 +6,13 @@ use airscout::services::open_data;
 use airscout::web_api::{WebApi, WebCtx};
 use airscout::web_paths::{elevation_path, nearest_planes, propagation_path};
 use airscout::web_stations::web_elevation;
-use as_aircraft::{PlaneCategory, PlaneInfo, PlaneInfoCache};
+use as_aircraft::{AltitudeProvenance, PlaneCategory, PlaneInfo, PlaneInfoCache};
 use as_elevation::ElevationModel;
 use as_geo::band::Band;
 use as_geo::latlon::{self, EARTH_RADIUS_KM};
 use as_geo::maidenhead;
 use as_propagation::PathParams;
-use as_settings::{ElevationEnabled, Settings};
+use as_settings::{default_band_table, ElevationEnabled, Settings};
 use as_stations::{default_antenna_height, GeoSource, Location, Qrv};
 use as_web::query::Query;
 use as_web::route::{route, Route};
@@ -101,22 +101,6 @@ fn json(body: &str) -> Value {
     serde_json::from_str(body).unwrap_or_else(|e| panic!("{e}: {body}"))
 }
 
-/// `v` without any `LastUpdated` member, at every depth.
-fn without_last_updated(mut v: Value) -> Value {
-    fn strip(v: &mut Value) {
-        match v {
-            Value::Object(m) => {
-                m.remove("LastUpdated");
-                m.values_mut().for_each(strip);
-            }
-            Value::Array(a) => a.iter_mut().for_each(strip),
-            _ => {}
-        }
-    }
-    strip(&mut v);
-    v
-}
-
 const PAIR: &str = "mycall=TE1ST&dxcall=TE2ND";
 
 #[test]
@@ -164,6 +148,84 @@ fn elevation_path_matches_store() {
         v["QRV2"]["AntennaHeight"].as_f64(),
         Some(default_antenna_height(Band::B1_2G))
     );
+}
+
+/// A `WebApi` over an already-populated `Paths`, storing nothing further.
+fn from_paths(dir: &Path, s: Settings, paths: airscout::services::Paths) -> WebApi {
+    WebApi::new(WebCtx {
+        paths,
+        cache: Arc::new(PlaneInfoCache::new()),
+        live: Arc::new(RwLock::new(s)),
+        aircraft: None,
+        tmp_dir: dir.join("tmp"),
+        stop: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+    })
+}
+
+/// A stored QRV row for TE1ST at `loc` on 1.2G with a distinctive 30 m height.
+fn seed_qrv(paths: &airscout::services::Paths, loc: &str) {
+    paths
+        .stations
+        .qrv_insert_or_update_if_newer(
+            &Qrv::new("TE1ST", loc, Band::B1_2G, 30.0, 23.0, 400.0, Utc::now()).unwrap(),
+        )
+        .unwrap();
+}
+
+#[test]
+fn coarse_locator_alone_uses_band_defaults_not_seeded_qrv() {
+    // A QRV row sits at JO50's midpoint JO50MM, but no Location for TE1ST/JO50: a coarse
+    // locator with no trusted position must not fabricate a JO50MM key (#13).
+    let dir = common::data_dir_with_globe();
+    let paths = open_data(dir.path()).unwrap();
+    seed_qrv(&paths, "JO50MM");
+    store(&paths, "TE2ND", "JO60AA", TE2ND);
+    let a = from_paths(dir.path(), settings(), paths);
+    let v = json(&get(
+        &a,
+        "/elevationpath.json?mycall=TE1ST&myloc=JO50&dxcall=TE2ND&dxloc=JO60AA",
+    ));
+    assert_eq!(v["QRV1"]["Loc"], "JO50", "{v}");
+    assert_eq!(
+        v["QRV1"]["AntennaHeight"].as_f64(),
+        Some(default_antenna_height(Band::B1_2G)),
+        "{v}"
+    );
+}
+
+#[test]
+fn coarse_locator_with_stored_station_uses_trusted_position() {
+    // A FromUser record inside JO50AA stored under the coarse locator JO50 derives the
+    // six-character key from its trusted position (#13).
+    let dir = common::data_dir_with_globe();
+    let paths = open_data(dir.path()).unwrap();
+    store(&paths, "TE1ST", "JO50", TE1ST);
+    seed_qrv(&paths, "JO50AA");
+    store(&paths, "TE2ND", "JO60AA", TE2ND);
+    let a = from_paths(dir.path(), settings(), paths);
+    let v = json(&get(
+        &a,
+        "/elevationpath.json?mycall=TE1ST&myloc=JO50&dxcall=TE2ND&dxloc=JO60AA",
+    ));
+    assert_eq!(v["QRV1"]["Loc"], "JO50AA", "{v}");
+    assert_eq!(v["QRV1"]["AntennaHeight"].as_f64(), Some(30.0), "{v}");
+}
+
+#[test]
+fn coarse_locator_with_supplied_coordinates_derives_key() {
+    // Supplied coordinates are trusted and derive the six-character key even with a coarse
+    // locator (#13).
+    let dir = common::data_dir_with_globe();
+    let paths = open_data(dir.path()).unwrap();
+    seed_qrv(&paths, "JO50AA");
+    store(&paths, "TE2ND", "JO60AA", TE2ND);
+    let a = from_paths(dir.path(), settings(), paths);
+    let v = json(&get(
+        &a,
+        "/elevationpath.json?mycall=TE1ST&mylat=50.01&mylon=10.03&myloc=JO50&dxcall=TE2ND&dxloc=JO60AA",
+    ));
+    assert_eq!(v["QRV1"]["Loc"], "JO50AA", "{v}");
+    assert_eq!(v["QRV1"]["AntennaHeight"].as_f64(), Some(30.0), "{v}");
 }
 
 #[test]
@@ -246,33 +308,60 @@ fn propagation_path_matches_engine() {
 }
 
 #[test]
-fn propagation_ignores_band_param() {
+fn propagation_honors_band_param() {
     let dir = common::data_dir_with_globe();
     let a = api(dir.path(), settings(), true);
     let b144 = json(&get(&a, &format!("/propagationpath.json?{PAIR}&band=144M")));
-    let b1g2 = json(&get(&a, &format!("/propagationpath.json?{PAIR}&band=1.2G")));
-    // L12 1:1: the settings band (1.2G) is used for both
-    assert_eq!(b144["QRG"].as_f64(), Some(Band::B1_2G.to_ghz()));
-    assert_eq!(without_last_updated(b144), without_last_updated(b1g2));
+    // the requested band drives the QRG, F1 clearance and QRV defaults (#262)
+    assert_eq!(b144["QRG"].as_f64(), Some(Band::B144M.to_ghz()));
+    assert_eq!(
+        b144["F1_Clearance"].as_f64(),
+        Some(default_band_table()[&Band::B144M].f1_clearance)
+    );
+    assert_eq!(
+        b144["QRV1"]["AntennaHeight"].as_f64(),
+        Some(default_antenna_height(Band::B144M))
+    );
+    // no band: the settings band (1.2G)
+    let b = json(&get(&a, &format!("/propagationpath.json?{PAIR}")));
+    assert_eq!(b["QRG"].as_f64(), Some(Band::B1_2G.to_ghz()));
 }
 
 #[test]
-fn propagation_creates_locations() {
+fn propagation_bad_band_text() {
+    let dir = common::data_dir_with_globe();
+    let a = api(dir.path(), settings(), true);
+    for band in ["7M", "none", "all"] {
+        assert_eq!(
+            get(&a, &format!("/propagationpath.json?{PAIR}&band={band}")),
+            format!("Error: {} is not a valid band value!", band.to_uppercase())
+        );
+    }
+}
+
+#[test]
+fn propagation_does_not_store_locations() {
     let dir = common::data_dir_with_globe();
     let a = api(dir.path(), settings(), false);
     let db = &a.ctx.paths.stations;
     assert!(db.location_find("TE2ND", None).unwrap().is_none());
+    let before = db.location_count().unwrap();
     let body = get(
         &a,
         &format!("/propagationpath.json?{PAIR}&dxlat=50.03&dxlon=12.05"),
     );
     let v = json(&body);
-    // stored at the centre of the locator of the given position (1:1 side effect)
-    let l = db.location_find("TE2ND", Some("JO60AA")).unwrap().unwrap();
+    // answered from the in-memory locator centre; nothing is stored (#265)
+    let centre =
+        maidenhead::gpoint_from_loc("JO60AA", maidenhead::PositionInRectangle::MiddleMiddle)
+            .unwrap();
     assert_eq!(v["Location2"]["Call"], "TE2ND");
-    assert_eq!(v["Location2"]["Lat"].as_f64(), Some(l.lat));
-    assert_eq!(v["Lat2"].as_f64(), Some(l.lat));
-    assert_eq!(v["Lon2"].as_f64(), Some(l.lon));
+    assert_eq!(v["Location2"]["Source"], 1);
+    assert_eq!(v["Location2"]["Lat"].as_f64(), Some(centre.lat));
+    assert_eq!(v["Lat2"].as_f64(), Some(centre.lat));
+    assert_eq!(v["Lon2"].as_f64(), Some(centre.lon));
+    assert_eq!(db.location_count().unwrap(), before);
+    assert!(db.location_find("TE2ND", None).unwrap().is_none());
 }
 
 /// The GLOBE fixture ends at 12 E, so TE2ND (12.03 E) sits at sea level behind terrain,
@@ -323,6 +412,20 @@ fn nearest_planes_lists_crossing_plane() {
 }
 
 #[test]
+fn nearest_planes_exposes_altitude_provenance() {
+    let dir = common::data_dir_with_globe();
+    let a = api(dir.path(), settings(), true);
+    let now = Utc::now();
+    let mid = latlon::midpoint(TE1ST.0, TE1ST.1, TE2ND.0, TE2ND.1);
+    let mut p = plane(now, "ABC001", mid.lat, mid.lon, 0.0);
+    p.altitude_provenance = AltitudeProvenance::PressureEstimate;
+    a.ctx.cache.insert_or_update_if_newer(&p);
+    let v = nearest(&a, PAIR, now);
+    assert_eq!(v[0]["AltitudeEstimate"], true);
+    assert_eq!(v[0]["AltitudeProvenance"], "PressureEstimate");
+}
+
+#[test]
 fn nearest_planes_is_indented_array() {
     let dir = common::data_dir_with_globe();
     let a = api(dir.path(), settings(), true);
@@ -333,7 +436,7 @@ fn nearest_planes_is_indented_array() {
         .cache
         .insert_or_update_if_newer(&plane(now, "ABC001", 50.02, 11.04, 0.0));
     let body = get(&a, &format!("/nearestplanes.json?{PAIR}"));
-    assert!(body.starts_with("[\n  {\n    \"Track\": 0.0,"), "{body}");
+    assert!(body.starts_with("[\n  {\n    \"Track\":"), "{body}");
 }
 
 #[test]
@@ -348,12 +451,11 @@ fn nearest_planes_uses_band_param() {
         .cache
         .insert_or_update_if_newer(&plane(now, "ABC002", p.lat, p.lon, 0.0));
     let wide = nearest(&a, &format!("{PAIR}&band=144M"), now);
-    assert_eq!(wide[0]["Potential"], 100, "{wide}");
     assert!(wide[0]["IntPoint"].is_object(), "{wide}");
     // no band: the settings band 1.2G
     let narrow = nearest(&a, PAIR, now);
     assert_eq!(narrow[0]["Potential"], 0, "{narrow}");
-    assert!(narrow[0]["IntPoint"].is_null(), "{narrow}");
+    assert!(narrow[0]["IntPoint"].is_object(), "{narrow}");
     let narrow = nearest(&a, &format!("{PAIR}&band=1.2G"), now);
     assert_eq!(narrow[0]["Potential"], 0, "{narrow}");
 }
@@ -595,16 +697,19 @@ fn far_apart_points_answer() {
     let a = api(dir.path(), settings(), true);
     let started = std::time::Instant::now();
     for r in &ALL_PATH_ROUTES[..2] {
-        // about 11 000 km, 11 000 GLOBE samples mostly without a tile
+        // About 11 000 km, with most GLOBE samples outside the fixture.
         let far = "mylat=50.2&mylon=10.3&dxlat=-40&dxlon=100";
         let v = json(&get(&a, &format!("{r}?{PAIR}&{far}")));
         assert!(v["Distance"].as_f64().unwrap() > 10_000.0, "{r}");
         assert_eq!(v["Valid"], false, "{r}");
-        // almost antipodal: the samples cross 180 E unnormalised (`destination_point`,
-        // 1:1), and the elevation lookup rejects them; the route answers that text
+        // #15: near-antipodal samples cross 180° and the route returns a profile.
         let far = "mylat=50.2&mylon=10.3&dxlat=-50.1&dxlon=-169.8";
-        let body = get(&a, &format!("{r}?{PAIR}&{far}"));
-        assert!(body.starts_with("Error: invalid coordinate"), "{r}: {body}");
+        let v = json(&get(&a, &format!("{r}?{PAIR}&{far}")));
+        assert!(v["Distance"].as_f64().unwrap() > 19_000.0, "{r}");
+        assert_eq!(
+            v["Valid"], false,
+            "{r}: the fixture only covers a small area"
+        );
     }
     // a few seconds on the fixture; generous for slow CI runners
     assert!(

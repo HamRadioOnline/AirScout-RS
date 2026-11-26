@@ -410,30 +410,34 @@ fn n50e011_tiles(dir: &Path) -> (Vec<ElevationTile>, std::path::PathBuf) {
 fn preview_places_tiles() {
     let tmp = tempfile::tempdir().unwrap();
     let (tiles, src) = n50e011_tiles(tmp.path());
-    assert!(!tiles.iter().any(|t| t.index == "JO50MA"));
+    // JO50MA is written now: under #294 its samples shift one cell south, so its bottom row
+    // (file row 1200) holds data instead of lining up with the void band.
+    assert!(tiles.iter().any(|t| t.index == "JO50MA"));
     let mb = tiles.iter().find(|t| t.index == "JO50MB").unwrap();
     // cell (k, l) is elv[k * rows + l]
     let cell = |k: usize, l: usize| mb.elv[k * mb.rows + l];
     assert_eq!(
         [cell(0, 0), cell(0, 49), cell(1, 49), cell(0, 48)],
-        [3719, 2200, 2217, 2231]
+        [VOID, 2231, 2248, 2262]
     );
 
     let (w, h, rgba) = square_rgba(&tiles).unwrap();
     assert_eq!((w, h), (2400, 1200));
     assert_eq!(rgba.len(), 2400 * 1200 * 4);
-    assert_eq!(pixel(&rgba, w, 1200, 1200 - 50 - 1), colour(3719));
+    // JO50MB cell (0, 0) now reads file row 1150, col 0 — the top of the void band.
+    assert_eq!(pixel(&rgba, w, 1200, 1200 - 50 - 1), [0, 0, 0, 255]);
     let p = [
         pixel(&rgba, w, 1200, 1100),
         pixel(&rgba, w, 1201, 1100),
         pixel(&rgba, w, 1200, 1101),
     ];
-    assert_eq!(p, [colour(2200), colour(2217), colour(2231)]);
+    assert_eq!(p, [colour(2231), colour(2248), colour(2262)]);
     assert!(p[0] != p[1] && p[1] != p[2] && p[0] != p[2], "{p:?}");
-    // JO50MA (x 1200..1300, y 1150..1200) is missing: transparent
-    for (x, y) in [(1200, 1199), (1299, 1150), (1250, 1175)] {
-        assert_eq!(pixel(&rgba, w, x, y)[3], 0, "({x}, {y})");
-    }
+    // JO50MA (x 1200..1300, y 1150..1200) is written: its bottom row (l = 0, file row 1200)
+    // holds data, the rows above fall in the void band and are opaque black.
+    assert_eq!(pixel(&rgba, w, 1200, 1199), colour(100));
+    assert_eq!(pixel(&rgba, w, 1299, 1150), [0, 0, 0, 255]);
+    assert_eq!(pixel(&rgba, w, 1250, 1175), [0, 0, 0, 255]);
     // JO50AB..: west half missing
     assert_eq!(pixel(&rgba, w, 0, 0)[3], 0);
 

@@ -79,6 +79,27 @@ fn leave_restores_then_simplex() {
 }
 
 #[test]
+fn leave_restores_split_when_entered_in_split() {
+    let (fake, mut rig) = rig();
+    fake.with(|s| {
+        s.split = true;
+        s.split_freq = 144_300_500;
+    });
+    let mut d = DopplerSession::default();
+    assert!(d.enter(&mut rig, Doppler::A));
+    assert_eq!(d.saved().map(|v| v.split), Some(RigSplit::SplitOn));
+    assert_eq!(d.saved().map(|v| v.tx_hz), Some(144_300_500));
+    fake.clear_log();
+    d.leave(&mut rig);
+    // A rig entered in split leaves still in split, never switched back off.
+    assert!(fake.with(|s| s.split));
+    assert!(!fake.ops().contains(&Op::SetSplit(false)));
+    // ... and the saved RX/TX frequencies are put back (#221).
+    assert_eq!(fake.with(|s| s.freq), 144_300_000);
+    assert_eq!(fake.with(|s| s.split_freq), 144_300_500);
+}
+
+#[test]
 fn leave_twice_restores_once() {
     let (fake, mut rig) = rig();
     let mut d = DopplerSession::default();
@@ -148,13 +169,15 @@ fn status_mapping() {
 }
 
 #[test]
-fn strategy_a_needs_split() {
+fn every_active_doppler_strategy_needs_split() {
     let (fake, mut rig) = rig();
     fake.fail("GetSplit", BackendError::Rejected(-11));
-    assert_eq!(rig.get_status(Doppler::A), RigStatus::NotSuitable);
-    fake.clear_log();
-    assert_eq!(rig.get_status(Doppler::B), RigStatus::Online);
-    assert_eq!(fake.ops(), vec![Op::Connect, Op::GetFreq]);
+    for s in [Doppler::A, Doppler::B, Doppler::C, Doppler::D] {
+        assert_eq!(rig.get_status(s), RigStatus::NotSuitable, "{s:?}");
+    }
+    // No Doppler strategy requires split.
+    fake.with(|s| s.fail.clear());
+    assert_eq!(rig.get_status(Doppler::None), RigStatus::Online);
 }
 
 #[test]

@@ -13,6 +13,7 @@ use as_aircraft::{PlaneCategory, PlaneInfo, PlaneInfoCache};
 use as_cat::{Doppler, DopplerCell};
 use as_settings::{DopplerStrategy, Settings, TrackFile, TrackUdp};
 use chrono::Utc;
+use std::collections::VecDeque;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::mpsc::{channel, Receiver};
@@ -127,6 +128,62 @@ fn failed_send_is_not_counted_and_reconnects() {
         assert!(!ev.iter().any(|e| matches!(e, TrackEvent::Disabled(_))));
     }
     assert_eq!(connects.load(Ordering::SeqCst), 20);
+}
+
+/// A [`TrackOutput`] that plays a queue of [`Script`] outcomes, one per send.
+struct Sequenced {
+    group: OutputGroup,
+    script: Arc<Mutex<VecDeque<Script>>>,
+    connected: bool,
+}
+
+impl TrackOutput for Sequenced {
+    fn group(&self) -> OutputGroup {
+        self.group
+    }
+    fn connect(&mut self) -> Result<(), String> {
+        self.connected = true;
+        Ok(())
+    }
+    fn is_connected(&self) -> bool {
+        self.connected
+    }
+    fn send(&mut self, _az: f64, _el: f64) -> Result<(), OutputError> {
+        match self.script.lock().unwrap().pop_front() {
+            Some(Script::NotConnected) => Err(OutputError::NotConnected("[UDP]: nope".into())),
+            Some(Script::Failed) => Err(OutputError::Failed("boom".into())),
+            _ => Ok(()),
+        }
+    }
+    fn close(&mut self) {
+        self.connected = false;
+    }
+}
+
+#[test]
+fn successful_step_resets_the_group_error_counter() {
+    // #203: a success resets the counter, so ten runs of five failures each never accumulate to
+    // a switch-off (without the reset the 11th total error would disable the output).
+    let mut scripts = VecDeque::new();
+    for _ in 0..10 {
+        for _ in 0..5 {
+            scripts.push_back(Script::NotConnected);
+        }
+        scripts.push_back(Script::Ok);
+    }
+    let o = Sequenced {
+        group: OutputGroup::Udp,
+        script: Arc::new(Mutex::new(scripts)),
+        connected: false,
+    };
+    let mut f = TrackFanout::new(vec![Box::new(o)]);
+    for i in 0..60 {
+        let ev = f.step(&some(TrackMode::Track));
+        assert!(
+            !ev.iter().any(|e| matches!(e, TrackEvent::Disabled(_))),
+            "step {i}"
+        );
+    }
 }
 
 #[test]

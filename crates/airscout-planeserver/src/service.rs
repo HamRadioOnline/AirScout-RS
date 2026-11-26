@@ -102,6 +102,16 @@ fn make_feed(cfg: &PlaneServerConfig, name: &str) -> Result<Box<dyn PlaneFeed>, 
         // `FeedError` texts name the key, never a value.
         feed.load_settings(t).map_err(|e| e.to_string())?;
     }
+    if name == "AirScoutServer"
+        && cfg
+            .feed_settings
+            .get(name)
+            .and_then(|settings| settings.get("url"))
+            .and_then(toml::Value::as_str)
+            .is_none_or(str::is_empty)
+    {
+        return Err("AirScoutServer feed URL is unconfigured".into());
+    }
     Ok(feed)
 }
 
@@ -158,6 +168,12 @@ fn forward(rx: Receiver<FeedEvent>, shared: Arc<Mutex<Shared>>, slot: usize) {
         match e {
             FeedEvent::Started => f.state = "running".into(),
             FeedEvent::Planes(_) => f.last_ok = Some(Utc::now()),
+            FeedEvent::RejectedRecords(count) => {
+                f.state = format!("running, skipped {count} invalid records");
+            }
+            FeedEvent::DroppedRecords(count) => {
+                f.state = format!("running, dropped {count} pending observations");
+            }
             FeedEvent::Error(text) => {
                 f.last_error = Some(text);
                 f.last_error_at = Some(Utc::now());
@@ -241,6 +257,7 @@ impl Service {
             dx_lat: my_lat,
             dx_lon: my_lon,
             keep_history: false,
+            airscout_listener: cfg.server_active.then_some(web.bind),
         };
         let worker_cfg = WorkerConfig {
             // 0 would make the worker loop without pause

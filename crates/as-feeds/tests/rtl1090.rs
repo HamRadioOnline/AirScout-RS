@@ -1,6 +1,9 @@
 //! RTL1090 feed against a fake receiver on 127.0.0.1 (Beast and AVR).
 use as_adsb::crc::parity;
+use as_aircraft::db::AircraftDb;
+use as_aircraft::{AltitudeProvenance, PlaneInfoCache};
 use as_feeds::feeds::rtl1090::Rtl1090;
+use as_feeds::pipeline::{process, PipelineConfig};
 use as_feeds::registry::feed_by_name;
 use as_feeds::{FeedArgs, FeedPlane, PlaneFeed};
 use std::io::Write;
@@ -62,7 +65,15 @@ fn send_slowly(mut s: TcpStream, data: &[u8], hold: Duration) {
 }
 
 fn args() -> FeedArgs {
-    FeedArgs::default()
+    FeedArgs {
+        min_lat: -90.0,
+        max_lat: 90.0,
+        min_lon: -180.0,
+        max_lon: 180.0,
+        min_alt_m: 0,
+        max_alt_m: 20_000,
+        ..FeedArgs::default()
+    }
 }
 
 fn rtl(port: u16, extra: &str) -> Rtl1090 {
@@ -97,12 +108,29 @@ fn beast_stream_yields_plane() {
     let mut f = rtl(port, "");
     f.start(&args()).unwrap();
     let p = wait_plane(&mut f);
-    f.stop(&args()).unwrap();
     server.join().unwrap();
+    f.stop(&args()).unwrap();
     assert_eq!(p.hex, "40621D");
     // the callsign keeps its padding; the pipeline checks it later
     assert_eq!(p.call, "KLM1023 ");
     assert_eq!(p.alt_ft, 38000.0);
+    assert_eq!(p.altitude_provenance, AltitudeProvenance::PressureEstimate);
+    let admitted = process(
+        vec![p.clone()],
+        &args(),
+        &PipelineConfig {
+            extended_plausibility: false,
+            max_error_dist: 30.0,
+            log_errors: false,
+        },
+        &PlaneInfoCache::new(),
+        &AircraftDb::open_in_memory().unwrap(),
+    );
+    assert_eq!(admitted.planes.len(), 1);
+    assert_eq!(
+        admitted.planes[0].altitude_provenance,
+        AltitudeProvenance::PressureEstimate
+    );
     assert!(
         (p.lat - 52.26).abs() < 0.02 && (p.lon - 3.93).abs() < 0.03,
         "{p:?}"
@@ -131,8 +159,9 @@ fn avr_stream_yields_plane() {
     );
     f.start(&args()).unwrap();
     let p = wait_plane(&mut f);
-    f.stop(&args()).unwrap();
+    // the finite sender must finish before the feed closes the socket (BrokenPipe race)
     server.join().unwrap();
+    f.stop(&args()).unwrap();
     assert_eq!(p.call, "@KLM1023 ");
     // baro + geo-minus-baro
     assert_eq!(p.alt_ft, 38550.0);
@@ -152,8 +181,8 @@ fn server_closes_then_reconnects() {
     let mut f = rtl(port, "");
     f.start(&args()).unwrap();
     let p = wait_plane(&mut f);
-    f.stop(&args()).unwrap();
     server.join().unwrap();
+    f.stop(&args()).unwrap();
     assert_eq!(p.hex, "40621D");
 }
 
@@ -221,7 +250,7 @@ fn silent_receiver_reconnects() {
     f.load_settings(&t).unwrap();
     f.start(&args()).unwrap();
     let p = wait_plane(&mut f);
-    f.stop(&args()).unwrap();
     server.join().unwrap();
+    f.stop(&args()).unwrap();
     assert_eq!(p.hex, "40621D");
 }

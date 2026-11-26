@@ -11,6 +11,7 @@ use super::{set_bool, set_str};
 use crate::{FeedArgs, FeedError, FeedPlane, PlaneFeed};
 use as_adsb::decoder::{AdsbInfo, Decoder};
 use as_adsb::framing::{avr_line, BeastReader};
+use as_aircraft::AltitudeProvenance;
 use chrono::Utc;
 use std::io::{ErrorKind, Read};
 use std::net::{TcpStream, ToSocketAddrs};
@@ -29,12 +30,11 @@ const STEP: Duration = Duration::from_millis(100);
 const UNKNOWN: &str = "[unknown]";
 
 /// Settings shared with the receiver thread.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Conn {
     server: String,
     port: u16,
     binary: bool,
-    use_geometric_alt_only: bool,
     backoff: Duration,
     idle: Duration,
 }
@@ -58,7 +58,6 @@ pub struct Rtl1090 {
 impl std::fmt::Debug for Rtl1090 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Rtl1090")
-            .field("server", &self.server)
             .field("port", &self.port)
             .field("binary", &self.binary)
             .field("running", &self.thread.is_some())
@@ -144,7 +143,7 @@ fn session(mut s: TcpStream, c: &Conn, dec: &Mutex<Decoder>, stop: &AtomicBool) 
         let mut d = lock(dec);
         for f in frames {
             // malformed frames are dropped, as the C# loop ignores DecodeMessage errors
-            let _ = d.decode_message(&f, now, c.use_geometric_alt_only);
+            let _ = d.decode_message(&f, now, None);
         }
     }
 }
@@ -192,17 +191,9 @@ impl Rtl1090 {
     }
 
     fn plane(&self, i: AdsbInfo) -> FeedPlane {
-        let alt = if self.use_geometric_alt_only {
-            if i.geo_minus_baro_ft.is_nan() {
-                f64::from(i32::MIN)
-            } else {
-                i.baro_alt_ft + i.geo_minus_baro_ft
-            }
-        } else {
-            i.baro_alt_ft
-        };
         FeedPlane {
             time: Some(i.timestamp),
+            components_valid_until: Some(i.components_valid_until),
             hex: i.icao24,
             call: if self.mark_local {
                 format!("@{}", i.call)
@@ -211,7 +202,16 @@ impl Rtl1090 {
             },
             lat: i.lat,
             lon: i.lon,
-            alt_ft: alt,
+            alt_ft: i.altitude_ft,
+            altitude_provenance: match i.altitude_provenance {
+                as_adsb::decoder::AltitudeProvenance::Geometric => AltitudeProvenance::Geometric,
+                as_adsb::decoder::AltitudeProvenance::PressureEstimate => {
+                    AltitudeProvenance::PressureEstimate
+                }
+                as_adsb::decoder::AltitudeProvenance::PressurePlusCorrectionEstimate => {
+                    AltitudeProvenance::PressurePlusCorrectionEstimate
+                }
+            },
             speed_kts: i.speed_kts,
             track: i.heading,
             reg: UNKNOWN.into(),
@@ -279,6 +279,10 @@ impl PlaneFeed for Rtl1090 {
         set_bool(t, "mark_local", &mut self.mark_local)
     }
 
+    fn component_feed_geometric_only(&self) -> Option<bool> {
+        Some(self.use_geometric_alt_only)
+    }
+
     fn start(&mut self, _args: &FeedArgs) -> Result<(), FeedError> {
         self.halt();
         self.stop = Arc::new(AtomicBool::new(false));
@@ -286,7 +290,6 @@ impl PlaneFeed for Rtl1090 {
             server: self.server.clone(),
             port: self.port,
             binary: self.binary,
-            use_geometric_alt_only: self.use_geometric_alt_only,
             backoff: self.backoff,
             idle: self.idle,
         };
@@ -300,7 +303,7 @@ impl PlaneFeed for Rtl1090 {
     }
 
     fn get_planes(&mut self, _args: &FeedArgs) -> Result<Vec<FeedPlane>, FeedError> {
-        let infos = lock(&self.decoder).planes();
+        let infos = lock(&self.decoder).planes_with_altitude_policy(self.use_geometric_alt_only);
         Ok(infos
             .into_iter()
             .map(|i| self.plane(i))

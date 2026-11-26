@@ -1,6 +1,6 @@
 //! Validation and recovery pipeline (`PlaneFeed.cs` worker loop body).
 use as_aircraft::db::{Aircraft, AircraftDb, AircraftRegistration, AircraftType, Airline};
-use as_aircraft::{PlaneCategory, PlaneInfo, PlaneInfoCache};
+use as_aircraft::{AltitudeProvenance, PlaneCategory, PlaneInfo, PlaneInfoCache};
 use as_feeds::pipeline::{process, PipelineConfig, Reject};
 use as_feeds::{FeedArgs, FeedPlane};
 use chrono::{DateTime, Duration, TimeZone, Utc};
@@ -114,6 +114,18 @@ fn valid_plane_passes_and_model_prefix_stripped() {
 }
 
 #[test]
+fn pipeline_preserves_geometric_altitude_provenance() {
+    let mut p = fp("3C0001", 50.0, 8.0);
+    p.altitude_provenance = AltitudeProvenance::Geometric;
+    let r = run(vec![p], &PlaneInfoCache::new());
+    assert_eq!(r.planes.len(), 1);
+    assert_eq!(
+        r.planes[0].altitude_provenance,
+        AltitudeProvenance::Geometric
+    );
+}
+
+#[test]
 fn hex_invalid_recovered_from_reg() {
     let r = run(vec![fp("", 50.0, 8.0)], &PlaneInfoCache::new());
     assert_eq!(r.planes.len(), 1);
@@ -202,6 +214,7 @@ fn alt_and_speed_recovered_from_cache() {
         PlaneCategory::Superheavy,
     );
     prev.time = t0() - Duration::seconds(10);
+    prev.altitude_provenance = AltitudeProvenance::PressureEstimate;
     cache.insert_or_update_if_newer(&prev);
     let mut p = fp("3C0001", 50.0, 8.0);
     p.alt_ft = f64::MIN;
@@ -217,6 +230,10 @@ fn alt_and_speed_recovered_from_cache() {
         &db(),
     );
     assert_eq!(r.planes[0].alt_ft, 36000.0);
+    assert_eq!(
+        r.planes[0].altitude_provenance,
+        AltitudeProvenance::PressureEstimate
+    );
     assert_eq!(r.planes[0].speed_kts, 440.0);
 }
 
@@ -238,21 +255,13 @@ fn missing_call_from_db_then_unknown() {
 }
 
 #[test]
-fn type_info_from_db_and_unkonwn_typo() {
-    // manufacturer "[unknown]" does not trigger the DB lookup (C# compares with "[unkonwn]")
-    let mut a = fp("3C0001", 50.0, 8.0);
-    a.manufacturer = "[unknown]".into();
-    a.model = "A380".into();
-    // empty model triggers it; the manufacturer prefix is then stripped from the model
-    let mut b = fp("3C0001", 50.0, 8.0);
-    b.model = String::new();
-    let r = run(vec![a], &PlaneInfoCache::new());
-    assert_eq!(r.planes[0].manufacturer, "[unknown]");
-    assert_eq!(r.planes[0].model, "A380");
-    let r = run(vec![b], &PlaneInfoCache::new());
-    assert_eq!(r.planes[0].manufacturer, "AIRBUS");
-    assert_eq!(r.planes[0].model, "A-380-800");
-    assert_eq!(r.planes[0].category, PlaneCategory::Superheavy);
+fn type_fields_from_db_when_model_is_empty() {
+    let mut observation = fp("3C0001", 50.0, 8.0);
+    observation.model.clear();
+    let mapped = run(vec![observation], &PlaneInfoCache::new());
+    assert_eq!(mapped.planes[0].manufacturer, "AIRBUS");
+    assert_eq!(mapped.planes[0].model, "A-380-800");
+    assert_eq!(mapped.planes[0].category, PlaneCategory::Superheavy);
 }
 
 fn cached_prev() -> PlaneInfoCache {
@@ -286,18 +295,79 @@ fn plausibility_rejects_jump() {
 }
 
 #[test]
-fn plausibility_track_fold_reproduced() {
-    // moving east (bearing ~90°) but reporting 270°: the fold maps both to 90° (#47)
+fn plausibility_track_uses_shortest_separation() {
+    // moving east (bearing ~90°); reporting the opposite 270° is a 180° separation and fails
+    // (#47: the old fold mapped both to 90° and wrongly accepted it)
     let mut p = fp("3C0001", 50.0, 8.2);
     p.time = Some(t0() + Duration::seconds(60));
     p.track = 270.0;
     let r = run(vec![p.clone()], &cached_prev());
-    assert_eq!(r.planes.len(), 1);
-    assert_eq!(r.planes[0].track, 270.0);
-    // 200° folds to 160°: 70° off, rejected and the track replaced by the bearing
-    p.track = 200.0;
-    let r = run(vec![p], &cached_prev());
+    assert!(r.planes.is_empty());
     assert_eq!(r.rejected[0].1, Reject::PlausibilityTrack);
+
+    // a turn across north (bearing ~350°, reported 10°) is a 20° separation and passes
+    let mut north = fp("3C0001", 50.1, 7.97);
+    north.time = Some(t0() + Duration::seconds(60));
+    north.track = 10.0;
+    let r = run(vec![north.clone()], &cached_prev());
+    assert_eq!(r.planes.len(), 1);
+    assert_eq!(r.planes[0].track, 10.0);
+
+    // a ~40° separation stays within the 45° tolerance and passes (the exact 45° boundary is
+    // covered by the heading_separation unit test below)
+    let mut diagonal = fp("3C0001", 50.0, 8.2);
+    diagonal.time = Some(t0() + Duration::seconds(60));
+    diagonal.track = 130.0;
+    let r = run(vec![diagonal], &cached_prev());
+    assert_eq!(r.planes.len(), 1);
+    assert_eq!(r.planes[0].track, 130.0);
+}
+
+#[test]
+fn plausibility_track_ignores_zero_displacement_updates() {
+    // A south-bound aircraft whose position quantizes to the same coordinates one second later
+    // has a zero-displacement bearing of 0°, which must not be compared against its 180° track
+    // (#47: `atan2(0, 0) == 0` would otherwise reject it as a 180° separation).
+    let cache = PlaneInfoCache::new();
+    cache.insert_or_update_if_newer(&PlaneInfo::new(
+        t0(),
+        "DLH459",
+        "D-AIMA",
+        "3C0001",
+        50.0,
+        8.0,
+        180.0,
+        35000.0,
+        450.0,
+        "A388",
+        "AIRBUS",
+        "A380",
+        PlaneCategory::Superheavy,
+    ));
+    let mut p = fp("3C0001", 50.0, 8.0);
+    p.time = Some(t0() + Duration::seconds(1));
+    p.track = 180.0;
+    let r = run(vec![p], &cache);
+    assert_eq!(r.planes.len(), 1);
+    assert_eq!(r.planes[0].track, 180.0);
+}
+
+#[test]
+fn plausibility_distance_uses_full_positive_elapsed_time() {
+    // 30 s forward at 30 km/min grants a 15 km budget, measured from the dead-reckoned position
+    // (the cached plane at 450 kts advances ~7 km east in 30 s). A step well inside the budget
+    // passes; one well beyond it fails (#50).
+    let cache = cached_prev();
+    let mut ok = fp("3C0001", 50.0, 8.15);
+    ok.time = Some(t0() + Duration::seconds(30));
+    let r = run(vec![ok.clone()], &cache);
+    assert_eq!(r.planes.len(), 1);
+
+    let mut far = fp("3C0001", 50.0, 8.5);
+    far.time = Some(t0() + Duration::seconds(30));
+    let r = run(vec![far], &cache);
+    assert!(r.planes.is_empty());
+    assert_eq!(r.rejected[0].1, Reject::PlausibilityDist);
 }
 
 #[test]
@@ -315,4 +385,145 @@ fn plausibility_off_accepts_jump() {
         &db(),
     );
     assert_eq!(r.planes.len(), 1);
+}
+
+#[test]
+fn finding_366_component_expiry_survives_feed_enrichment_and_cache_update() {
+    let cache = PlaneInfoCache::new();
+    let mut previous = fp("3C0001", 50.0, 8.0);
+    previous.time = Some(t0() - Duration::seconds(5));
+    let previous = run(vec![previous], &cache).planes.remove(0);
+    cache.insert_or_update_if_newer(&previous);
+
+    // A fresh position arrived fifty seconds after the motion measurement.
+    let mut report = fp("3C0001", 50.01, 8.0);
+    report.components_valid_until = Some(t0() + Duration::seconds(10));
+    let config = PipelineConfig {
+        extended_plausibility: false,
+        ..cfg()
+    };
+    let position = process(vec![report], &args(), &config, &cache, &db())
+        .planes
+        .remove(0);
+    assert!(cache.insert_or_update_if_newer(&position));
+
+    let boundary = t0() + Duration::seconds(10);
+    assert!(cache.get("3C0001", boundary, 5).is_some());
+    assert_eq!(cache.get_all(boundary, 5).len(), 1);
+    let expired = boundary + Duration::nanoseconds(1);
+    assert!(cache.get("3C0001", expired, 5).is_none());
+    assert!(cache.get_all(expired, 5).is_empty());
+}
+
+#[test]
+fn finding_366_component_reports_do_not_borrow_cached_motion_or_height() {
+    // A cached value has its own (older) observation time; pairing it with the fresh
+    // report's component deadline would keep stale motion or height eligible.
+    let cache = PlaneInfoCache::new();
+    let mut prev = fp("3C0001", 50.0, 7.98);
+    prev.time = Some(t0() - Duration::seconds(10));
+    let prev = run(vec![prev], &cache).planes.remove(0);
+    cache.insert_or_update_if_newer(&prev);
+    let config = PipelineConfig {
+        extended_plausibility: false,
+        ..cfg()
+    };
+
+    let mut fast = fp("3C0001", 50.0, 8.0);
+    fast.speed_kts = 900.0;
+    fast.components_valid_until = Some(t0() + Duration::seconds(10));
+    let r = process(vec![fast], &args(), &config, &cache, &db());
+    assert!(r.planes.is_empty());
+    assert_eq!(r.rejected[0].1, Reject::Speed);
+
+    let mut no_alt = fp("3C0001", 50.0, 8.0);
+    no_alt.alt_ft = f64::MIN;
+    no_alt.components_valid_until = Some(t0() + Duration::seconds(10));
+    let r = process(vec![no_alt], &args(), &config, &cache, &db());
+    assert!(r.planes.is_empty());
+    assert_eq!(r.rejected[0].1, Reject::Alt);
+}
+
+#[test]
+fn finding_366_geometric_policy_removes_only_prior_component_pressure_reports() {
+    let cache = PlaneInfoCache::new();
+    let mut pressure = fp("3C0001", 50.0, 8.0);
+    pressure.altitude_provenance = AltitudeProvenance::PressureEstimate;
+    pressure.components_valid_until = Some(t0() + Duration::minutes(5));
+    let mut direct = pressure.clone();
+    direct.hex = "3C0002".into();
+    direct.altitude_provenance = AltitudeProvenance::Geometric;
+    let mut other_source = pressure.clone();
+    other_source.hex = "3C0003".into();
+    other_source.components_valid_until = None;
+    cache.bulk_insert_or_update_if_newer(
+        &run(vec![pressure.clone(), direct, other_source], &cache).planes,
+    );
+
+    cache.set_component_feed_geometric_only(true);
+    let hexes: Vec<_> = cache.get_all(t0(), 5).into_iter().map(|p| p.hex).collect();
+    assert_eq!(hexes, ["3C0002", "3C0003"]);
+    let late_pressure = run(vec![pressure], &cache).planes.remove(0);
+    assert!(!cache.insert_or_update_if_newer(&late_pressure));
+}
+
+#[test]
+fn finding_48_recovers_manufacturer_for_canonical_unknown_marker() {
+    let mut plane = fp("3C0001", 50.0, 8.0);
+    plane.manufacturer = "[unknown]".into();
+    let recovered = run(vec![plane], &PlaneInfoCache::new());
+    assert_eq!(recovered.planes[0].manufacturer, "AIRBUS");
+    assert_eq!(recovered.planes[0].model, "A-380-800");
+}
+
+#[test]
+fn finding_51_wire_categories_survive_enrichment_and_yield_to_canonical_a388() {
+    let db = db();
+    db.airline_insert_or_update_if_newer(&Airline {
+        icao: "TST".into(),
+        iata: "TE".into(),
+        airline: "Synthetic airline".into(),
+        country: String::new(),
+        last_updated: t0(),
+    })
+    .unwrap();
+    for parse in [
+        as_feeds::feeds::readsb::parse as fn(&str) -> Result<Vec<FeedPlane>, _>,
+        as_feeds::feeds::dump1090::parse,
+    ] {
+        for (emitter, category) in [
+            ("A1", 1),
+            ("A2", 1),
+            ("A3", 2),
+            ("A4", 2),
+            ("A5", 3),
+            ("A7", 0),
+        ] {
+            let json = format!(
+                r#"{{"now":100,"aircraft":[
+                {{"hex":"3C0002","category":"{emitter}","flight":" TE1ST ","seen_pos":0,"lat":50,"lon":8,
+                  "gs":450,"speed":450,"track":90,"alt_baro":35000,"altitude":35000}},
+                {{"hex":"3C0001","category":"{emitter}","seen_pos":0,"lat":50,"lon":8,
+                  "gs":450,"speed":450,"track":90,"alt_baro":35000,"altitude":35000}}
+            ]}}"#
+            );
+            let raw = parse(&json).unwrap();
+            assert_eq!(raw[0].category, category);
+            let result = process(raw, &args(), &cfg(), &PlaneInfoCache::new(), &db);
+            assert_eq!(result.planes.len(), 2);
+            let unseen = result
+                .planes
+                .iter()
+                .find(|plane| plane.hex == "3C0002")
+                .unwrap();
+            assert_eq!(unseen.category as i32, category);
+            assert_eq!(unseen.call, "TE1ST");
+            let known = result
+                .planes
+                .iter()
+                .find(|plane| plane.hex == "3C0001")
+                .unwrap();
+            assert_eq!(known.category, PlaneCategory::Superheavy);
+        }
+    }
 }

@@ -135,27 +135,74 @@ fn status_bits() {
 }
 
 #[test]
-fn legacy_cache_full_does_not_insert_but_still_answers() {
-    // finding #5: when the cache is full the oldest entry is evicted and the new tile is NOT cached
+fn finding_5_cache_keeps_the_two_most_recent_insertions() {
     let dir = tempfile::tempdir().unwrap();
-    let store = ElevationStore::open_with_cache_capacity(dir.path(), 1).unwrap();
-    for ((model, _), t) in common::fixture_tiles() {
-        store.insert_or_update_if_newer(model, &t).unwrap();
+    let store = ElevationStore::open_with_cache_capacity(dir.path(), 2).unwrap();
+    let model = ElevationModel::Globe;
+    for (index, value) in [("JO50AA", 1), ("JO51AA", 2), ("JO60AA", 3), ("JO61AA", 4)] {
+        store
+            .insert_or_update_if_newer(model, &constant_tile(index, value))
+            .unwrap();
     }
-    let pts = [
+    let points = [
         (50.01, 10.01),
         (51.01, 10.01),
         (50.01, 12.01),
         (51.01, 12.01),
-        (50.01, 10.01),
     ];
-    for (lat, lon) in pts {
-        let v = store
-            .elevation(ElevationModel::Globe, lat, lon, false)
-            .unwrap();
-        assert!(v > TILE_MISSING, "{lat},{lon}");
+    for ((lat, lon), expected) in points.into_iter().zip(1..=4) {
+        assert_eq!(store.elevation(model, lat, lon, false).unwrap(), expected);
     }
-    assert!(store.cache_len(ElevationModel::Globe) <= 2);
+    assert_eq!(store.cache_len(model), 2);
+    // Remove the backing rows to distinguish a cache hit from a fresh read.
+    store
+        .with_conn(model, |conn| {
+            conn.execute("DELETE FROM Elevation", [])?;
+            Ok(())
+        })
+        .unwrap();
+    for ((lat, lon), expected) in points.into_iter().zip([TILE_MISSING, TILE_MISSING, 3, 4]) {
+        assert_eq!(store.elevation(model, lat, lon, false).unwrap(), expected);
+    }
+}
+
+fn constant_tile(index: &str, value: i16) -> as_elevation::ElevationTile {
+    as_elevation::ElevationTile::new(
+        index,
+        value.into(),
+        0.0,
+        0.0,
+        value.into(),
+        0.0,
+        0.0,
+        5,
+        10,
+        vec![value; 50],
+        chrono::DateTime::UNIX_EPOCH,
+    )
+    .unwrap()
+}
+
+#[test]
+fn finding_10_shared_corner_is_independent_of_the_previous_tile() {
+    let (_d, store) = store_with_fixtures();
+    let model = ElevationModel::Globe;
+    for (lat, lon) in [(50.49, 10.99), (50.51, 10.99), (50.49, 11.01)] {
+        assert!(store.elevation(model, lat, lon, false).unwrap() > TILE_MISSING);
+        assert_eq!(store.elevation(model, 50.5, 11.0, false).unwrap(), 706);
+    }
+}
+
+#[test]
+fn finding_10_pole_and_antimeridian_have_a_sample() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = ElevationStore::open(dir.path()).unwrap();
+    let model = ElevationModel::Globe;
+    store
+        .insert_or_update_if_newer(model, &constant_tile("AR09AX", 123))
+        .unwrap();
+    assert_eq!(store.elevation(model, 90.0, 180.0, false).unwrap(), 123);
+    assert_eq!(store.elevation(model, 90.0, -180.0, false).unwrap(), 123);
 }
 
 #[test]
@@ -181,4 +228,82 @@ fn min_max_info_reads_tile_extremes_without_the_grid() {
     assert!(store.max_elv_loc(*model, "ZZ99ZZ").unwrap().is_none());
     assert!(store.max_elv_loc(*model, "AA00AA").unwrap().is_none());
     assert!(store.min_max_info(*model, "AA00AA").unwrap().is_none());
+}
+
+#[test]
+fn finding_372_elevation_store_guards_schema_version_and_migrates_older() {
+    let ahead_dir = tempfile::tempdir().unwrap();
+    let path = ahead_dir.path().join(ElevationModel::Globe.db_file_name());
+    let raw = rusqlite::Connection::open(&path).unwrap();
+    raw.execute_batch(
+        "CREATE TABLE Elevation (TileIndex TEXT PRIMARY KEY);
+         INSERT INTO Elevation VALUES ('JO50AA');
+         PRAGMA user_version = 5;",
+    )
+    .unwrap();
+    drop(raw);
+    let before = std::fs::read(&path).unwrap();
+
+    let err = ElevationStore::open(ahead_dir.path()).err().unwrap();
+    assert!(
+        matches!(
+            err,
+            as_elevation::ElevationError::SchemaAhead {
+                actual: 5,
+                supported: 4
+            }
+        ),
+        "unexpected error: {err:?}"
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), before);
+    let check = rusqlite::Connection::open(&path).unwrap();
+    let journal: String = check
+        .query_row("PRAGMA journal_mode", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(journal.to_lowercase(), "delete");
+
+    // Migrate from each older version (1, 2, 3) -> 4.
+    for start_ver in 1..=3i64 {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(ElevationModel::Globe.db_file_name());
+        let raw = rusqlite::Connection::open(&path).unwrap();
+        raw.execute_batch(
+            "CREATE TABLE Elevation (
+                TileIndex TEXT NOT NULL PRIMARY KEY,
+                MinElv INTEGER, MinLat REAL, MinLon REAL,
+                MaxElv INTEGER, MaxLat REAL, MaxLon REAL,
+                Rows INTEGER NOT NULL, Columns INTEGER NOT NULL,
+                Elv BLOB NOT NULL, LastUpdated INTEGER NOT NULL);",
+        )
+        .unwrap();
+        if start_ver >= 2 {
+            raw.execute_batch(
+                "CREATE TABLE ElevationPath (
+                    Lat1 REAL NOT NULL, Lon1 REAL NOT NULL, Lat2 REAL NOT NULL, Lon2 REAL NOT NULL,
+                    StepWidth REAL NOT NULL, Count INTEGER NOT NULL, Path BLOB NOT NULL,
+                    LastUpdated INTEGER NOT NULL,
+                    PRIMARY KEY (Lat1, Lon1, Lat2, Lon2, StepWidth));",
+            )
+            .unwrap();
+        }
+        if start_ver >= 3 {
+            raw.execute_batch(
+                "CREATE TABLE LocalObstruction (
+                    Lat REAL NOT NULL, Lon REAL NOT NULL, Distance BLOB NOT NULL,
+                    Height BLOB NOT NULL, LastUpdated INTEGER NOT NULL,
+                    PRIMARY KEY (Lat, Lon));",
+            )
+            .unwrap();
+        }
+        raw.pragma_update(None, "user_version", start_ver).unwrap();
+        drop(raw);
+
+        let store = ElevationStore::open(dir.path()).unwrap();
+        let ver: i64 = store
+            .with_conn(ElevationModel::Globe, |c| {
+                Ok(c.query_row("PRAGMA user_version", [], |r| r.get(0))?)
+            })
+            .unwrap();
+        assert_eq!(ver, 4);
+    }
 }

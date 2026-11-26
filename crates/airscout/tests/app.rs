@@ -660,6 +660,7 @@ fn leds_reset_on_start_and_on_options_ok() {
     assert!(st.background_idle.contains(&Led::Stations));
     let new = st.settings.clone();
     st.apply_options(new);
+    st.options_closed();
     assert_eq!(led_of(&st, Led::Stations), LedState::Unknown);
     assert!(st.background_idle.is_empty());
     assert_eq!(rec.0.borrow().bg_gens, vec![g1, st.background_gen]);
@@ -678,6 +679,7 @@ fn background_event_of_old_generation_is_ignored() {
     let old = st.background_gen;
     let new = st.settings.clone();
     st.apply_options(new);
+    st.options_closed();
     st.on_event(led_event(old, LedState::UpToDate));
     st.on_event(ServiceEvent::BackgroundIdle {
         generation: old,

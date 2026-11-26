@@ -110,9 +110,7 @@ pub fn substitute(
     }
     let parts: Vec<&str> = template.split('%').collect();
     if parts.len().is_multiple_of(2) {
-        return Err(FeedError::Config(format!(
-            "Number of separators is not an even number: {template}"
-        )));
+        return Err(FeedError::Config("unmatched URL template separator".into()));
     }
     let mut s = String::new();
     for (i, p) in parts.iter().enumerate() {
@@ -121,9 +119,40 @@ pub fn substitute(
         } else {
             let name = p.to_uppercase();
             let v = value(&name, args, now, last_dv)
-                .ok_or_else(|| FeedError::Config(format!("Var identifier not found: {name}")))?;
+                .ok_or_else(|| FeedError::Config("unknown URL template variable".into()))?;
             s.push_str(&v);
         }
     }
     Ok(s)
+}
+
+/// Expand supported variables while preserving all other URL bytes.
+pub(crate) fn substitute_supported(
+    mut template: &str,
+    args: &FeedArgs,
+    now: DateTime<Utc>,
+) -> String {
+    let mut url = String::with_capacity(template.len());
+    while let Some(start) = template.find('%') {
+        url.push_str(&template[..start]);
+        let rest = &template[start + 1..];
+        if let Some(end) = rest.find('%') {
+            let name = &rest[..end];
+            if let Some(expanded) = value(&name.to_ascii_uppercase(), args, now, "") {
+                url.push_str(&expanded);
+                template = &rest[end + 1..];
+                continue;
+            }
+        }
+        // A percent escape is one unit even immediately before another token.
+        let escape = rest
+            .as_bytes()
+            .get(..2)
+            .filter(|bytes| bytes.iter().all(u8::is_ascii_hexdigit));
+        let len = escape.map_or(1, |_| 3);
+        url.push_str(&template[start..start + len]);
+        template = &template[start + len..];
+    }
+    url.push_str(template);
+    url
 }

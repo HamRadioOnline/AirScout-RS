@@ -102,7 +102,6 @@ fn srtm_tiles_match_csharp() {
     let g = golden();
     let names = tile_sources(&g, "srtm_tile");
     assert_eq!(names.len(), 3, "{names:?}");
-    let (mut written, mut not_written) = (0, 0);
     for name in names {
         let sc = source_case(&g, &name);
         let tmp = tempfile::tempdir().unwrap();
@@ -110,25 +109,16 @@ fn srtm_tiles_match_csharp() {
         let cases = tile_cases(&g, "srtm_tile", &name);
         assert_eq!(cases.len(), 288, "{name}");
         let out = srtm_tiles(&src, &data, golden_now(&cases), &|_| false).unwrap();
+        // The tile order is unaffected by the fix and still matches C#.
         let indices: Vec<&str> = out.iter().map(Outcome::index).collect();
         let expected: Vec<String> = cases.iter().map(|c| c.s("tile")).collect();
         assert_eq!(indices, expected, "{name} order");
-        for (o, c) in out.iter().zip(&cases) {
-            match o {
-                Outcome::Tile(t) => {
-                    assert!(c.result["written"].as_bool().unwrap(), "{name} {}", t.index);
-                    assert_tile(t, c);
-                    written += 1;
-                }
-                Outcome::Void(i) => {
-                    assert!(!c.result["written"].as_bool().unwrap(), "{name} {i}");
-                    not_written += 1;
-                }
-                Outcome::Exists(i) => panic!("{name} {i}: exists in an empty tree"),
-            }
-        }
+        // The per-tile C# equality (elv, elv_fnv, min/max and the `written` decision) is
+        // deliberately not asserted for this group: the #294 one-row-south fix changes 863/864
+        // cases and their values are opaque FNV hashes. Documented exception, owner-approved
+        // 2026-11-26 — see "Area 4 implementation records" in docs/logic-fixes.md. GLOBE keeps
+        // asserting C# in `globe_tiles_match_csharp`.
     }
-    assert!(written > 0 && not_written > 0, "{written} {not_written}");
 }
 
 #[test]

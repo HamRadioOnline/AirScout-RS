@@ -231,8 +231,8 @@ impl Calculator {
         let my_pos = GPoint::new(my_st.lat, my_st.lon);
         let (my, my_height) = self.end(&my_st.call, my_pos, band)?;
         let (dx, dx_height) = self.end(call, pos, band)?;
-        let obstruction =
-            local_obstruction(&self.paths.store, self.model, my.pos, dx.pos, my_height)?;
+        // the obstruction is stored at the settings position, not at the shifted one (#105)
+        let obstruction = local_obstruction(&self.paths.store, self.model, my_pos, pos, my_height)?;
         let bs = s.band_settings.get(&band).copied().unwrap_or_default();
         let p = PathParams {
             lat1: my.pos.lat,

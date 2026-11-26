@@ -2,17 +2,25 @@
 //! file from one receiver, decoded by [`parse_bincraft`].
 
 use super::bincraft_parse::parse_bincraft;
-use super::{client, get_bytes, set_bool, set_str, unzstd, WEBCLIENT_TIMEOUT_S};
+use super::{bincraft_body, client, set_bool, set_str, WEBCLIENT_TIMEOUT_S};
 use crate::{vars, FeedArgs, FeedError, FeedPlane, PlaneFeed};
 use chrono::Utc;
 
 pub const DEFAULT_URL: &str = "http://44.149.131.185/tar1090/data/aircraft.binCraft.zst";
 
 /// The BinCraft feed.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct BinCraft {
     pub url: String,
     pub compressed: bool,
+}
+
+impl std::fmt::Debug for BinCraft {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BinCraft")
+            .field("compressed", &self.compressed)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Default for BinCraft {
@@ -59,12 +67,7 @@ impl PlaneFeed for BinCraft {
 
     fn get_planes(&mut self, args: &FeedArgs) -> Result<Vec<FeedPlane>, FeedError> {
         let url = vars::substitute(&self.url, args, Utc::now(), "")?;
-        let body = get_bytes(&client(WEBCLIENT_TIMEOUT_S, false)?, &url, None)?;
-        let data = if self.compressed {
-            unzstd(&body)?
-        } else {
-            body
-        };
+        let data = bincraft_body(&client(WEBCLIENT_TIMEOUT_S, false)?, &url, self.compressed)?;
         parse_bincraft(&data)
     }
 

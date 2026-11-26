@@ -8,7 +8,7 @@ mod location;
 mod qrv;
 mod updater;
 
-pub use db::{StationDb, QRV_USER_EDIT_MARKER};
+pub use db::{StationDb, INTERNAL_TABLES, QRV_USER_EDIT_MARKER};
 pub use location::{locations_from_json, GeoSource, Location};
 pub use qrv::{default_antenna_gain, default_antenna_height, default_power, qrvs_from_json, Qrv};
 pub use updater::{update_stations, UpdateStats, DEFAULT_UPDATE_URL};
@@ -18,8 +18,18 @@ pub use updater::{update_stations, UpdateStats, DEFAULT_UPDATE_URL};
 pub enum StationError {
     #[error("database error: {0}")]
     Db(#[from] rusqlite::Error),
+    #[error("database schema version {actual} is newer than supported version {supported}")]
+    SchemaAhead { actual: i64, supported: i64 },
     #[error("cannot parse station data: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("invalid downloaded archive")]
+    ArchiveMalformed,
+    #[error("expanded station archive member exceeds {limit} bytes")]
+    ArchiveTooLarge { limit: u64 },
+    #[error("invalid station coordinates")]
+    InvalidCoordinates,
+    #[error("cannot parse downloaded archive at line {line}, column {column}")]
+    ArchiveData { line: usize, column: usize },
     #[error("download failed: {0}")]
     Net(#[from] as_net::NetError),
     #[error("bad archive: {0}")]
@@ -28,8 +38,21 @@ pub enum StationError {
     Io(#[from] std::io::Error),
     #[error("invalid locator for QRV entry: {0:?} (needs 6 characters)")]
     InvalidLocator(String),
+    #[error("cannot clear internal table {0:?}")]
+    InternalTable(String),
     #[error("cancelled")]
     Cancelled,
+}
+
+impl From<as_db::DbError> for StationError {
+    fn from(err: as_db::DbError) -> Self {
+        match err {
+            as_db::DbError::SchemaAhead { actual, supported } => {
+                Self::SchemaAhead { actual, supported }
+            }
+            as_db::DbError::Sqlite(err) => Self::Db(err),
+        }
+    }
 }
 
 /// Numbers in the server JSON (Newtonsoft `FloatFormatHandling.String`): numbers or "NaN" etc.

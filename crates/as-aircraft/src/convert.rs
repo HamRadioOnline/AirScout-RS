@@ -78,16 +78,9 @@ pub fn to_hex(s: &str) -> Option<String> {
     (len16(&h) == 6 && h.chars().all(|c| c.is_ascii_hexdigit())).then_some(h)
 }
 
-/// `To_Reg`: must contain `-` or start with `N`, and have a known registration prefix.
-/// (`Check_Reg` also accepts `H`; logic-findings #19.)
+/// `To_Reg`: shared shape gate with `Check_Reg`, plus a known registration prefix.
 pub fn to_reg(s: &str, l: &dyn Lookup) -> Option<String> {
-    let r = norm_upper(s);
-    if r.is_empty() || len16(&r) < l.registration_min_len() + 1 {
-        return None;
-    }
-    if !r.contains('-') && !r.starts_with('N') {
-        return None;
-    }
+    let r = reg_shape(s, l.registration_min_len())?;
     l.registration_by_reg(&r).then_some(r)
 }
 
@@ -119,8 +112,7 @@ pub fn to_radar(s: &str) -> Option<String> {
     (len16(&r) >= 3 && ch.len() >= 2 && ch[0].is_alphabetic() && ch[1] == '-').then_some(r)
 }
 
-/// `To_Route`: `FROM-TO` with both ICAO airports known. The origin is cut one character short
-/// (`Substring(0, index - 1)`, logic-findings #21), so `EDDF-EGLL` fails and `EDDFX-EGLL` passes.
+/// `To_Route`: `FROM-TO` with both whole ICAO airports known.
 pub fn to_route(s: &str, l: &dyn Lookup) -> Option<String> {
     let r = norm_upper(s);
     let ch: Vec<char> = r.chars().collect();
@@ -131,7 +123,7 @@ pub fn to_route(s: &str, l: &dyn Lookup) -> Option<String> {
     if index < 3 || index > ch.len() - 3 {
         return None;
     }
-    let from: String = ch[..index - 1].iter().collect();
+    let from: String = ch[..index].iter().collect();
     let to: String = ch[index + 1..].iter().collect();
     (l.airport_by_icao(&from) && l.airport_by_icao(&to)).then_some(r)
 }
@@ -142,14 +134,44 @@ pub(crate) fn call_shape(s: &str) -> Option<String> {
     (len16(&c) >= 4 && !c.contains('-')).then_some(c)
 }
 
-/// `To_Call`: at least 4 characters, no `-`, and (with `check_airline`) a known ICAO airline.
+pub(crate) enum CallDiscriminator {
+    Iata(String),
+    Icao(String),
+}
+
+pub(crate) fn call_discriminator(call: &str) -> Option<CallDiscriminator> {
+    let ch: Vec<char> = call.chars().collect();
+    if ch.len() < 3 {
+        return None;
+    }
+    if ch[2].is_ascii_digit() {
+        return Some(CallDiscriminator::Iata(ch[..2].iter().collect()));
+    }
+    let icao: String = ch[..3].iter().collect();
+    icao.chars()
+        .all(|c| c.is_ascii_alphabetic())
+        .then_some(CallDiscriminator::Icao(icao))
+}
+
+pub(crate) fn reg_shape(s: &str, min_len: usize) -> Option<String> {
+    let r = norm_upper(s);
+    if r.is_empty() || len16(&r) < min_len + 1 {
+        return None;
+    }
+    (r.contains('-') || r.starts_with('N')).then_some(r)
+}
+
+/// `To_Call`: at least 4 characters, no `-`, and (with `check_airline`) a known airline by the
+/// shared call discriminator.
 pub fn to_call(s: &str, check_airline: bool, l: &dyn Lookup) -> Option<String> {
     let c = call_shape(s)?;
     if !check_airline {
         return Some(c);
     }
-    let icao: String = c.chars().take(3).collect();
-    l.airline_by_icao(&icao).then_some(c)
+    match call_discriminator(&c)? {
+        CallDiscriminator::Iata(iata) => l.airline_by_iata(&iata).then_some(c),
+        CallDiscriminator::Icao(icao) => l.airline_by_icao(&icao).then_some(c),
+    }
 }
 
 /// `To_Squawk`: 4 octal digits.

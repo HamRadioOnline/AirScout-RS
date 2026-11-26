@@ -46,3 +46,21 @@ fn type_error_does_not_quote_the_value() {
         assert!(!t.contains("SECRET-TEST-4"), "{t}");
     }
 }
+
+#[test]
+fn finding_374_settings_debug_omits_url_paths_and_arbitrary_feed_tables() {
+    let mut settings = Settings::default();
+    let sentinel = "SyntheticCredential";
+    let url = format!("http://user:{sentinel}@localhost/{sentinel}?key={sentinel}#{sentinel}");
+    settings.background.stations_url = url.clone();
+    settings.background.aircraft_url = url.clone();
+    settings.background.map_mirror_url = url.clone();
+    settings.analysis.history_url = url.clone();
+    settings.gui.elevation_base_url = url.clone();
+    settings.web.kst_websocket = url.clone();
+    settings.speclab.url = url;
+    settings
+        .feed_settings
+        .insert(sentinel.into(), "opaque".into());
+    assert!(!format!("{settings:?}").contains(sentinel));
+}

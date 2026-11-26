@@ -1,6 +1,6 @@
 //! Track messages sent to the rotator program (`MapDlg.cs:7864-7895`).
 
-use crate::dotnet::{fixed, zero3};
+use crate::dotnet::{clamp_elevation, fixed, wrap_azimuth, zero3};
 use crate::{WtKind, WtMessage};
 
 fn msg(kind: WtKind, server: &str, dst: &str, data: String, extra: String) -> WtMessage {
@@ -19,7 +19,7 @@ pub fn set_azimuth(server: &str, az: f64) -> WtMessage {
         server,
         "",
         "AUTO".into(),
-        format!(" 00 {}", zero3(az)),
+        format!(" 00 {}", zero3(wrap_azimuth(az))),
     )
 }
 
@@ -29,7 +29,7 @@ pub fn set_elevation(server: &str, el: f64) -> WtMessage {
         server,
         "",
         "AUTO".into(),
-        format!(" 00 {}", zero3(el)),
+        format!(" 00 {}", zero3(clamp_elevation(el))),
     )
 }
 

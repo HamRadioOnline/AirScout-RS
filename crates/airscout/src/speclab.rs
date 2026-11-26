@@ -34,6 +34,7 @@ pub const BULK_COUNT: usize = 60;
 const EMPTY_Y: (f64, f64) = (-120.0, 0.0);
 /// Smallest Y span [dB]: one sample or constant levels must not give a flat plot.
 const MIN_SPAN: f64 = 10.0;
+const MAX_RESPONSE_BYTES: u64 = 8 * 1024 * 1024;
 
 /// Handle of a running poller. [`stop`](Self::stop) cancels it; a thread inside a request ends
 /// when the request returns and reports nothing from the moment of the cancel.
@@ -92,11 +93,19 @@ impl Drop for SpecLabService {
 }
 
 fn fetch(client: &reqwest::blocking::Client, url: &str) -> Result<String, String> {
-    let resp = client.get(url).send().map_err(|e| e.to_string())?;
-    if !resp.status().is_success() {
-        return Err(format!("HTTP {}", resp.status()));
+    let response = client.get(url).send().map_err(|error| {
+        if error.is_timeout() {
+            "request timed out"
+        } else {
+            "request failed"
+        }
+    })?;
+    if !response.status().is_success() {
+        return Err(format!("HTTP {}", response.status().as_u16()));
     }
-    resp.text().map_err(|e| e.to_string())
+    let bytes =
+        as_net::read_response(response, MAX_RESPONSE_BYTES).map_err(|error| error.to_string())?;
+    String::from_utf8(bytes).map_err(|_| "response is not UTF-8".into())
 }
 
 fn poll_loop(
@@ -113,8 +122,10 @@ fn poll_loop(
         .build()
     {
         Ok(c) => c,
-        Err(e) => {
-            let _ = tx.send(ServiceEvent::SpectrumError(format!("HTTP client: {e}")));
+        Err(_) => {
+            let _ = tx.send(ServiceEvent::SpectrumError(
+                "could not initialize HTTP client".into(),
+            ));
             return;
         }
     };
@@ -259,5 +270,60 @@ impl SpectrumState {
     pub fn on_error(&mut self, text: String) {
         self.status = text;
         self.is_error = true;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn finding_375_spectrum_transport_caps_text_and_rejects_truncation() {
+        let mut server = mockito::Server::new();
+        let body = vec![b' '; MAX_RESPONSE_BYTES as usize];
+        let exact = server.mock("GET", "/exact").with_body(body).create();
+        let oversized = server
+            .mock("GET", "/oversized")
+            .with_body(vec![b' '; MAX_RESPONSE_BYTES as usize + 1])
+            .create();
+        let client = reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(5))
+            .build()
+            .unwrap();
+        assert_eq!(
+            fetch(&client, &format!("{}/exact", server.url()))
+                .unwrap()
+                .len() as u64,
+            MAX_RESPONSE_BYTES
+        );
+        assert!(fetch(&client, &format!("{}/oversized", server.url()))
+            .unwrap_err()
+            .contains("exceeds"));
+        exact.assert();
+        oversized.assert();
+
+        use std::io::{BufRead, BufReader, Write};
+        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let sender = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            stream
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .unwrap();
+            let mut request = BufReader::new(&mut stream);
+            let mut line = String::new();
+            loop {
+                line.clear();
+                if request.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
+                    break;
+                }
+            }
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 8\r\n\r\n[1]")
+                .unwrap();
+        });
+        let error = fetch(&client, &format!("http://{addr}/SyntheticCredential")).unwrap_err();
+        sender.join().unwrap();
+        assert_eq!(error, "response body read failed");
     }
 }

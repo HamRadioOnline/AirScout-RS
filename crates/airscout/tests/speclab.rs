@@ -92,8 +92,7 @@ fn poller_sends_levels() {
     let s = start(&srv.url(), false);
     let got = levels(&s.rx, 3);
     s.svc.stop();
-    // maximum of the bins; the last character of the last bin is dropped (logic-findings),
-    // so -99.9 reads -99. and the maximum is still -60.25; time stamp truncated to seconds
+    // The maximum uses every complete bin and the timestamp is truncated to seconds.
     assert!(got.iter().all(|(_, l)| *l == -60.25));
     assert_eq!(got[0].0.timestamp(), 1_795_438_000);
     assert_eq!(got[1].0.timestamp(), 1_795_438_001);

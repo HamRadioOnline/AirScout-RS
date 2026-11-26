@@ -1,16 +1,4 @@
-//! FlexJSON feed: column auto-detection on synthetic shapes
-//! (`tests/fixtures/feeds/flexjson_*.json`).
-//!
-//! The expected indices are derived by hand from `FlexJSON.cs`:
-//! - `GetAllPlaneInfos` flattens every object/array, takes the most common container length
-//!   `n` and turns each container of length `n` into a row `[key, v1, .., vn]`. Column 0 is
-//!   the container's key: a fresh GUID for array elements, the member name otherwise.
-//! - The finders run in the order Hex, UTC, Type, Lat, Lon, Alt, Track, Speed, Reg. Each
-//!   takes the first not yet assigned column with the most matching cells and keeps it only
-//!   if that count is `> (int)(0.9 * rows)`. Alt also needs a column mean `> 5000`, Track a
-//!   column maximum `<= 360`, Speed a maximum `> 360`.
-//! - `IsReg` is true for any text containing `-`, so the GUID column 0 wins the Reg search
-//!   whenever it is still free. `GetPlanes` reads a column only if its index is `> 0`.
+//! FlexJSON fixture and synthetic tests for explicit columns and checked inference.
 use as_feeds::registry::feed_by_name;
 use as_feeds::{FeedArgs, FeedError, FeedPlane, PlaneFeed};
 use chrono::{Duration, Utc};
@@ -70,157 +58,109 @@ fn indices(f: &dyn PlaneFeed) -> [i64; 9] {
 }
 
 #[test]
-fn detects_columns_array_of_arrays() {
-    // rows: [guid, hex, call, lat, lon, alt, track, speed, type, reg, vspeed]
-    // Hex 1; no UTC; Type 8; Lat 3 (Lon 4 matches IsLat as well, 3 comes first); Lon 4;
-    // Alt 5 (mean > 5000); Track 6 (max <= 360); Speed 7 (max > 360); Reg 0: the GUID column
-    // matches IsReg in every row and comes before column 9.
+fn arrays_map_when_ambiguous_coordinates_are_configured() {
     let before = Utc::now();
-    let (f, r) = run(&fixture("flexjson_array_of_arrays.json"), "");
-    let planes = r.unwrap();
-    assert_eq!(indices(f.as_ref()), [1, -1, 8, 3, 4, 5, 6, 7, 0]);
-    assert_eq!(planes.len(), 12);
-    let p = &planes[0];
-    assert_eq!(p.hex, "3C6589");
-    assert_eq!(p.lat, 50.1234);
-    assert_eq!(p.lon, 10.5678);
-    assert_eq!(p.alt_ft, 37000.0);
-    assert_eq!(p.track, 245.0);
-    assert_eq!(p.speed_kts, 450.0);
-    assert_eq!(p.type_code, "A320");
-    // the call column is never detected, the reg column lost to column 0
-    assert_eq!(p.call, "");
-    assert_eq!(p.reg, "");
-    // no UTC column: DateTime.UtcNow
-    let t = p.time.unwrap();
-    assert!(t >= before && t <= Utc::now());
-}
-
-#[test]
-fn detects_columns_vrs_like() {
-    // rows: [guid, Id, Icao, Reg, Alt, Lat, Long, Spd, Trak, Type, Call]
-    // The dictionary branch of GetPlaneInfo keeps only primitives and strings: the decimal
-    // Lat/Long values become "". Hex 2, Type 9, Alt 4 (Id has mean > 5000 but no cell
-    // <= 100000), Track 8, Speed 7, Reg 0; Lat and Lon stay -1 and GetPlanes throws.
-    let (f, r) = run(&fixture("flexjson_vrs_like.json"), "");
-    assert!(
-        matches!(r, Err(FeedError::Parse(ref m)) if m.contains("Lat")),
-        "{r:?}"
-    );
-    // the indices found so far are kept (Settings.Save before the throw)
-    assert_eq!(indices(f.as_ref()), [2, -1, 9, -1, -1, 4, 8, 7, 0]);
-}
-
-#[test]
-fn detects_columns_nested() {
-    // rows: [hex key, lat, lon, alt, track, speed, type, reg, call]
-    // Containers: root (2), meta (2), data (1), aircraft (12), 12 arrays of 8 -> n = 8.
-    // Hex 0 (the member name), Type 6, Lat 1, Lon 2, Alt 3, Track 4, Speed 5, Reg 7
-    // (column 0 is already taken by Hex).
-    let (f, r) = run(&fixture("flexjson_nested.json"), "");
-    let planes = r.unwrap();
-    assert_eq!(indices(f.as_ref()), [0, -1, 6, 1, 2, 3, 4, 5, 7]);
-    assert_eq!(planes.len(), 12);
-    let p = &planes[3];
-    assert_eq!(p.lat, 50.4567);
-    assert_eq!(p.reg, "G-EUPT");
-    assert_eq!(p.type_code, "A21N");
-}
-
-#[test]
-fn column_zero_never_mapped() {
-    // Hex is detected in column 0 (the member names), but GetPlanes reads a column only if
-    // its index is > 0: every hex is "".
-    let (_, r) = run(&fixture("flexjson_nested.json"), "");
-    assert!(r.unwrap().iter().all(|p| p.hex.is_empty()));
-    // the same with a hand-set index 0
-    let (_, r) = run(
+    let (feed, result) = run(
         &fixture("flexjson_array_of_arrays.json"),
-        "index_hex = 0\nindex_call = 2",
+        "index_lat = 3\nindex_lon = 4",
     );
-    let planes = r.unwrap();
-    assert!(planes.iter().all(|p| p.hex.is_empty()));
-    assert_eq!(planes[1].call, "KLM1023");
+    let planes = result.unwrap();
+    assert_eq!(planes.len(), 12);
+    assert_eq!(indices(feed.as_ref()), [-1, -1, -1, 3, 4, -1, -1, -1, -1]);
+    let plane = &planes[0];
+    assert_eq!(plane.hex, "3C6589");
+    assert_eq!((plane.lat, plane.lon), (50.1234, 10.5678));
+    assert_eq!(
+        (plane.alt_ft, plane.track, plane.speed_kts),
+        (37000.0, 245.0, 450.0)
+    );
+    assert_eq!(plane.type_code, "A320");
+    assert!(!plane.reg.is_empty());
+    assert!(plane.time.unwrap() >= before && plane.time.unwrap() <= Utc::now());
+}
+
+#[test]
+fn positional_aliases_extend_the_named_vrs_like_layout() {
+    let (_, result) = run(
+        &fixture("flexjson_vrs_like.json"),
+        "index_lon = 6\nindex_speed = 7\nindex_track = 8",
+    );
+    let planes = result.unwrap();
+    assert_eq!(planes.len(), 12);
+    assert_eq!(planes[0].hex, "3C6589");
+    assert_eq!(planes[0].lat, 50.1234);
+}
+
+#[test]
+fn nested_arrays_infer_the_actual_object_key() {
+    let (feed, result) = run(
+        &fixture("flexjson_nested.json"),
+        "index_lat = 1\nindex_lon = 2",
+    );
+    let planes = result.unwrap();
+    assert_eq!(indices(feed.as_ref()), [-1, -1, -1, 1, 2, -1, -1, -1, -1]);
+    assert_eq!(planes.len(), 12);
+    assert!(!planes[3].hex.is_empty());
+    assert_eq!(planes[3].lat, 50.4567);
+    assert_eq!(planes[3].reg, "G-EUPT");
+    assert_eq!(planes[3].type_code, "A21N");
 }
 
 #[test]
 fn manual_indices_are_kept() {
-    // set indices are not searched again and their columns are excluded from the search
-    let (f, r) = run(
+    let (feed, result) = run(
         &fixture("flexjson_array_of_arrays.json"),
-        "index_reg = 9\nindex_alt = 5",
+        "index_reg = 9\nindex_alt = 5\nindex_lat = 3\nindex_lon = 4",
     );
-    r.unwrap();
-    assert_eq!(indices(f.as_ref()), [1, -1, 8, 3, 4, 5, 6, 7, 9]);
+    assert_eq!(result.unwrap().len(), 12);
+    assert_eq!(indices(feed.as_ref()), [-1, -1, -1, 3, 4, 5, -1, -1, 9]);
 }
 
 #[test]
-fn metre_and_kmh_units() {
-    // "m" and "km/h" convert in To_Alt/To_Speed; the detection compares with "m " and
-    // "km/h " (trailing space) and so ignores the units
-    let (f, r) = run(
-        &fixture("flexjson_array_of_arrays.json"),
-        "units_alt = \"m\"\nunits_speed = \"km/h\"",
-    );
-    let planes = r.unwrap();
-    assert_eq!(indices(f.as_ref()), [1, -1, 8, 3, 4, 5, 6, 7, 0]);
-    assert_eq!(planes[0].alt_ft, f64::from(i32::MIN)); // 37000 m -> 121391 ft > 100000
-    assert_eq!(planes[2].alt_ft, f64::from((24000.0 * 3.28084) as i32));
-    assert_eq!(planes[0].speed_kts, f64::from((450.0 / 1.852) as i32));
-}
-
-#[test]
-fn utc_ms_column_detected() {
-    // IsUTC accepts only 13-digit millisecond time stamps within 1000 s of now
+fn both_epoch_units_are_inferred_within_the_detection_window() {
     let now = Utc::now();
-    let json = |stamp: &dyn Fn(i64) -> i64| {
+    for millis in [false, true] {
+        let stamp = |i| {
+            let time = now - Duration::seconds(i);
+            if millis {
+                time.timestamp_millis()
+            } else {
+                time.timestamp()
+            }
+        };
         let rows: Vec<String> = (0..12)
             .map(|i| {
                 format!(
-                    "[\"3C65{i:02}\", {}, 50.{i}5, 10.{i}5, 3{i:02}00, {}, {}]",
-                    stamp(i),
-                    10 * i,
-                    400 + i
+                    r#"["3C65{i:02}", {}, 50.25, 10.25, 30000, 80, 430]"#,
+                    stamp(i)
                 )
             })
             .collect();
-        format!("[{}]", rows.join(","))
-    };
-    let ms = |i| (now - Duration::seconds(i)).timestamp_millis();
-    let (f, r) = run(&json(&ms), "");
-    let planes = r.unwrap();
-    assert_eq!(indices(f.as_ref())[1], 2);
-    assert_eq!(planes[3].time.unwrap().timestamp_millis(), ms(3));
-    // 10-digit seconds fail the millisecond check that follows the seconds check
-    let s = |i| (now - Duration::seconds(i)).timestamp();
-    let (f, _) = run(&json(&s), "");
-    assert_eq!(indices(f.as_ref())[1], -1);
-}
-
-#[test]
-fn decimal_altitude_is_unset() {
-    // To_Alt/To_Track/To_Speed parse integers only
-    let json = fixture("flexjson_array_of_arrays.json").replace("37000", "37000.5");
-    let (_, r) = run(&json, "index_alt = 5");
-    assert_eq!(r.unwrap()[0].alt_ft, f64::from(i32::MIN));
-}
-
-#[test]
-fn json_null_is_err() {
-    // AddElement calls GetType() on every value: a null anywhere throws
-    let json = fixture("flexjson_array_of_arrays.json").replacen("\"A320\"", "null", 1);
-    let (_, r) = run(&json, "");
-    assert!(matches!(r, Err(FeedError::Parse(_))), "{r:?}");
+        let (feed, result) = run(
+            &format!("[{}]", rows.join(",")),
+            "index_lat = 3\nindex_lon = 4",
+        );
+        let planes = result.unwrap();
+        assert_eq!(indices(feed.as_ref())[1], -1);
+        let at = planes[3].time.unwrap();
+        assert_eq!(
+            if millis {
+                at.timestamp_millis()
+            } else {
+                at.timestamp()
+            },
+            stamp(3)
+        );
+    }
 }
 
 #[test]
 fn min_planes_not_enforced() {
-    // Min_Planes / Min_Elements are settings only; C# never reads them
-    let (_, r) = run(
+    let (_, result) = run(
         &fixture("flexjson_array_of_arrays.json"),
-        "min_planes = 50\nmin_elements = 20",
+        "min_planes = 50\nmin_elements = 20\nindex_lat = 3\nindex_lon = 4",
     );
-    assert_eq!(r.unwrap().len(), 12);
+    assert_eq!(result.unwrap().len(), 12);
 }
 
 #[test]
@@ -245,4 +185,136 @@ fn flexjson_defaults() {
     assert_eq!(t["min_planes"].as_integer(), Some(50));
     assert_eq!(t["index_call"].as_integer(), Some(-1));
     assert_eq!(indices(f.as_ref()), [-1; 9]);
+}
+
+const EXPLICIT_COLUMNS: &str =
+    "index_hex = 1\nindex_lat = 2\nindex_lon = 3\nindex_alt = 4\nindex_track = 5\nindex_speed = 6\n";
+
+#[test]
+fn finding_70_maps_real_column_zero_and_ignores_array_placeholder() {
+    let settings = "index_hex = 0\nindex_lat = 1\nindex_lon = 2\nindex_alt = 3\nindex_track = 4\nindex_speed = 5";
+    let (_, keyed) = run(r#"{"3C0001":[50.25,10.25,12000,80,430]}"#, settings);
+    assert_eq!(keyed.unwrap()[0].hex, "3C0001");
+    let (_, array) = run(
+        r#"[["3C0001",50.25,10.25,12000,80,430,"G-TEST"]]"#,
+        EXPLICIT_COLUMNS,
+    );
+    assert_eq!(array.unwrap()[0].reg, "G-TEST");
+}
+
+#[test]
+fn finding_71_uses_common_metric_ranges_and_conversion() {
+    let settings = format!("{EXPLICIT_COLUMNS}units_alt = \" M \"\nunits_speed = \" KM/H \"");
+    let (_, result) = run(
+        r#"[
+        ["3C0001",50.25,10.25,10000,80,185.2],
+        ["3C0002",50.25,10.25,10000,80,1001],
+        ["3C0003",50.25,10.25,30001,80,185.2],
+        ["3C0004",50.25,10.25,10000,80,-0.1]
+    ]"#,
+        &settings,
+    );
+    let planes = result.unwrap();
+    assert_eq!(planes.len(), 1);
+    assert!((planes[0].speed_kts - 100.0).abs() < 1e-9);
+    assert!((planes[0].alt_ft - 32808.4).abs() < 1e-9);
+}
+
+#[test]
+fn finding_72_keeps_fractional_motion_and_altitude() {
+    let (_, result) = run(
+        r#"[["3C0001",50.25,10.25,37000.5,245.3,100.5]]"#,
+        EXPLICIT_COLUMNS,
+    );
+    let planes = result.unwrap();
+    assert_eq!(
+        (planes[0].alt_ft, planes[0].track, planes[0].speed_kts),
+        (37000.5, 245.3, 100.5)
+    );
+}
+
+#[test]
+fn finding_73_named_objects_keep_fractional_fields_in_any_order() {
+    let (_, result) = run(
+        r#"[
+        {"ICAO":"3C0001","latitude":50.25,"longitude":10.25,"altitude":12000.5,"groundtrack":60.5,"groundspeed":100},
+        {"groundspeed":100,"groundtrack":65.5,"altitude":13000.7,"longitude":11.25,"latitude":51.25,"ICAO":"3C0002"}
+    ]"#,
+        "",
+    );
+    let planes = result.unwrap();
+    assert_eq!(planes.len(), 2);
+    assert_eq!((planes[0].lat, planes[0].lon), (50.25, 10.25));
+    assert_eq!((planes[1].lat, planes[1].lon), (51.25, 11.25));
+    assert_eq!(planes[1].speed_kts, 100.0);
+}
+
+#[test]
+fn finding_74_null_cells_and_rows_keep_neighboring_positions() {
+    let (_, result) = run(
+        r#"{"meta":null,"data":[null,
+        ["3C0001",50.25,10.25,12000,80,430,null,"G-TEST"]
+    ]}"#,
+        &format!("{EXPLICIT_COLUMNS}index_call = 7\nindex_reg = 8"),
+    );
+    let planes = result.unwrap();
+    assert_eq!(planes.len(), 1);
+    assert!(planes[0].call.is_empty());
+    assert_eq!(planes[0].reg, "G-TEST");
+    assert!(run("null", "").1.is_err());
+}
+
+#[test]
+fn finding_75_checks_epochs_offsets_and_missing_values_separately() {
+    let (_, result) = run(
+        r#"[
+        ["3C0001",50.25,10.25,12000,80,430,1795435200],
+        ["3C0002",50.25,10.25,12000,80,430,"001795435200000"],
+        ["3C0003",50.25,10.25,12000,80,430,"2026-10-25T02:30:00+02:00"],
+        ["3C0004",50.25,10.25,12000,80,430,"2026-10-25T02:30:00+01:00"],
+        ["3C0005",50.25,10.25,12000,80,430,946684800],
+        ["3C0006",50.25,10.25,12000,80,430,1.7954352e9],
+        ["3C0007",50.25,10.25,12000,80,430,null],
+        ["3C0008",50.25,10.25,12000,80,430,10000000000]
+    ]"#,
+        &format!("{EXPLICIT_COLUMNS}index_utc = 7"),
+    );
+    let planes = result.unwrap();
+    assert_eq!(planes.len(), 7);
+    assert_eq!(
+        planes[0].time,
+        chrono::DateTime::from_timestamp(1_795_435_200, 0)
+    );
+    assert_eq!(planes[0].time, planes[1].time);
+    assert_eq!(
+        (planes[3].time.unwrap() - planes[2].time.unwrap()).num_seconds(),
+        3600
+    );
+    assert_eq!(
+        planes[4].time,
+        chrono::DateTime::from_timestamp(946_684_800, 0)
+    );
+    assert_eq!(planes[5].hex, "3C0007");
+    assert!(planes[5].time.unwrap() > chrono::DateTime::from_timestamp(1_795_435_200, 0).unwrap());
+    assert_eq!(
+        planes[6].time,
+        chrono::DateTime::from_timestamp(10_000_000, 0)
+    );
+}
+
+#[test]
+fn finding_77_ambiguous_arrays_need_explicit_indices_and_inference_stays_runtime() {
+    let body = r#"[
+        ["3C0001",50.25,10.25,12000,80,430,123456],
+        ["3C0002",50.26,10.26,13000,90,431,-12345]
+    ]"#;
+    assert!(matches!(run(body, "").1, Err(FeedError::Config(_))));
+    let (feed, result) = run(body, "index_lat = 2\nindex_lon = 3");
+    let planes = result.unwrap();
+    assert_eq!(planes.len(), 2);
+    assert_eq!((planes[0].lat, planes[0].lon), (50.25, 10.25));
+    assert!(planes
+        .iter()
+        .all(|plane| plane.reg.is_empty() && plane.call.is_empty()));
+    assert_eq!(indices(feed.as_ref()), [-1, -1, -1, 2, 3, -1, -1, -1, -1]);
 }

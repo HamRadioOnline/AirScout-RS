@@ -82,7 +82,7 @@ pub const LOCATOR_MAX_LENGTH: i32 = 10;
 pub const LOCATOR_AUTO_LENGTH: bool = true;
 
 /// Settings of the GUI application.
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct GuiSettings {
     pub map_provider: String,
@@ -131,6 +131,57 @@ pub struct GuiSettings {
     /// this level. Clamped to `0..=`[`MAP_PRELOADER_MAX_ZOOM`] when read.
     #[serde(deserialize_with = "clamped_preloader_zoom")]
     pub map_preloader_max_zoom: u8,
+}
+
+impl std::fmt::Debug for GuiSettings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GuiSettings")
+            .field("map_provider", &self.map_provider)
+            .field("map_update_s", &self.map_update_s)
+            .field("map_auto_center", &self.map_auto_center)
+            .field("map_opacity", &self.map_opacity)
+            .field("map_label_calls", &self.map_label_calls)
+            .field("map_show_beam_width", &self.map_show_beam_width)
+            .field(
+                "locator_small_letters_for_subsquares",
+                &self.locator_small_letters_for_subsquares,
+            )
+            .field("planes_filter_min_alt_m", &self.planes_filter_min_alt_m)
+            .field(
+                "planes_filter_max_circumcircle_km",
+                &self.planes_filter_max_circumcircle_km,
+            )
+            .field(
+                "planes_filter_min_category",
+                &self.planes_filter_min_category,
+            )
+            .field("planes_icon_size", &self.planes_icon_size)
+            .field("alarm_activate", &self.alarm_activate)
+            .field("alarm_distance_km", &self.alarm_distance_km)
+            .field("alarm_bring_to_front", &self.alarm_bring_to_front)
+            .field("alarm_play_sound", &self.alarm_play_sound)
+            .field("info_win", &self.info_win)
+            .field("my_calls", &self.my_calls)
+            .field("window_size", &self.window_size)
+            .field("window_pos", &self.window_pos)
+            .field("side_panel_width", &self.side_panel_width)
+            .field("bottom_panel_height", &self.bottom_panel_height)
+            .field("show_info_box", &self.show_info_box)
+            .field("show_zoom_box", &self.show_zoom_box)
+            .field("show_filter_box", &self.show_filter_box)
+            .field("show_alarm_box", &self.show_alarm_box)
+            .field("elevation_download", &self.elevation_download)
+            .field("thunderforest_api_key", &self.thunderforest_api_key)
+            .field("horizon_plot_polar", &self.horizon_plot_polar)
+            .field("tracking_gauges_show", &self.tracking_gauges_show)
+            .field(
+                "stations_map_overlay_elevation",
+                &self.stations_map_overlay_elevation,
+            )
+            .field("map_preloader_enabled", &self.map_preloader_enabled)
+            .field("map_preloader_max_zoom", &self.map_preloader_max_zoom)
+            .finish_non_exhaustive()
+    }
 }
 
 /// Highest preloader zoom level: the C# preloader hard-codes 11 (`MapPreloader.cs:146`) and the

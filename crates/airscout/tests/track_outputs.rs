@@ -106,6 +106,33 @@ fn file_native_overwrites_each_step() {
 }
 
 #[test]
+fn azel_dat_is_replaced_atomically() {
+    // #206: the line is written to a same-directory temp file and renamed over azel.dat, so a
+    // reader holding the old file keeps the old, complete line while the path already holds the
+    // new one, and no temp file is left behind.
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("Tmp").join("azel.dat");
+    let mut out = FileOutput::new(FileFormat::Native, path.clone());
+    out.connect().unwrap();
+    out.send(10.0, 1.0).unwrap();
+    let mut old = std::fs::File::open(&path).unwrap();
+    out.send(20.0, 2.0).unwrap();
+    let mut buf = String::new();
+    std::io::Read::read_to_string(&mut old, &mut buf).unwrap();
+    assert_eq!(buf, format!("10.0,1.0{NEWLINE}"));
+    assert_eq!(
+        std::fs::read_to_string(&path).unwrap(),
+        format!("20.0,2.0{NEWLINE}")
+    );
+    let leftovers: Vec<String> = std::fs::read_dir(dir.path().join("Tmp"))
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .filter(|n| n != "azel.dat")
+        .collect();
+    assert!(leftovers.is_empty(), "{leftovers:?}");
+}
+
+#[test]
 fn file_output_unwritable_dir_reports_error() {
     let dir = tempfile::tempdir().unwrap();
     let blocker = dir.path().join("blocker");

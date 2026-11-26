@@ -9,6 +9,7 @@ use as_aircraft::check;
 use as_aircraft::db::AircraftDb;
 use as_aircraft::{PlaneCategory, PlaneInfo, PlaneInfoCache};
 use as_geo::latlon;
+use chrono::{DateTime, Utc};
 
 use crate::{FeedArgs, FeedPlane};
 
@@ -53,12 +54,19 @@ pub struct Processed {
 
 const UNKNOWN: &str = "[unknown]";
 
-fn fold(t: f64) -> f64 {
-    if t <= 180.0 {
-        t
-    } else {
-        360.0 - t
-    }
+/// Shortest angular separation in degrees modulo 360° (#47): opposite bearings (90° versus
+/// 270°) are 180° apart, while a turn across north (350° versus 10°) is 20° apart.
+fn heading_separation(a: f64, b: f64) -> f64 {
+    ((b - a + 540.0).rem_euclid(360.0) - 180.0).abs()
+}
+
+/// Full fractional seconds between two instants (the `TimeSpan.TotalSeconds` of C#), used for
+/// forward-only comparisons (#50).
+fn elapsed_secs(from: DateTime<Utc>, to: DateTime<Utc>) -> f64 {
+    let d = to - from;
+    d.num_nanoseconds()
+        .map(|n| n as f64 / 1e9)
+        .unwrap_or(d.num_milliseconds() as f64 / 1e3)
 }
 
 /// Check one plane. `Ok(Some)` keeps it, `Ok(None)` skips it silently, `Err` rejects it.
@@ -78,11 +86,13 @@ fn check_one(
         lat: ac.lat,
         lon: ac.lon,
         alt_ft: ac.alt_ft,
+        altitude_provenance: ac.altitude_provenance,
         call: ac.call.clone(),
         reg: ac.reg.clone(),
         track: ac.track,
         speed_kts: ac.speed_kts,
         time,
+        components_valid_until: ac.components_valid_until,
         from: ac.from.clone(),
         to: ac.to.clone(),
         vspeed: ac.vspeed,
@@ -120,8 +130,16 @@ fn check_one(
         return Ok(None);
     }
     let cached = cache.latest(&p.hex);
+    // A component-timed report (#366) carries the deadline of its own observations; a
+    // cached height or speed has an older one, so it must not be borrowed under it.
+    let component_timed = p.components_valid_until.is_some();
     if !check::alt(p.alt_ft) {
-        p.alt_ft = cached.as_ref().ok_or(Reject::Alt)?.alt_ft;
+        if component_timed {
+            return Err(Reject::Alt);
+        }
+        let cached = cached.as_ref().ok_or(Reject::Alt)?;
+        p.alt_ft = cached.alt_ft;
+        p.altitude_provenance = cached.altitude_provenance;
     }
     let alt_m = p.alt_m();
     if alt_m < f64::from(args.min_alt_m) || alt_m > f64::from(args.max_alt_m) {
@@ -143,61 +161,88 @@ fn check_one(
         return Err(Reject::Track);
     }
     if !check::speed(p.speed_kts) {
+        if component_timed {
+            return Err(Reject::Speed);
+        }
         p.speed_kts = cached.as_ref().ok_or(Reject::Speed)?.speed_kts;
     }
     if !check::type_code(&p.type_code, db) {
-        match by_hex(&p.hex) {
-            Some(a) => p.type_code = a.type_code,
-            None => {
-                p.type_code = UNKNOWN.into();
-                p.model = UNKNOWN.into();
-                p.manufacturer = UNKNOWN.into();
-                p.category = PlaneCategory::None;
-            }
+        p.type_code = by_hex(&p.hex)
+            .map(|aircraft| aircraft.type_code)
+            .filter(|code| check::type_code(code, db))
+            .unwrap_or_else(|| UNKNOWN.into());
+        if p.type_code == UNKNOWN {
+            p.model = UNKNOWN.into();
+            p.manufacturer = UNKNOWN.into();
         }
     }
-    // the original compares the manufacturer with "[unkonwn]" (typo, #48)
-    if p.manufacturer.is_empty()
+    let canonical_type = p.type_code.trim().to_ascii_uppercase();
+    let recover_type_fields = p.manufacturer.is_empty()
         || p.model.is_empty()
-        || p.manufacturer == "[unkonwn]"
-        || p.model == UNKNOWN
+        || p.manufacturer == UNKNOWN
+        || p.model == UNKNOWN;
+    if let Some(aircraft_type) = db
+        .aircraft_type_find_by_icao(&canonical_type)
+        .ok()
+        .flatten()
     {
-        match db.aircraft_type_find_by_icao(&p.type_code).ok().flatten() {
-            Some(td) => {
-                p.manufacturer = td.manufacturer;
-                p.model = td.model;
-                p.category = td.category;
-            }
-            None => {
-                p.manufacturer = UNKNOWN.into();
-                p.model = UNKNOWN.into();
-                p.category = PlaneCategory::None;
-            }
+        if recover_type_fields {
+            p.manufacturer = aircraft_type.manufacturer;
+            p.model = aircraft_type.model;
         }
+        if aircraft_type.category != PlaneCategory::None {
+            p.category = aircraft_type.category;
+        }
+    } else if recover_type_fields {
+        p.manufacturer = UNKNOWN.into();
+        p.model = UNKNOWN.into();
+    }
+    if canonical_type == "A388" {
+        p.category = PlaneCategory::Superheavy;
     }
     if let Some(rest) = p.model.strip_prefix(p.manufacturer.as_str()) {
         p.model = rest.trim().to_string();
     }
-    // extended plausibility check against the last known report
-    let last = cached.filter(|l| (p.time - l.time).num_milliseconds() as f64 / 1000.0 <= 300.0);
-    let est = if last.is_some() {
-        cache.get(&p.hex, p.time, 5)
-    } else {
-        None
-    };
-    if let (true, Some(last), Some(est)) = (cfg.extended_plausibility, last, est) {
-        let track = latlon::bearing(last.lat, last.lon, p.lat, p.lon);
-        let dist = latlon::distance(est.lat, est.lon, p.lat, p.lon);
-        // folding maps e.g. 90° and 270° to the same value (#47)
-        if (fold(track) - fold(p.track)).abs() > 45.0 {
-            return Err(Reject::PlausibilityTrack);
-        }
-        let minutes = (p.time - last.time).num_milliseconds() as f64 / 60_000.0;
-        if dist.abs() > cfg.max_error_dist * minutes {
-            return Err(Reject::PlausibilityDist);
-        }
-    }
+    // extended plausibility check against the last known report (forward-only, #50/#47)
+    plausibility_pass(&p, cached.as_ref(), cfg)?;
     Ok(Some(p))
+}
+
+/// The extended plausibility check against the accepted live state `current` (the stored report
+/// for the same hex): the shortest-angular-separation track check once there is a displacement
+/// (#47), then the distance budget (#50). `current` is filtered to forward-only comparisons
+/// within 300 s; with no such previous report — or when the extended check is off — it passes.
+pub fn plausibility_pass(
+    p: &PlaneInfo,
+    current: Option<&PlaneInfo>,
+    cfg: &PipelineConfig,
+) -> Result<(), Reject> {
+    if !cfg.extended_plausibility {
+        return Ok(());
+    }
+    let Some(last) = current.filter(|l| {
+        // forward-only (#50): an older report never borrows a newer one as its baseline
+        p.time > l.time && elapsed_secs(l.time, p.time) <= 300.0
+    }) else {
+        return Ok(());
+    };
+    let Some(est) = PlaneInfoCache::extrapolate_entry(last, p.time, 5) else {
+        return Ok(());
+    };
+    let track = latlon::bearing(last.lat, last.lon, p.lat, p.lon);
+    let dist = latlon::distance(est.lat, est.lon, p.lat, p.lon);
+    // shortest angular separation, but only once there is a displacement with a defined
+    // bearing (#47): a zero-displacement update has `atan2(0, 0) == 0` and must not be
+    // compared against the reported track, while the distance check stays active.
+    let displaced = last.lat != p.lat || last.lon != p.lon;
+    if displaced && track.is_finite() && heading_separation(track, p.track) > 45.0 {
+        return Err(Reject::PlausibilityTrack);
+    }
+    let minutes = elapsed_secs(last.time, p.time) / 60.0;
+    if dist.abs() > cfg.max_error_dist * minutes {
+        return Err(Reject::PlausibilityDist);
+    }
+    Ok(())
 }
 
 /// Run all checks over one feed response.
@@ -217,4 +262,22 @@ pub fn process(
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::heading_separation;
+
+    #[test]
+    fn heading_separation_uses_shortest_angular_distance() {
+        // opposite bearings are 180° apart (#47: the old fold mapped both to 90°)
+        assert_eq!(heading_separation(90.0, 270.0), 180.0);
+        // a turn across north is 20°, not 340°
+        assert_eq!(heading_separation(350.0, 10.0), 20.0);
+        assert_eq!(heading_separation(10.0, 350.0), 20.0);
+        // the 45° boundary is inclusive: exactly 45° is not rejected
+        assert_eq!(heading_separation(90.0, 135.0), 45.0);
+        assert_eq!(heading_separation(0.0, 45.0), 45.0);
+        assert_eq!(heading_separation(0.0, 0.0), 0.0);
+    }
 }

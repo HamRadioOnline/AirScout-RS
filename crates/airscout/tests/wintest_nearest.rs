@@ -6,8 +6,9 @@ use airscout::wintest_nearest::{
 };
 use as_aircraft::{PlaneCategory, PlaneInfo, PlaneInfoCache};
 use as_geo::band::Band;
-use as_geo::latlon::{GPoint, EARTH_RADIUS_KM};
+use as_geo::latlon::GPoint;
 use as_settings::{default_band_table, Settings};
+use as_stations::{GeoSource, Location, Qrv};
 use as_wintest::encode;
 use as_wintest::track::as_nearest;
 use chrono::{DateTime, TimeZone, Utc};
@@ -100,6 +101,7 @@ fn plane(call: &str, cat: PlaneCategory, qrb: f64, pot: i32, kts: f64, cross: bo
     );
     p.int_point = cross.then(|| GPoint::new(50.5, 11.0));
     p.int_qrb = qrb;
+    p.forward_qrb = cross.then_some(qrb);
     p.potential = pot;
     p
 }
@@ -114,7 +116,7 @@ fn nearest_data_lists_crossing_planes_only() {
     ];
     assert_eq!(
         nearest_data(now(), &req(Band::B144M), &planes),
-        "2026-11-24 12:00:00Z,TE1ST,JO50AA,TE2ND,JO60AA,2,TST123,M,120,85,8,TST456,H,50,50,0"
+        "2026-11-24 12:00:00Z,TE1ST,JO50AA,TE2ND,JO60AA,1,TST123,M,120,85,8"
     );
 }
 
@@ -130,21 +132,22 @@ fn answer_end_to_end_with_globe_tile() {
         .expect("answered");
     assert!(out.ends_with(",0"), "{out}");
     assert!(out.starts_with("2026-11-24 12:00:00Z,TE1ST,JO50AA,TE2ND,JO60AA,"));
-    assert_eq!(paths.stations.location_count().unwrap(), 2);
+    // read-only (#265): the answer works from the locator centres and stores nothing
+    assert_eq!(paths.stations.location_count().unwrap(), 0);
     assert!(paths
         .stations
         .location_find("TE1ST", Some("JO50AA"))
         .unwrap()
-        .is_some());
+        .is_none());
     assert!(paths
         .stations
         .location_find("TE2ND", Some("JO60AA"))
         .unwrap()
-        .is_some());
+        .is_none());
 }
 
 #[test]
-fn answer_path_uses_gui_band() {
+fn answer_path_uses_requested_band() {
     let dir = common::data_dir_with_globe();
     let paths = open_data(dir.path()).unwrap();
     let mut s = settings();
@@ -154,11 +157,51 @@ fn answer_path_uses_gui_band() {
     let path = set_path_path(&paths, &n, &req(Band::B144M), &cancel)
         .unwrap()
         .expect("path");
-    assert_eq!(path.params.qrg_ghz, 0.432);
+    assert_eq!(path.params.qrg_ghz, 0.144);
     assert_eq!(
-        path.params.radius_km,
-        EARTH_RADIUS_KM * default_band_table()[&Band::B432M].k_factor
+        path.params.f1_clearance,
+        default_band_table()[&Band::B144M].f1_clearance
     );
+}
+
+#[test]
+fn coarse_locator_uses_trusted_stored_station() {
+    // A FromUser record under a coarse locator derives the six-character QRV key from its
+    // trusted position (#13); with no terrain data, ground is 0 so h1 is the stored height.
+    let dir = tempfile::tempdir().unwrap();
+    let paths = open_data(dir.path()).unwrap();
+    paths
+        .stations
+        .location_insert_or_update_if_newer(&Location::new(
+            "TE1ST",
+            "JO50",
+            50.01,
+            10.03,
+            GeoSource::FromUser,
+            0,
+            Utc::now(),
+        ))
+        .unwrap();
+    paths
+        .stations
+        .qrv_insert_or_update_if_newer(
+            &Qrv::new("TE1ST", "JO50AA", Band::B144M, 25.0, 0.0, 0.0, Utc::now()).unwrap(),
+        )
+        .unwrap();
+    let n = NearestSettings::from_settings(&settings());
+    let r = SetPathRequest {
+        src: "KST".into(),
+        band: Band::B144M,
+        my_call: "TE1ST".into(),
+        my_loc: "JO50".into(),
+        dx_call: "TE2ND".into(),
+        dx_loc: "JO60AA".into(),
+    };
+    let cancel = AtomicBool::new(false);
+    let path = set_path_path(&paths, &n, &r, &cancel)
+        .unwrap()
+        .expect("path");
+    assert_eq!(path.params.h1, 25.0);
 }
 
 #[test]
@@ -184,7 +227,7 @@ fn undefined_band_writes_nothing() {
     assert!(matches!(out, Ok(None)), "{out:?}");
     assert_eq!(paths.stations.qrv_count().unwrap(), 0);
     assert_eq!(paths.stations.location_count().unwrap(), 0);
-    // so is a missing GUI band
+    // a missing GUI band no longer drops the request: only the requested band is resolved (#200)
     let mut s = settings();
     s.band_settings.remove(&s.band.clone());
     let n = NearestSettings::from_settings(&s);
@@ -195,8 +238,12 @@ fn undefined_band_writes_nothing() {
         &req(Band::B144M),
         now(),
         &cancel,
-    );
-    assert!(matches!(out, Ok(None)), "{out:?}");
+    )
+    .unwrap();
+    assert!(out.is_some(), "{out:?}");
+    assert!(out
+        .unwrap()
+        .starts_with("2026-11-24 12:00:00Z,TE1ST,JO50AA,TE2ND,JO60AA,"));
     assert_eq!(paths.stations.qrv_count().unwrap(), 0);
     assert_eq!(paths.stations.location_count().unwrap(), 0);
 }

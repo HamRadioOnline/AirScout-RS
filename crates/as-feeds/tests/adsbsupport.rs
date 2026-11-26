@@ -1,7 +1,7 @@
 //! ADSBSupport feed (`tests/fixtures/feeds/adsbsupport_planes.json`).
 use as_feeds::registry::feed_by_name;
 use as_feeds::{FeedArgs, FeedError, PlaneFeed};
-use chrono::Utc;
+use chrono::DateTime;
 use mockito::{Matcher, Server};
 
 fn fixture() -> String {
@@ -67,7 +67,6 @@ fn adsbsupport_basic_auth() {
         "url = \"{}/planes?fSBnd=%MINLAT%&fNBnd=%MAXLAT%&fWBnd=%MINLON%&fEBnd=%MAXLON%&age=300\"\npassword = \"pw-1\"",
         server.url()
     );
-    let before = Utc::now();
     let planes = feed(&s).get_planes(&args()).unwrap();
     m.assert();
     // one entry without receivedAt is dropped
@@ -81,9 +80,7 @@ fn adsbsupport_basic_auth() {
     assert_eq!(p.speed_kts, f64::from(482.3_f32));
     assert_eq!(p.category, 3);
     assert_eq!(p.vspeed, 64);
-    // receivedAt is overwritten with the local clock (#36)
-    let t = p.time.unwrap();
-    assert!(t >= before && t <= Utc::now());
+    assert_eq!(p.time, DateTime::from_timestamp(1_795_435_199, 300_000_000));
     let d = &planes[2];
     assert_eq!(d.alt_ft, f64::from(i32::MIN));
     assert!(d.track.is_nan());
@@ -172,4 +169,19 @@ fn adsbsupport_defaults() {
     assert_eq!(t["token"].as_str(), Some(""));
     assert_eq!(t["use_geo_alt"].as_bool(), Some(false));
     assert_eq!(t["timeout_s"].as_integer(), Some(30));
+}
+
+#[test]
+fn finding_67_keeps_checked_receiver_epoch_milliseconds() {
+    let body = r#"{"planes":[
+        {"hex":"3C0001","receivedAt":1795435199300},
+        {"hex":"3C0002","receivedAt":9223372036854775807},
+        {"hex":"3C0003","receivedAt":null}
+    ]}"#;
+    let reports = as_feeds::feeds::adsbsupport::parse(body, false).unwrap();
+    assert_eq!(reports.len(), 1);
+    assert_eq!(
+        reports[0].time,
+        chrono::DateTime::from_timestamp(1_795_435_199, 300_000_000)
+    );
 }

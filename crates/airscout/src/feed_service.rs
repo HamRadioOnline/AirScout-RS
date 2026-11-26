@@ -9,6 +9,7 @@ use as_feeds::registry::feed_by_name;
 use as_feeds::worker::{FeedHandle, FeedWorker, WorkerConfig};
 use as_feeds::FeedArgs;
 use as_settings::Settings;
+use std::net::SocketAddr;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::thread::JoinHandle;
@@ -28,6 +29,19 @@ impl FeedService {
         cache: Arc<PlaneInfoCache>,
         tx: Sender<ServiceEvent>,
         feed_id: u64,
+    ) -> Result<Self, AppError> {
+        let listener =
+            crate::web_service::web_config(settings, Default::default()).map(|web| web.bind);
+        Self::start_with_listener(paths, settings, cache, tx, feed_id, listener)
+    }
+
+    pub(crate) fn start_with_listener(
+        paths: &Paths,
+        settings: &Settings,
+        cache: Arc<PlaneInfoCache>,
+        tx: Sender<ServiceEvent>,
+        feed_id: u64,
+        airscout_listener: Option<SocketAddr>,
     ) -> Result<Self, AppError> {
         let mut feed = feed_by_name(&settings.feed)
             .ok_or_else(|| AppError::Other(format!("unknown feed: {}", settings.feed)))?;
@@ -56,8 +70,13 @@ impl FeedService {
             my_lat: (a.min_lat + a.max_lat) / 2.0,
             my_lon: (a.min_lon + a.max_lon) / 2.0,
             keep_history: settings.planes_keep_history,
+            airscout_listener,
             ..FeedArgs::default()
         };
+        if feed.name() == "AirScoutServer" {
+            feed.start(&args)
+                .map_err(|error| AppError::Other(error.to_string()))?;
+        }
         let cfg = WorkerConfig {
             // 0 would make the worker loop without pause
             interval_s: settings.planes_interval_s.max(1),

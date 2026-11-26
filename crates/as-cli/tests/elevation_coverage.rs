@@ -106,12 +106,8 @@ fn download_once_with_user_agent() {
     assert_eq!(v["catalogue"], format!("{url}/GLOBE/files.zip"));
     assert_eq!(v["found"], Value::Null);
     let err = String::from_utf8_lossy(&out.stderr);
-    assert!(
-        err.contains(&format!(
-            "GLOBE: Downloading elevation tile catalogue from {url}/GLOBE/files.zip"
-        )),
-        "stderr: {err}"
-    );
+    assert!(err.contains("GLOBE: Downloading elevation tile catalogue"));
+    assert!(!err.contains(&url));
     let left: Vec<_> = std::fs::read_dir(tmp.path()).unwrap().collect();
     assert!(left.is_empty(), "temp dir not empty: {left:?}");
 }

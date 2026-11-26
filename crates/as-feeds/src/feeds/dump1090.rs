@@ -1,33 +1,33 @@
 //! Dump1090 JSON feed (`AirScout.PlaneFeeds.Plugin.Dump1090`), dump1090(-mutability)
 //! `aircraft.json` format.
-//!
-//! Faithful to the C# plugin: `flight` is not mapped, the category `if` chain has no
-//! `else` before the A5 test so only A5 survives, and `"altitude":"ground"` makes the whole
-//! response unreadable (`tests/golden/feed_json.json`).
 
 use super::readsb::file_time;
-use super::{clean_hex, convert_to_i32, de_f64, de_string, http_get, parse_err};
-use super::{seconds_before, set_str, NO_ALT, WEBCLIENT_TIMEOUT_S};
-use crate::{vars, FeedArgs, FeedError, FeedPlane, PlaneFeed};
+use super::{clean_hex, de_f64, de_string, http_get, parse_err};
+use super::{de_altitude, map_records, WireAltitude};
+use super::{seconds_before, set_str, WEBCLIENT_TIMEOUT_S};
+use crate::{vars, wake, FeedArgs, FeedBatch, FeedError, FeedPlane, PlaneFeed};
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+use serde_json::value::RawValue;
 
 pub const DEFAULT_URL: &str = "http://localhost:8080/data/aircraft.json";
 
 #[derive(Deserialize)]
-struct List {
+struct List<'a> {
     #[serde(deserialize_with = "de_f64")]
     now: Option<f64>,
-    #[serde(deserialize_with = "super::required")]
-    aircraft: Option<Vec<Aircraft>>,
+    #[serde(borrow, deserialize_with = "super::required")]
+    aircraft: Option<Vec<&'a RawValue>>,
 }
 
 #[derive(Deserialize)]
 struct Aircraft {
     #[serde(deserialize_with = "de_string")]
     hex: Option<String>,
-    #[serde(default, deserialize_with = "de_f64")]
-    altitude: Option<f64>,
+    #[serde(default, deserialize_with = "de_string")]
+    flight: Option<String>,
+    #[serde(default, deserialize_with = "de_altitude")]
+    altitude: WireAltitude,
     #[serde(default, deserialize_with = "de_f64")]
     speed: Option<f64>,
     #[serde(default, deserialize_with = "de_f64")]
@@ -45,42 +45,45 @@ struct Aircraft {
 fn map(ac: &Aircraft, filetime: Option<DateTime<Utc>>) -> Option<FeedPlane> {
     let hex = clean_hex(ac.hex.as_deref()?).to_uppercase();
     let time = seconds_before(filetime?, ac.seen_pos?)?;
-    // the A1..A4 assignments are overwritten by the final `if A5 .. else 0`; the A388
-    // test reads `plane.Type`, which this feed never sets
-    let category = if ac.category.as_deref() == Some("A5") {
-        3
-    } else {
-        0
-    };
     Some(FeedPlane {
         time: Some(time),
         hex,
+        call: ac.flight.as_deref().map(str::trim).unwrap_or("").into(),
         lat: ac.lat.unwrap_or(f64::NAN),
         lon: ac.lon.unwrap_or(f64::NAN),
-        alt_ft: ac
-            .altitude
-            .map_or(NO_ALT, |a| convert_to_i32(a).map_or(0.0, f64::from)),
+        alt_ft: ac.altitude.feet()?,
+        ground: ac.altitude.ground(),
         track: ac.track.unwrap_or(f64::NAN),
         speed_kts: ac.speed.unwrap_or(f64::NAN),
-        category,
+        category: wake::category(ac.category.as_deref().unwrap_or(""), ""),
         ..FeedPlane::default()
     })
 }
 
 /// Map one response.
 pub fn parse(json: &str) -> Result<Vec<FeedPlane>, FeedError> {
-    let list: List = serde_json::from_str(json).map_err(parse_err)?;
+    Ok(parse_batch(json)?.planes)
+}
+
+fn parse_batch(json: &str) -> Result<FeedBatch, FeedError> {
+    let list: List<'_> = serde_json::from_str(json).map_err(parse_err)?;
     let ac = list
         .aircraft
         .ok_or_else(|| FeedError::Parse("no aircraft list".into()))?;
     let filetime = file_time(list.now);
-    Ok(ac.iter().filter_map(|a| map(a, filetime)).collect())
+    map_records(ac, |a: Aircraft| map(&a, filetime))
 }
 
 /// The Dump1090 feed.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Dump1090 {
     pub url: String,
+}
+
+impl std::fmt::Debug for Dump1090 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Dump1090").finish_non_exhaustive()
+    }
 }
 
 impl Default for Dump1090 {
@@ -123,8 +126,12 @@ impl PlaneFeed for Dump1090 {
     }
 
     fn get_planes(&mut self, args: &FeedArgs) -> Result<Vec<FeedPlane>, FeedError> {
+        Ok(self.get_batch(args)?.planes)
+    }
+
+    fn get_batch(&mut self, args: &FeedArgs) -> Result<FeedBatch, FeedError> {
         let url = vars::substitute(&self.url, args, Utc::now(), "")?;
-        parse(&http_get(&url, WEBCLIENT_TIMEOUT_S, None)?)
+        parse_batch(&http_get(&url, WEBCLIENT_TIMEOUT_S, None)?)
     }
 
     fn stop(&mut self, _args: &FeedArgs) -> Result<(), FeedError> {

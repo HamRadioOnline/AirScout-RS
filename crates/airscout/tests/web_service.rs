@@ -1,5 +1,4 @@
-//! The web service (stage 4d Task 7): the `planes.json` writer (`MapDlg.cs:8463-8545`), the
-//! file routes (`Webserver.cs:429-449`) and the server lifecycle in the Options cycle
+//! Desktop aircraft routes (`Webserver.cs:429-449`) and the server lifecycle in the Options cycle
 //! (`MapDlg.cs:2402-2414`, `:2477-2503`).
 #[path = "../../as-web/tests/common/mod.rs"]
 mod http;
@@ -8,11 +7,10 @@ use airscout::app::{RealServices, Services};
 use airscout::net_addrs::NetAddrs;
 use airscout::services::{open_data, ServiceEvent};
 use airscout::web_api::{WebApi, WebCtx};
-use airscout::web_service::{
-    planes_json, web_config, write_planes_json, WebService, WebState, PLANES_JSON_PERIOD,
-};
+use airscout::web_service::{web_config, WebService, WebState};
 use as_aircraft::{PlaneCategory, PlaneInfo, PlaneInfoCache};
 use as_settings::Settings;
+use as_web::planes::planes_json;
 use as_web::query::Query;
 use as_web::route::{route, Route};
 use as_web::server::{Api, WebConfig};
@@ -80,7 +78,6 @@ fn wait_until(what: &str, mut cond: impl FnMut() -> bool) {
 
 #[test]
 fn planes_json_layout_matches_csharp() {
-    assert_eq!(PLANES_JSON_PERIOD, Duration::from_secs(60));
     let planes = [plane(t0(), "AAAAAA", "TST1"), plane(t0(), "BBBBBB", "TST2")];
     let row = |i: &str, hex: &str, call: &str| {
         format!(
@@ -108,40 +105,6 @@ fn planes_json_escapes_quotes() {
     assert!(text.contains(r#","TS\"1",0]"#), "{text}");
 }
 
-#[test]
-fn writer_writes_at_once_and_skips_empty() {
-    let dir = tempfile::tempdir().unwrap();
-    let tmp = dir.path().join("tmp");
-    let file = tmp.join("planes.json");
-    let empty = PlaneInfoCache::new();
-    assert!(!write_planes_json(&empty, &tmp, Utc::now(), 5).unwrap());
-    assert!(!file.exists());
-
-    let cache = Arc::new(PlaneInfoCache::new());
-    cache.set(plane(
-        Utc::now() - chrono::Duration::seconds(1),
-        "AAAAAA",
-        "TST1",
-    ));
-    let (tx, _rx) = channel();
-    let cfg = WebConfig::new("127.0.0.1:0".parse().unwrap());
-    let _svc = WebService::start(cfg, ctx(dir.path(), cache), tx);
-    let end = Instant::now() + Duration::from_secs(2);
-    while !file.exists() {
-        assert!(Instant::now() < end, "no planes.json within 2 s");
-        thread::sleep(Duration::from_millis(10));
-    }
-    let text = std::fs::read_to_string(&file).unwrap();
-    assert!(
-        text.starts_with("{\"full_count\":1,\"version\":1"),
-        "{text}"
-    );
-    assert!(text.contains("\"AAAAAA\""), "{text}");
-    // only the final file is left (temp file renamed)
-    let names: Vec<_> = std::fs::read_dir(&tmp).unwrap().flatten().collect();
-    assert_eq!(names.len(), 1);
-}
-
 /// The body `api` answers for the raw request target `raw`.
 fn answer(api: &WebApi, raw: &str) -> String {
     match route(raw) {
@@ -151,12 +114,29 @@ fn answer(api: &WebApi, raw: &str) -> String {
 }
 
 #[test]
+fn finding_370_legacy_forecast_is_ignored_after_restart() {
+    let dir = tempfile::tempdir().unwrap();
+    let tmp = dir.path().join("tmp");
+    std::fs::create_dir_all(&tmp).unwrap();
+    let legacy = tmp.join("planes.json");
+    let snapshot = planes_json(&[plane(t0(), "3C0001", "TE1ST")], 1);
+    std::fs::write(&legacy, &snapshot).unwrap();
+
+    let api = WebApi::new(ctx(dir.path(), Arc::new(PlaneInfoCache::new())));
+    let response = answer(&api, "/planes.json");
+    assert!(as_feeds::feeds::airscoutserver::parse(&response, t0())
+        .unwrap()
+        .is_empty());
+    assert_eq!(std::fs::read_to_string(legacy).unwrap(), snapshot);
+}
+
+#[test]
 fn missing_files_answer() {
     let dir = tempfile::tempdir().unwrap();
     let api = WebApi::new(ctx(dir.path(), Arc::new(PlaneInfoCache::new())));
     assert_eq!(
         answer(&api, "/planes.json"),
-        "Error: planes.json not found!"
+        "{\"full_count\":0,\"version\":1}\n"
     );
     assert_eq!(
         answer(&api, "/AircraftList.json"),
@@ -164,9 +144,7 @@ fn missing_files_answer() {
     );
     let tmp = dir.path().join("tmp");
     std::fs::create_dir_all(&tmp).unwrap();
-    std::fs::write(tmp.join("planes.json"), "{\"full_count\":0}\n").unwrap();
     std::fs::write(tmp.join("vrsplanes.json"), "{\"acList\":[]}").unwrap();
-    assert_eq!(answer(&api, "/planes.json"), "{\"full_count\":0}\n");
     assert_eq!(answer(&api, "/AircraftList.json"), "{\"acList\":[]}");
 }
 

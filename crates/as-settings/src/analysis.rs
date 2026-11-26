@@ -34,20 +34,9 @@ impl Default for Analysis {
     }
 }
 
-/// The history URL without user info, query and fragment: they can carry credentials. The user
-/// info goes up to the last `@`, because a password may hold an unescaped `/`, `?` or `#`.
-fn redact_url(url: &str) -> String {
-    let (scheme, rest) = url.split_at(url.find("://").map_or(0, |i| i + 3));
-    let rest = rest.rfind('@').map_or(rest, |i| &rest[i + 1..]);
-    let rest = rest.find(['?', '#']).map_or(rest, |i| &rest[..i]);
-    format!("{scheme}{rest}")
-}
-
-/// `Debug` hides the credentials a history URL can carry (credential rule).
 impl std::fmt::Debug for Analysis {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Analysis")
-            .field("history_url", &redact_url(&self.history_url))
             .field(
                 "history_disclaimer_accepted",
                 &self.history_disclaimer_accepted,
@@ -61,6 +50,6 @@ impl std::fmt::Debug for Analysis {
                 &self.crossing_with_signal_level,
             )
             .field("crossing_ambiguous_gap_s", &self.crossing_ambiguous_gap_s)
-            .finish()
+            .finish_non_exhaustive()
     }
 }

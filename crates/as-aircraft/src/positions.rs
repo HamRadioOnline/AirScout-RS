@@ -11,6 +11,8 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
+const MAINTAIN_DELETE_BATCH: usize = 1000;
+
 const SCHEMA: &[&str] = &["CREATE TABLE IF NOT EXISTS AircraftPositions (
         Hex TEXT NOT NULL DEFAULT '', Call TEXT NOT NULL DEFAULT '', Lat DOUBLE, Lon DOUBLE,
         Alt DOUBLE, Track DOUBLE, Speed DOUBLE, LastUpdated INT32 NOT NULL DEFAULT 0,
@@ -61,20 +63,24 @@ pub struct PositionDb {
 impl PositionDb {
     /// Open or create `<dir>/aircraftpositions.db3`.
     pub fn open(dir: &Path) -> Result<Self, AircraftError> {
-        let conn = as_db::open(&dir.join("aircraftpositions.db3"))?;
         // C# relies on auto_vacuum so that deletes shrink the file; it only takes effect on a
         // fresh database.
-        conn.pragma_update(None, "auto_vacuum", "FULL")?;
-        Self::init(conn)
+        let conn = as_db::open_versioned_with(
+            &dir.join("aircraftpositions.db3"),
+            SCHEMA,
+            as_db::InitOptions::default().with_auto_vacuum_full(),
+        )?;
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// In-memory database (tests, temporary use).
     pub fn open_in_memory() -> Result<Self, AircraftError> {
-        Self::init(as_db::open_in_memory()?)
-    }
-
-    fn init(conn: Connection) -> Result<Self, AircraftError> {
-        as_db::migrate(&conn, SCHEMA)?;
+        let conn = as_db::open_in_memory_versioned_with(
+            SCHEMA,
+            as_db::InitOptions::default().with_auto_vacuum_full(),
+        )?;
         Ok(Self {
             conn: Mutex::new(conn),
         })
@@ -351,11 +357,13 @@ impl PositionDb {
         )?)
     }
 
-    /// `AircraftPositionBulkDeleteFirst`: delete the first `n` rows by rowid.
-    pub fn delete_first(&self, n: usize) -> Result<usize, AircraftError> {
+    /// `AircraftPositionBulkDeleteFirst`: delete the oldest `n` rows.
+    /// Ties on `LastUpdated` are broken by rowid so repeated passes are stable.
+    pub fn delete_oldest(&self, n: usize) -> Result<usize, AircraftError> {
         Ok(self.conn().execute(
             "DELETE FROM AircraftPositions WHERE rowid IN
-             (SELECT rowid FROM AircraftPositions ORDER BY rowid ASC LIMIT ?1)",
+             (SELECT rowid FROM AircraftPositions
+              ORDER BY LastUpdated ASC, rowid ASC LIMIT ?1)",
             params![n as i64],
         )?)
     }
@@ -374,6 +382,15 @@ impl PositionDb {
         let pages: i64 = conn.query_row("PRAGMA page_count", [], |r| r.get(0))?;
         let size: i64 = conn.query_row("PRAGMA page_size", [], |r| r.get(0))?;
         Ok((pages * size) as f64 / 1024.0 / 1024.0)
+    }
+
+    /// Occupied database size in MB (`page_count - freelist_count`).
+    pub fn occupied_size_mb(&self) -> Result<f64, AircraftError> {
+        let conn = self.conn();
+        let pages: i64 = conn.query_row("PRAGMA page_count", [], |r| r.get(0))?;
+        let free: i64 = conn.query_row("PRAGMA freelist_count", [], |r| r.get(0))?;
+        let size: i64 = conn.query_row("PRAGMA page_size", [], |r| r.get(0))?;
+        Ok(((pages - free) * size) as f64 / 1024.0 / 1024.0)
     }
 }
 
@@ -404,29 +421,39 @@ pub struct MaintainStats {
 }
 
 /// One pass of `AircraftPositionDatabaseMaintainer.OnDoWork` (the caller repeats it every
-/// maintenance period). The three rules, as in C#:
-/// 1. more rows than `max_count`: delete the first 1000 rows;
-/// 2. size above `last_max_size` (which is then raised) and above `max_size_mb`: delete the
-///    first 1000 rows. `last_max_size` never decreases (logic-findings #31);
-/// 3. delete rows older than `max_days`.
-///
-/// Rules 1 and 2 delete only 1000 rows per pass (logic-findings #30).
+/// maintenance period). Retention runs in this order:
+/// 1. delete rows older than `max_days`;
+/// 2. while row count exceeds `max_count`, delete oldest rows in bounded batches;
+/// 3. if occupied size (`page_count - freelist_count`) exceeds `max_size_mb`, delete one bounded
+///    oldest batch.
 pub fn maintain(
     db: &PositionDb,
     cfg: &MaintainerConfig,
     last_max_size: &mut f64,
 ) -> Result<MaintainStats, AircraftError> {
-    let mut s = MaintainStats::default();
-    if db.count()? > cfg.max_count {
-        s.deleted_count = db.delete_first(1000)?;
-    }
-    let size = db.file_size_mb()?;
-    if size > *last_max_size {
-        *last_max_size = size;
-        if *last_max_size > cfg.max_size_mb {
-            s.deleted_size = db.delete_first(1000)?;
+    let mut s = MaintainStats {
+        deleted_old: db.delete_older_than(Utc::now() - Duration::days(cfg.max_days))?,
+        ..MaintainStats::default()
+    };
+
+    loop {
+        let count = db.count()?;
+        if count <= cfg.max_count {
+            break;
+        }
+        let surplus = (count - cfg.max_count) as usize;
+        let to_delete = surplus.min(MAINTAIN_DELETE_BATCH);
+        let deleted = db.delete_oldest(to_delete)?;
+        s.deleted_count += deleted;
+        if deleted == 0 {
+            break;
         }
     }
-    s.deleted_old = db.delete_older_than(Utc::now() - Duration::days(cfg.max_days))?;
+
+    let occupied_size = db.occupied_size_mb()?;
+    *last_max_size = occupied_size;
+    if occupied_size > cfg.max_size_mb {
+        s.deleted_size = db.delete_oldest(MAINTAIN_DELETE_BATCH)?;
+    }
     Ok(s)
 }

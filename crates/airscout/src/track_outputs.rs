@@ -10,9 +10,10 @@ use as_wintest::encode;
 use as_wintest::track::{set_azel, set_azimuth, set_elevation};
 use chrono::{DateTime, Utc};
 use std::fs::File;
-use std::io::Write;
+use std::io::{self, Write};
 use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Output group; the error counters and the switch-off work per group. Declared in the upstream
 /// order (`:8156-8197`).
@@ -29,6 +30,9 @@ pub enum OutputGroup {
 pub enum OutputError {
     /// The `"[UDP]:"`-prefixed class the C# counts towards the switch-off.
     NotConnected(String),
+    /// A serial timeout or I/O error (`#239`): shown, counted towards the same switch-off counter
+    /// as a format error, and the output closes to reconnect on the next step.
+    SerialIo(String),
     /// Every other exception: shown, not counted; the output reconnects on the next step.
     Failed(String),
 }
@@ -229,7 +233,7 @@ pub fn wsjt_azel(utc: DateTime<Utc>, az: f64, el: f64) -> String {
     )
 }
 
-/// Rewrites the file in place every step.
+/// Writes the file atomically each step (`atomic_write`, #206).
 pub struct FileOutput {
     format: FileFormat,
     path: PathBuf,
@@ -244,6 +248,38 @@ impl FileOutput {
             ready: false,
         }
     }
+}
+
+/// A process-wide counter for unique same-directory temp file names.
+static TEMP_SEQ: AtomicU64 = AtomicU64::new(0);
+
+/// Writes `bytes` to `path` atomically (`#206`): the line is written and synced to a unique temp
+/// file in the same directory and then renamed over `azel.dat`, so a reader (WSJT-X) never sees a
+/// torn line — it observes either the old or the new complete file. On any failure the temp file is
+/// removed. The rename can still fail on Windows while WSJT-X holds `azel.dat` open.
+fn atomic_write(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let dir = path
+        .parent()
+        .filter(|d| !d.as_os_str().is_empty())
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from("."));
+    let name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("azel.dat");
+    let seq = TEMP_SEQ.fetch_add(1, Ordering::Relaxed);
+    let tmp = dir.join(format!(".{name}.{}.{seq}.tmp", std::process::id()));
+    let result = (|| {
+        let mut f = File::create(&tmp)?;
+        f.write_all(bytes)?;
+        f.sync_all()?;
+        drop(f);
+        std::fs::rename(&tmp, path)
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    result
 }
 
 impl TrackOutput for FileOutput {
@@ -268,9 +304,7 @@ impl TrackOutput for FileOutput {
             FileFormat::Native => native_azel(az, el),
             FileFormat::Wsjt => wsjt_azel(Utc::now(), az, el),
         };
-        File::create(&self.path)
-            .and_then(|mut f| f.write_all(text.as_bytes()))
-            .map_err(|e| OutputError::Failed(e.to_string()))
+        atomic_write(&self.path, text.as_bytes()).map_err(|e| OutputError::Failed(e.to_string()))
     }
 
     fn close(&mut self) {

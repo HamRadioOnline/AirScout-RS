@@ -87,3 +87,33 @@ pub fn zero3(x: f64) -> String {
     let (neg, int, _) = round_decimal(x, 0);
     format!("{}{:0>3}", if neg { "-" } else { "" }, int)
 }
+
+/// `x` rounded to a whole degree (half away from zero, like `zero3`), with non-finite or
+/// out-of-range inputs as `0.0` (#202, #236). `f64::MAX` formats to a decimal that parses back
+/// to `f64::INFINITY`; that overflow must not reach the wire.
+pub fn whole_degrees(x: f64) -> f64 {
+    if !x.is_finite() {
+        return 0.0;
+    }
+    let (neg, int, _) = round_decimal(x, 0);
+    let mut v: f64 = int.parse().unwrap_or(0.0);
+    if !v.is_finite() {
+        return 0.0;
+    }
+    if neg {
+        v = -v;
+    }
+    v
+}
+
+/// Azimuth in degrees, rounded to a whole degree and wrapped into `[0, 360)`; the `+ 0.0`
+/// normalises a `-0.0` that would otherwise round-trip to `-000` (#202, #236).
+pub fn wrap_azimuth(az: f64) -> f64 {
+    whole_degrees(az).rem_euclid(360.0) + 0.0
+}
+
+/// Elevation in degrees, rounded to a whole degree and clamped to `[0, 90]`; the `+ 0.0`
+/// normalises a `-0.0` that would otherwise round-trip to `-000` (#202, #236).
+pub fn clamp_elevation(el: f64) -> f64 {
+    whole_degrees(el).clamp(0.0, 90.0) + 0.0
+}

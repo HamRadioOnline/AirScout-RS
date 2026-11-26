@@ -34,12 +34,22 @@ impl Watchlist {
             .sort_by(|a, b| a.call.cmp(&b.call).then_with(|| a.loc.cmp(&b.loc)));
     }
 
-    /// Add `item` unless its call/locator exists or the list already holds `max` entries.
+    /// Add `item` at the front unless its call/locator exists, then keep at most `max` entries by
+    /// dropping the oldest (`UpdatePaths`, MapDlg.cs:4455-4462). A `max` of 0 keeps nothing and
+    /// returns `false` (a hand-edited `watchlist_max_count = 0` must not silently drop the entry
+    /// while reporting success).
     pub fn insert_capped(&mut self, item: WatchlistItem, max: usize) -> bool {
-        if self.0.len() >= max || self.index_of_loc(&item.call, &item.loc).is_some() {
+        if max == 0 {
+            self.0.clear();
             return false;
         }
-        self.0.push(item);
+        if self.index_of_loc(&item.call, &item.loc).is_some() {
+            return false;
+        }
+        self.0.insert(0, item);
+        if self.0.len() > max {
+            self.0.truncate(max);
+        }
         true
     }
 }

@@ -101,8 +101,4 @@ impl OmniDispatch for FakeOmni {
         self.check("is_writeable")?;
         Ok(self.writeable.contains(&param))
     }
-
-    fn call_missing(&mut self, _n: u8, name: &str, _param: i32) -> Result<bool, OmniError> {
-        Err(OmniError(format!("no method {name}")))
-    }
 }

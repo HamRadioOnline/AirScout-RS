@@ -1,5 +1,5 @@
 use airscout::style::*;
-use as_aircraft::{PlaneCategory, PlaneInfo};
+use as_aircraft::{AltitudeProvenance, PlaneCategory, PlaneInfo};
 use as_geo::latlon::GPoint;
 use as_settings::InfoWin;
 use chrono::{TimeZone, Utc};
@@ -27,6 +27,7 @@ fn plane() -> PlaneInfo {
         model: "A320".into(),
         category: PlaneCategory::Medium,
         int_qrb: 120.0,
+        forward_qrb: Some(120.0),
         alt_diff: 150.4,
         potential: 100,
         eps1: 1.5_f64.to_radians(),
@@ -71,7 +72,7 @@ fn tooltip_metric_default() {
             "DLH123",
             "--------------------",
             "Pos: 48.46°N , 011.23°W",
-            "Alt: 9143m [+150m]",
+            "Alt: 9143m [estimated] [+150m]",
             "Track: 123°",
             "Type: AIRBUS A320 [M]",
             "Dist: 120km",
@@ -101,18 +102,27 @@ fn tooltip_imperial() {
             "DLH123",
             "--------------------",
             "Pos: 03.00°S , 007.50°E",
-            "Alt: 30000ft [-328ft]",
+            "Alt: 30000ft [estimated] [-328ft]",
             "Track: 123°",
             "Speed: 400kts",
             "Type: AIRBUS A320 [M]",
-            // 120 km * 1.609 (reproduces logic-findings #16)
-            "Dist: 193mi",
+            "Dist: 75mi",
             "Time: 10:59 [ 9min]",
             "Angle: 45°",
             "Eps: 01.50° <> 02.25°",
             "Squint: 03.00°",
         ]
     );
+}
+
+#[test]
+fn tooltip_marks_pressure_altitude_as_estimated() {
+    let mut p = plane();
+    p.altitude_provenance = AltitudeProvenance::PressureEstimate;
+    let lines = tooltip_lines(&p, &InfoWin::default(), my(), now(), None);
+    assert!(lines
+        .iter()
+        .any(|line| line == "Alt: 9143m [estimated] [+150m]"));
 }
 
 #[test]
@@ -126,7 +136,7 @@ fn tooltip_simple_for_gray_planes() {
         "DLH123",
         "--------------------",
         "Pos: 48.46°N , 011.23°W",
-        "Alt: 9143m",
+        "Alt: 9143m [estimated]",
         "Track: 123°",
         "Type: AIRBUS A320 [M]",
     ];
@@ -147,11 +157,19 @@ fn tooltip_simple_for_gray_planes() {
             "DLH123",
             "--------------------",
             "Pos: 48.46°N , 011.23°W",
-            "Alt: 30000ft",
+            "Alt: 30000ft [estimated]",
             "Track: 123°",
             "Type: AIRBUS A320 [M]",
         ]
     );
+}
+
+#[test]
+fn tooltip_time_is_na_without_forward_crossing() {
+    let mut p = plane();
+    p.forward_qrb = None;
+    let lines = tooltip_lines(&p, &InfoWin::default(), my(), now(), None);
+    assert!(lines.contains(&"Time: n/a".to_string()));
 }
 
 #[test]
@@ -163,7 +181,7 @@ fn tooltip_truncates_type_and_zero_altdiff() {
     p.potential = 75;
     let lines = tooltip_lines(&p, &InfoWin::default(), my(), now(), None);
     assert!(lines.contains(&"Type: ABCDEFGHIJKLMNOPQRST 01234567890123456789 [M]".to_string()));
-    assert!(lines.contains(&"Alt: 9143m [0m]".to_string()));
+    assert!(lines.contains(&"Alt: 9143m [estimated] [0m]".to_string()));
 }
 
 fn track_values() -> airscout::tracking::TrackValues {

@@ -6,14 +6,14 @@ use as_settings::{BandSettings, Settings};
 /// Values from `AirScout.Core/BandSettings.cs` `GenerateDefault` and the `Path_Default_*`
 /// settings of `AirScout.Core/Properties/Settings.settings`.
 #[test]
-fn defaults_match_original() {
+fn generated_defaults_use_approved_k_and_legacy_band_fields() {
     let s = Settings::default();
     let k = |b: Band| s.band_settings[&b].k_factor;
     let f1 = |b: Band| s.band_settings[&b].f1_clearance;
-    assert_eq!((k(Band::B50M), f1(Band::B50M)), (1.6, 0.1));
-    assert_eq!((k(Band::B70M), f1(Band::B70M)), (1.6, 0.1));
-    assert_eq!((k(Band::B144M), f1(Band::B144M)), (1.5, 0.2));
-    assert_eq!((k(Band::B432M), f1(Band::B432M)), (1.4, 0.4));
+    assert_eq!((k(Band::B50M), f1(Band::B50M)), (1.33, 0.1));
+    assert_eq!((k(Band::B70M), f1(Band::B70M)), (1.33, 0.1));
+    assert_eq!((k(Band::B144M), f1(Band::B144M)), (1.33, 0.2));
+    assert_eq!((k(Band::B432M), f1(Band::B432M)), (1.33, 0.4));
     for b in [
         Band::B1_2G,
         Band::B2_3G,
@@ -65,6 +65,7 @@ fn band_setting_fallback_like_csharp_class_default() {
 fn radius_uses_k_factor_of_current_band() {
     let mut s = Settings::default();
     s.band = Band::B144M;
+    s.band_settings.get_mut(&Band::B144M).unwrap().k_factor = 1.5;
     assert_eq!(s.radius_km(), 6371.0 * 1.5);
     s.band = Band::B10G;
     assert_eq!(s.radius_km(), 6371.0 * 1.33);
@@ -140,7 +141,10 @@ fn settings_old_file_still_loads() {
     assert!(s.planes_extended_plausibility);
     assert_eq!(s.planes_max_error_dist, 30.0);
     assert_eq!(s.planes_max_delta_m, 1000.0);
-    assert!(s.feed_settings.is_empty());
+    assert_eq!(
+        s.feed_settings["AirScoutServer"]["url"].as_str(),
+        Some("http://localhost:9880/planes.json")
+    );
 }
 
 #[test]
@@ -164,4 +168,104 @@ fn feed_settings_roundtrip() {
         back.feed_settings["ADSBOne"]["url"].as_str(),
         Some("https://example.invalid/%MYLAT%")
     );
+}
+
+#[test]
+fn finding_371_fresh_profiles_use_standard_gradient_on_every_band() {
+    let dir = tempfile::tempdir().unwrap();
+    let settings = Settings::load_or_default(&dir.path().join("settings.toml")).unwrap();
+    assert!(settings
+        .band_settings
+        .values()
+        .all(|band| band.k_factor == 1.33));
+    let radius_m = settings.band_settings[&Band::B144M].k_factor * 6_371_000.0;
+    let rise_m = 100_000_f64.powi(2) / (8.0 * radius_m);
+    assert!((rise_m - 147.52).abs() < 0.01);
+}
+
+#[test]
+fn finding_373_legacy_band_omissions_and_explicit_values_survive_saves() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("settings.toml");
+    std::fs::write(&path, "[band_settings.B144M]\nground_clearance = 12.0\n").unwrap();
+    let partial = Settings::load_or_default(&path).unwrap();
+    let row = partial.band_settings[&Band::B144M];
+    assert_eq!(
+        (row.ground_clearance, row.k_factor, row.f1_clearance),
+        (12.0, 1.33, 0.6)
+    );
+    assert!(!partial.band_settings.contains_key(&Band::B432M));
+    partial.save(&path).unwrap();
+    let text = std::fs::read_to_string(&path).unwrap();
+    assert!(text
+        .parse::<toml::Table>()
+        .unwrap()
+        .contains_key("settings_version"));
+    assert_eq!(Settings::load_or_default(&path).unwrap(), partial);
+
+    std::fs::write(&path, "").unwrap();
+    let implicit = Settings::load_or_default(&path).unwrap();
+    assert_eq!(implicit.band_settings[&Band::B144M].k_factor, 1.5);
+    for _ in 0..2 {
+        implicit.save(&path).unwrap();
+        assert_eq!(Settings::load_or_default(&path).unwrap(), implicit);
+    }
+}
+
+#[test]
+fn finding_329_desktop_fresh_and_legacy_urls_are_distinct() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("settings.toml");
+    let url = |s: &Settings| {
+        s.feed_settings
+            .get("AirScoutServer")
+            .and_then(|t| t.get("url"))
+            .and_then(toml::Value::as_str)
+            .map(str::to_owned)
+    };
+    assert_eq!(
+        url(&Settings::load_or_default(&path).unwrap()).as_deref(),
+        Some("http://localhost:9872/planes.json")
+    );
+    for (text, endpoint) in [
+        (
+            "feed = \"AirScoutServer\"",
+            "http://localhost:9880/planes.json",
+        ),
+        (
+            "[feed_settings.AirScoutServer]\ntimeout_s = 10",
+            "http://localhost:9880/planes.json",
+        ),
+        ("[feed_settings.AirScoutServer]\nurl = \"\"", ""),
+        (
+            "[feed_settings.AirScoutServer]\nurl = \"http://localhost:1234/planes.json\"",
+            "http://localhost:1234/planes.json",
+        ),
+    ] {
+        std::fs::write(&path, text).unwrap();
+        let loaded = Settings::load_or_default(&path).unwrap();
+        assert_eq!(url(&loaded).as_deref(), Some(endpoint));
+        loaded.save(&path).unwrap();
+        assert_eq!(Settings::load_or_default(&path).unwrap(), loaded);
+    }
+}
+
+#[test]
+fn finding_340_desktop_ordinary_save_canonicalizes_only_the_legacy_authority() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("settings.toml");
+    for (entered, expected) in [
+        ("https://API.OPENSKY-NETWORK.ORG:443/api/%7e/states?x=%2f&lat=%MINLAT%",
+         "https://opensky-network.org:443/api/%7e/states?x=%2f&lat=%MINLAT%"),
+        ("https://api.opensky-network.org@localhost/api/?next=https://api.opensky-network.org/api/#https://api.opensky-network.org/api/",
+         "https://api.opensky-network.org@localhost/api/?next=https://api.opensky-network.org/api/#https://api.opensky-network.org/api/"),
+    ] {
+        let mut settings = Settings::default();
+        settings.feed_settings.insert("OpenSky".into(), toml::Value::Table(toml::Table::from_iter([("url".into(), entered.into())])));
+        settings.save(&path).unwrap();
+        let saved = std::fs::read_to_string(&path).unwrap().parse::<toml::Table>().unwrap();
+        assert_eq!(saved["feed_settings"]["OpenSky"]["url"].as_str(), Some(expected));
+        let loaded = Settings::load_or_default(&path).unwrap();
+        assert_eq!(loaded.feed_settings["OpenSky"]["url"].as_str(), Some(expected));
+    }
 }

@@ -679,6 +679,12 @@ impl AppState {
             ServiceEvent::Feed(_, f) => match f {
                 FeedEvent::Started => self.feed_status = "running".into(),
                 FeedEvent::Planes(p) => self.feed_status = format!("running, {} planes", p.len()),
+                FeedEvent::RejectedRecords(count) => {
+                    self.status = format!("feed: skipped {count} invalid records");
+                }
+                FeedEvent::DroppedRecords(count) => {
+                    self.status = format!("feed: dropped {count} pending observations");
+                }
                 FeedEvent::Error(s) => {
                     self.feed_status = "error".into();
                     self.status = format!("feed: {s}");
@@ -706,7 +712,7 @@ impl AppState {
     /// update only with the online time (`Time_Mode_Online`); offline LIFE shows no updates.
     pub fn on_tick(&mut self, now: DateTime<Utc>, cache: &PlaneInfoCache) {
         if self.life_mode == LifeMode::History {
-            self.history_tick(now, true);
+            self.history_tick(true);
             return;
         }
         if !self.is_playing() || !self.settings.time.online {
@@ -714,23 +720,16 @@ impl AppState {
         }
         self.resend_watch_paths();
         let planes = cache.get_all(now, self.settings.planes_position_ttl_min);
-        self.run_tick(planes, now, now, true);
+        self.run_tick(planes, now, true);
         self.track_unselected();
     }
 
-    /// `UpdatePlanes` on `planes` read at `now`; the nearest-plane maths run at `nearest_at`.
+    /// `UpdatePlanes` on `planes` read at a single analysis instant.
     /// `alarm` is false in HISTORY (no sound, no window to the front).
-    fn run_tick(
-        &mut self,
-        planes: Vec<PlaneInfo>,
-        now: DateTime<Utc>,
-        nearest_at: DateTime<Utc>,
-        alarm: bool,
-    ) {
+    fn run_tick(&mut self, planes: Vec<PlaneInfo>, at: DateTime<Utc>, alarm: bool) {
         let paths: Vec<PropagationPath> = self.paths.iter().map(|e| e.path.clone()).collect();
         self.tick = tick(TickInput {
-            now,
-            nearest_at,
+            at,
             paths: &paths,
             planes,
             settings: &self.settings,

@@ -16,6 +16,7 @@ use as_elevation::{ElevationModel, ElevationPath, ElevationStore};
 use as_geo::{latlon, propagation::epsilon_from_heights};
 use as_propagation::PropagationPath;
 use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 use std::io::{self, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -152,8 +153,9 @@ pub fn write_path_csv(
     Ok(true)
 }
 
-/// Write the history of one plane. `dist` and `av_speed` are 0 in the first row; a zero time
-/// difference writes `Infinity` or `NaN`, as the C# does (finding). `Ok(false)` if cancelled.
+/// Write the history of one plane. `dist` and `av_speed` are 0 in the first row of each hex; a
+/// zero or negative time difference writes `0` for `av_speed` (a literal `Infinity`/`NaN` would
+/// break spreadsheet readers). `Ok(false)` if cancelled.
 pub fn write_plane_csv(
     w: &mut dyn Write,
     rows: &[AircraftPosition],
@@ -164,17 +166,18 @@ pub fn write_plane_csv(
         "time;hex;call;lat[deg];lon[deg];alt[m];track[deg];speed[kmh];dist[km];av_speed[km/h]"
     )?;
     let clean = |s: &str| s.replace([';', '\r', '\n'], " ");
+    let mut prev_by_hex: HashMap<&str, &AircraftPosition> = HashMap::new();
     for (i, r) in rows.iter().enumerate() {
         if i.is_multiple_of(1024) && cancel.load(Ordering::Relaxed) {
             return Ok(false);
         }
         let (mut dist, mut av_speed) = (0.0, 0.0);
-        if i > 0 {
-            let prev = &rows[i - 1];
+        if let Some(prev) = prev_by_hex.get(r.hex.as_str()) {
             dist = latlon::distance(prev.lat, prev.lon, r.lat, r.lon);
             let hours = (r.last_updated - prev.last_updated).num_seconds() as f64 / 3600.0;
-            av_speed = dist / hours;
+            av_speed = if hours <= 0.0 { 0.0 } else { dist / hours };
         }
+        prev_by_hex.insert(r.hex.as_str(), r);
         writeln!(
             w,
             "{};{};{};{};{};{};{};{};{};{}",

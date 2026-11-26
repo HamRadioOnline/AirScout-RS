@@ -2,21 +2,22 @@
 //! Basic auth. The password (and an optional session token) must come from the service
 //! operator and are entered by the user; this port does not fetch keys from anywhere.
 //!
-//! Faithful to the C# plugin: the report time is replaced with the local clock, the hex is
-//! not upper-cased, `onGround` is ignored. Not ported: the 30 s sleep in `Start`.
+//! The source timestamp is the receiver’s epoch millisecond observation time.
 
+use super::{checked_optional_i32, map_records, set_u64, unix_ms, NO_ALT};
 use super::{client, de_f32, de_f64, de_i64, de_string, parse_err, send, set_bool, set_str};
-use super::{set_u64, NO_ALT};
-use crate::{vars, wake, FeedArgs, FeedError, FeedPlane, PlaneFeed};
+use crate::{vars, wake, FeedArgs, FeedBatch, FeedError, FeedPlane, PlaneFeed};
+use as_aircraft::AltitudeProvenance;
 use chrono::Utc;
 use serde::Deserialize;
+use serde_json::value::RawValue;
 
 pub const DEFAULT_URL: &str = "https://airscout.hamradio4.me/planes?fSBnd=%MINLAT%&fNBnd=%MAXLAT%&fWBnd=%MINLON%&fEBnd=%MAXLON%&age=300";
 
 #[derive(Deserialize)]
-struct List {
-    #[serde(deserialize_with = "super::required")]
-    planes: Option<Vec<Aircraft>>,
+struct List<'a> {
+    #[serde(borrow, deserialize_with = "super::required")]
+    planes: Option<Vec<&'a RawValue>>,
 }
 
 #[derive(Deserialize)]
@@ -45,48 +46,46 @@ struct Aircraft {
     category: Option<String>,
 }
 
-fn i32_of(x: Option<i64>) -> Result<Option<i32>, FeedError> {
-    x.map(|v| i32::try_from(v).map_err(|_| FeedError::Parse(format!("{v} is not an Int32"))))
-        .transpose()
+fn map(ac: Aircraft, use_geo_alt: bool) -> Option<FeedPlane> {
+    let alt = checked_optional_i32(if use_geo_alt {
+        ac.altitude_gps
+    } else {
+        ac.altitude_barometric
+    })?;
+    let altitude_provenance = match (use_geo_alt, alt.is_some()) {
+        (false, true) => AltitudeProvenance::PressureEstimate,
+        _ => AltitudeProvenance::Unknown,
+    };
+    let vsi = checked_optional_i32(ac.vertical_rate)?;
+    let hex = super::clean_hex(ac.hex.as_deref()?);
+    let time = ac.received_at.and_then(unix_ms)?;
+    Some(FeedPlane {
+        hex,
+        lat: ac.latitude.unwrap_or(f64::NAN),
+        lon: ac.longitude.unwrap_or(f64::NAN),
+        alt_ft: alt.map_or(NO_ALT, f64::from),
+        altitude_provenance,
+        call: ac.callsign.unwrap_or_default(),
+        track: ac.angle.map_or(f64::NAN, f64::from),
+        speed_kts: ac.speed.map_or(f64::NAN, f64::from),
+        time: Some(time),
+        category: wake::category(ac.category.as_deref().unwrap_or(""), ""),
+        vspeed: vsi.unwrap_or(i32::MIN),
+        ..FeedPlane::default()
+    })
 }
 
 /// Map one response.
 pub fn parse(json: &str, use_geo_alt: bool) -> Result<Vec<FeedPlane>, FeedError> {
-    let list: List = serde_json::from_str(json).map_err(parse_err)?;
+    Ok(parse_batch(json, use_geo_alt)?.planes)
+}
+
+fn parse_batch(json: &str, use_geo_alt: bool) -> Result<FeedBatch, FeedError> {
+    let list: List<'_> = serde_json::from_str(json).map_err(parse_err)?;
     let planes = list
         .planes
         .ok_or_else(|| FeedError::Parse("no plane list".into()))?;
-    let mut out = Vec::new();
-    for ac in &planes {
-        let alt = i32_of(if use_geo_alt {
-            ac.altitude_gps
-        } else {
-            ac.altitude_barometric
-        })?;
-        let vsi = i32_of(ac.vertical_rate)?;
-        let Some(hex) = ac.hex.as_deref() else {
-            continue;
-        };
-        if ac.received_at.is_none() {
-            continue;
-        }
-        out.push(FeedPlane {
-            hex: super::clean_hex(hex),
-            lat: ac.latitude.unwrap_or(f64::NAN),
-            lon: ac.longitude.unwrap_or(f64::NAN),
-            alt_ft: alt.map_or(NO_ALT, f64::from),
-            call: ac.callsign.clone().unwrap_or_default(),
-            track: ac.angle.map_or(f64::NAN, f64::from),
-            speed_kts: ac.speed.map_or(f64::NAN, f64::from),
-            // receivedAt is only checked for null, then replaced by the local clock
-            time: Some(Utc::now()),
-            // Type is never set, so the A388 rule cannot apply
-            category: wake::category(ac.category.as_deref().unwrap_or(""), ""),
-            vspeed: vsi.unwrap_or(i32::MIN),
-            ..FeedPlane::default()
-        });
-    }
-    Ok(out)
+    map_records(planes, |ac| map(ac, use_geo_alt))
 }
 
 /// The ADSBSupport feed. Password and token are never logged or shown in errors.
@@ -103,8 +102,6 @@ pub struct AdsbSupport {
 impl std::fmt::Debug for AdsbSupport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AdsbSupport")
-            .field("url", &self.url)
-            .field("username", &self.username)
             .field("use_geo_alt", &self.use_geo_alt)
             .field("timeout_s", &self.timeout_s)
             .finish_non_exhaustive()
@@ -174,6 +171,10 @@ impl PlaneFeed for AdsbSupport {
     }
 
     fn get_planes(&mut self, args: &FeedArgs) -> Result<Vec<FeedPlane>, FeedError> {
+        Ok(self.get_batch(args)?.planes)
+    }
+
+    fn get_batch(&mut self, args: &FeedArgs) -> Result<FeedBatch, FeedError> {
         if self.password.is_empty() {
             return Err(FeedError::Config(
                 "ADSBSupport needs a password from the service operator".into(),
@@ -188,7 +189,7 @@ impl PlaneFeed for AdsbSupport {
             req = req.header("token", &self.token);
         }
         let body = send(req)?;
-        parse(&String::from_utf8_lossy(&body), self.use_geo_alt)
+        parse_batch(&String::from_utf8_lossy(&body), self.use_geo_alt)
     }
 
     fn stop(&mut self, _args: &FeedArgs) -> Result<(), FeedError> {

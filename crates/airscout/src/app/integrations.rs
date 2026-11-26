@@ -48,9 +48,15 @@ impl AppState {
         self.integration_gen += 1;
     }
 
-    /// The Options dialog was closed with OK or Cancel, in LIFE or HISTORY (`:3976`).
+    /// The Options dialog was closed with OK or Cancel, in LIFE or HISTORY (`:3976`). The
+    /// integrations and (in LIFE) the background workers that [`Self::open_options_dlg`] paused
+    /// (#155) start again.
     pub fn options_closed(&mut self) {
         self.start_integrations();
+        if self.life_mode != LifeMode::History {
+            let generation = self.reset_background_state();
+            self.services.restart_background(&self.settings, generation);
+        }
     }
 
     /// Give the running receiver the nearest settings when they changed (band, filters), and

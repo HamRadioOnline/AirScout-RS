@@ -1,6 +1,9 @@
 mod common;
-use as_elevation::{DbStatus, ElevationModel, ElevationStore};
-use as_geo::latlon::GRect;
+use as_elevation::{DbStatus, ElevationModel, ElevationStore, TILE_MISSING};
+use as_geo::{
+    latlon::{self, GRect},
+    maidenhead,
+};
 use std::sync::atomic::AtomicBool;
 
 /// Store with the fixture GLOBE tiles under GLOBE and ASTER3 (ASTER3 exercises the averaging path),
@@ -29,9 +32,12 @@ fn fixture_store(complete: bool) -> (tempfile::TempDir, ElevationStore) {
 #[test]
 fn create_path_matches_original() {
     let g = as_golden::load("elevation_path.json");
+    let mut deltas = as_golden::deltas::DeltaManifest::load("elevation_path");
     let cases: Vec<_> = g.by_fn("create_path").collect();
     assert_eq!(cases.len(), 56);
     // the harness uses a fresh db per (complete, model, step) group: cache state is part of the behaviour
+    let tiles = common::fixture_tiles();
+    let mut case_index = 0;
     for group in cases.chunk_by(|a, b| {
         a.b("complete") == b.b("complete")
             && a.s("model") == b.s("model")
@@ -61,9 +67,52 @@ fn create_path_matches_original() {
                 .iter()
                 .map(|v| v.as_i64().unwrap() as i16)
                 .collect();
-            assert_eq!(p.path, exp, "{c:?}");
+            for (i, (&a, &e)) in p.path.iter().zip(&exp).enumerate() {
+                // #10: ASTER3 averages five raw values. Select each tile by its
+                // locator directly from the fixture, independent of store/cache order.
+                let expected = match (case_index, i) {
+                    (18 | 25 | 46 | 53, 0) | (19 | 26 | 47 | 54, 0..=2) => {
+                        let (lat, lon) = (c.f("lat1"), c.f("lon1"));
+                        let bearing = latlon::bearing(lat, lon, c.f("lat2"), c.f("lon2"));
+                        let sum: i32 = (-2..=2)
+                            .map(|offset| {
+                                let dist = (i as f64 + f64::from(offset)) * c.f("step") / 1000.0;
+                                let sample = latlon::destination_point(lat, lon, bearing, dist);
+                                let loc = maidenhead::loc_from_lat_lon(
+                                    sample.lat, sample.lon, false, 3, false,
+                                )
+                                .unwrap()
+                                .unwrap();
+                                let value = tiles
+                                    .get(&(ElevationModel::Globe, loc))
+                                    .map_or(0, |tile| tile.get_elevation(sample.lat, sample.lon));
+                                if value > TILE_MISSING {
+                                    i32::from(value)
+                                } else {
+                                    0
+                                }
+                            })
+                            .sum();
+                        deltas
+                            .expected(
+                                case_index,
+                                &format!("path[{i}]"),
+                                &c.result["path"][i],
+                                (sum / 5).into(),
+                                0.0,
+                                "#10",
+                            )
+                            .as_i64()
+                            .unwrap() as i16
+                    }
+                    _ => e,
+                };
+                assert_eq!(a, expected, "case {case_index} sample {i}");
+            }
+            case_index += 1;
         }
     }
+    deltas.finish();
 }
 
 #[test]
@@ -177,7 +226,7 @@ fn info_points_rules() {
 #[test]
 fn invalid_coordinate_path_is_err() {
     let (_d, store) = fixture_store(true);
-    // lat 91 would be folded to 89 by DestinationPoint (asin(sin)); lon is not normalised -> C# throws
+    // Validate endpoints before stepping, which wraps the destination longitude.
     let r = store.create_path(
         ElevationModel::Globe,
         51.0,
@@ -209,4 +258,71 @@ fn bad_step_width_is_err() {
         );
         assert!(r.is_err(), "step {step}: {r:?}");
     }
+}
+
+#[test]
+fn finding_15_wrapped_bounds_allow_missing_sea_tiles() {
+    let (_d, store) = fixture_store(true);
+    let model = ElevationModel::Globe;
+    store.set_bounds(GRect::new(9.99, 179.49, 10.02, -179.49));
+    let path = store
+        .create_path(model, 10.0, 179.5, 10.0, -179.5, 1000.0, false, None)
+        .unwrap()
+        .unwrap();
+    assert!(path.valid);
+    assert!(path.path.iter().all(|&elv| elv == 0));
+}
+
+#[test]
+fn pre_stage_6_elevation_profiles_are_recomputed() {
+    let (dir, store) = fixture_store(true);
+    let model = ElevationModel::Globe;
+    store
+        .with_conn(model, |conn| {
+            conn.execute_batch(
+                "DROP TABLE ElevationPath;
+             CREATE TABLE ElevationPath (
+               Lat1 REAL, Lon1 REAL, Lat2 REAL, Lon2 REAL, StepWidth REAL,
+               Count INTEGER, Path BLOB, LastUpdated INTEGER,
+               PRIMARY KEY(Lat1, Lon1, Lat2, Lon2, StepWidth));
+             INSERT INTO ElevationPath VALUES (50.5, 11.0, 50.5, 11.0, 1000, 1, X'0000', 1);
+             PRAGMA user_version = 3;",
+            )?;
+            Ok(())
+        })
+        .unwrap();
+    drop(store);
+
+    let store = ElevationStore::open(dir.path()).unwrap();
+    assert!(store
+        .find_path(model, 50.5, 11.0, 50.5, 11.0, 1000.0)
+        .unwrap()
+        .is_none());
+    assert_eq!(store.elevation(model, 50.5, 11.0, false).unwrap(), 706);
+    store.set_status_bit(model, DbStatus::COMPLETE);
+    let find_or_create = || {
+        store
+            .find_or_create_path(model, 50.5, 11.0, 50.5, 11.0, 1000.0, true, None)
+            .unwrap()
+            .unwrap()
+    };
+    assert_eq!(find_or_create().path, [706]);
+    store
+        .with_conn(model, |conn| {
+            conn.execute(
+                "UPDATE ElevationPath SET AlgorithmVersion = 0, LastUpdated = ?1, Path = X'0000'",
+                [i64::MAX],
+            )?;
+            Ok(())
+        })
+        .unwrap();
+    assert_eq!(find_or_create().path, [706]);
+    assert_eq!(
+        store
+            .find_path(model, 50.5, 11.0, 50.5, 11.0, 1000.0)
+            .unwrap()
+            .unwrap()
+            .path,
+        [706]
+    );
 }

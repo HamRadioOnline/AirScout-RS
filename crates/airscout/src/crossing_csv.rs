@@ -21,31 +21,34 @@ use std::path::Path;
 /// The 21 columns of the CSV.
 pub const CROSSING_HEADER: &str = "time[utc];call;lat[deg];lon[deg];type;category;potential;track[deg];alt[m];altdiff[m];dist[km];crossangle[deg];squint[deg];dist1[km];dist2[km];eps1[deg];eps2[deg];theta1[deg];theta2[deg];signal_strength[dB];ambiguous";
 
-/// The ambiguity pass of the export (:311-336), with its quirks: index 0 is never reset and its
-/// hex never counts, the hex at a gap joins the group that ends before it, and the last item is
-/// always ambiguous. A gap is a time difference to the previous crossing above `gap_s`.
+/// The ambiguity pass of the export: split into groups where a gap to the previous sample is
+/// strictly greater than `gap_s`, and mark each group ambiguous iff it contains at least two
+/// unique aircraft hexes.
 pub fn mark_ambiguous(c: &mut [PlaneInfo], gap_s: f64) {
     let n = c.len();
     if n == 0 {
         return;
     }
-    let mut start = 0;
-    let mut hexes: HashSet<String> = HashSet::new();
-    for i in 1..n {
-        c[i].ambiguous = false;
-        hexes.insert(c[i].hex.clone());
-        let diff = (c[i].time - c[i - 1].time).num_milliseconds() as f64 / 1000.0;
-        if diff > gap_s || i >= n - 1 {
+    c.iter_mut().for_each(|p| p.ambiguous = false);
+    let mut start = 0usize;
+    for i in 1..=n {
+        let split = i == n || {
+            let diff = (c[i].time - c[i - 1].time).num_milliseconds() as f64 / 1000.0;
+            diff > gap_s
+        };
+        if split {
+            let mut hexes: HashSet<&str> = HashSet::new();
+            for p in &c[start..i] {
+                hexes.insert(p.hex.as_str());
+            }
             if hexes.len() > 1 {
                 for p in &mut c[start..i] {
                     p.ambiguous = true;
                 }
             }
-            hexes.clear();
             start = i;
         }
     }
-    c[n - 1].ambiguous = true;
 }
 
 /// A text field of the CSV without separators and line breaks.

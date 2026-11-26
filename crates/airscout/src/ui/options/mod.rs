@@ -126,6 +126,12 @@ pub struct OptionsDlg {
     pub sizes: Vec<(DbId, String, f64)>,
     /// False while playing or while a job runs: the maintenance buttons are disabled.
     pub maint_enabled: bool,
+    /// A destructive maintenance job is running: OK/Cancel stay disabled until it ends, so the
+    /// restarted workers cannot race the delete/clear (#155).
+    pub maint_running: bool,
+    /// Background workers still stopping: the Database tab shows a note and keeps the destructive
+    /// buttons disabled until this reaches `None` (#155).
+    pub maint_waiting: Option<usize>,
     /// Bind state of the web server; the app keeps it current.
     pub web_state: WebState,
     /// The maintenance button the user pressed; the app acts ([`Self::take_maint_request`]).
@@ -152,6 +158,8 @@ impl OptionsDlg {
             feed_dlg: None,
             sizes: Vec::new(),
             maint_enabled: false,
+            maint_running: false,
+            maint_waiting: None,
             web_state: WebState::Off,
             maint_request: None,
             coverage: None,
@@ -260,7 +268,13 @@ impl OptionsDlg {
                     match self.tab {
                         OptionsTab::General => general::show(ui, d),
                         OptionsTab::Database => {
-                            maint = database::show(ui, d, &self.sizes, self.maint_enabled)
+                            maint = database::show(
+                                ui,
+                                d,
+                                &self.sizes,
+                                self.maint_enabled,
+                                self.maint_waiting,
+                            )
                         }
                         OptionsTab::Stations => match stations::show(ui, d, &mut self.stations) {
                             Some(StationAction::Map(who)) => open_map = Some(who),
@@ -287,13 +301,21 @@ impl OptionsDlg {
                 ui.colored_label(ui.visuals().warn_fg_color, w);
             }
             ui.horizontal(|ui| {
-                if ui.button("OK").clicked() {
+                // #155: while a destructive maintenance job runs, OK and Cancel stay disabled so
+                // the workers cannot restart into a delete/clear that is still running.
+                if ui
+                    .add_enabled(!self.maint_running, egui::Button::new("OK"))
+                    .clicked()
+                {
                     self.errors = validate(&self.draft);
                     if self.errors.is_empty() {
                         outcome = Some(OptionsOutcome::Ok(self.draft.clone()));
                     }
                 }
-                if ui.button("Cancel").clicked() {
+                if ui
+                    .add_enabled(!self.maint_running, egui::Button::new("Cancel"))
+                    .clicked()
+                {
                     outcome = Some(OptionsOutcome::Cancel);
                 }
             });

@@ -43,7 +43,11 @@ fn path_on_fixture_data() {
     );
     assert!(v["eps1_min_deg"].as_f64().unwrap().is_finite());
     assert!(v["eps2_min_deg"].as_f64().unwrap().is_finite());
-    assert_eq!(v["info_points"].as_array().unwrap().len(), d as usize + 2);
+    let info = v["info_points"].as_array().unwrap();
+    assert_eq!(info.len(), d as usize + 2);
+    let end = info.last().unwrap();
+    assert!((end["dist_km"].as_f64().unwrap() - d).abs() < 1e-9, "#352");
+    assert_eq!(end["f1"], 0.0);
 }
 
 #[test]
@@ -173,10 +177,8 @@ fn server_error_on_download_is_error_exit() {
         .failure();
 }
 
-/// Review I2 / logic-findings #15: DestinationPoint does not wrap longitude, so the core cannot
-/// handle paths or horizons across ±180°. The CLI refuses them instead of scanning 180 squares.
 #[test]
-fn antimeridian_is_rejected() {
+fn finding_15_antimeridian_prepares_both_sides() {
     let dir = tempfile::tempdir().unwrap();
     let data = dir.path().to_str().unwrap();
     for args in [
@@ -198,9 +200,13 @@ fn antimeridian_is_rejected() {
             .args(&args)
             .output()
             .unwrap();
-        assert!(!out.status.success(), "{args:?}");
         let err = String::from_utf8_lossy(&out.stderr);
-        assert!(err.contains("antimeridian"), "{args:?}: {err}");
+        assert!(out.status.success(), "{args:?}: {err}");
+        let checked: Vec<_> = err
+            .lines()
+            .filter_map(|line| line.split_once(" tiles for square ").map(|(_, sq)| sq))
+            .collect();
+        assert_eq!(checked, ["RJ99", "AJ09", "RK90", "AK00"]);
     }
 }
 
@@ -358,8 +364,51 @@ fn nearest_on_fixture_path() {
     assert_eq!(p["hex"], "3C6589");
     assert_eq!(p["potential"], 100, "{v}");
     assert!(p["int_qrb"].as_f64().unwrap() < 20.0, "{v}");
-    assert_eq!(p["minutes"], 0);
+    assert!(p["minutes"].is_null() || p["minutes"] == 0, "{v}");
     assert_eq!(v["valid"], true);
+}
+
+#[test]
+fn nearest_reports_null_eta_for_near_receding_plane() {
+    let dir = fixture_data_dir();
+    let data = dir.path().to_str().unwrap();
+    let a = maidenhead::gpoint_from_loc("JO50AA", MM).unwrap();
+    let b = maidenhead::gpoint_from_loc("JO61UF", MM).unwrap();
+    let mid = latlon::midpoint(a.lat, a.lon, b.lat, b.lon);
+    let brg = latlon::bearing(a.lat, a.lon, b.lat, b.lon);
+    let side = latlon::destination_point(mid.lat, mid.lon, brg + 90.0, 1.0);
+    let away = (latlon::bearing(side.lat, side.lon, mid.lat, mid.lon) + 180.0) % 360.0;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let planes = serde_json::json!([
+        {"Hex": "3C6589", "Call": "DLH4AB", "Lat": side.lat, "Lon": side.lon, "Alt": 36000.0,
+         "Track": away, "Speed": 450.0, "Type": "A320", "Category": 3, "Time": now}
+    ]);
+    let file = dir.path().join("planes_eta_null.json");
+    std::fs::write(&file, planes.to_string()).unwrap();
+    let v = run(&[
+        "nearest",
+        "--from",
+        "JO50AA",
+        "--to",
+        "JO61UF",
+        "--planes",
+        file.to_str().unwrap(),
+        "--band",
+        "144",
+        "--model",
+        "globe",
+        "--data",
+        data,
+    ]);
+    let found = v["planes"].as_array().unwrap();
+    assert_eq!(found.len(), 1, "{v}");
+    let p = &found[0];
+    assert!(p["int_qrb"].as_f64().unwrap() < 10.0, "{v}");
+    assert!(p["minutes"].is_null(), "{v}");
+    assert!(p["forward_distance_km"].is_null(), "{v}");
 }
 
 #[test]

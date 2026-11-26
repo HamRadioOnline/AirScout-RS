@@ -32,9 +32,10 @@ impl ElevationModel {
     /// `GetDefaultStepWidth` in m.
     pub fn default_step_width_m(self) -> f64 {
         match self {
-            ElevationModel::Srtm1 | ElevationModel::Aster1 => 30.0,
-            ElevationModel::Srtm3 | ElevationModel::Aster3 => 90.0,
-            _ => 1000.0,
+            ElevationModel::Srtm1 | ElevationModel::Aster1 => 15.0,
+            ElevationModel::Srtm3 | ElevationModel::Aster3 => 45.0,
+            Self::Globe => 500.0,
+            Self::None => 1000.0,
         }
     }
 

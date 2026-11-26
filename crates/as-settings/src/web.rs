@@ -2,7 +2,7 @@
 //! `:493-494` and `:772-776`. The Options dialog shows only the port, as in C#.
 
 /// The HTTP server and the values the browser page reads from `/settings.json`.
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct Web {
     /// `Webserver_Port`. The server listens on all interfaces while `server.activate` is on.
@@ -14,6 +14,16 @@ pub struct Web {
     pub kst_websocket_timeout_s: f64,
     /// `Map_SmallMarkers`.
     pub map_small_markers: bool,
+}
+
+impl std::fmt::Debug for Web {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Web")
+            .field("port", &self.port)
+            .field("kst_websocket_timeout_s", &self.kst_websocket_timeout_s)
+            .field("map_small_markers", &self.map_small_markers)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Default for Web {

@@ -1,7 +1,7 @@
 //! Port of `ElevationCatalogue.cs`: list of available tiles on the update server.
 
 use crate::{ElevationError, ElevationModel};
-use as_geo::latlon::GRect;
+use as_geo::latlon::{wrap_longitude, GRect};
 use as_geo::maidenhead;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use std::collections::{BTreeMap, BTreeSet};
@@ -56,34 +56,56 @@ impl<R: Read> Read for Capped<R> {
 
 /// `GetLocsFromRect`: locators covering a rectangle. `precision` 1..=3 (2 = 4-char squares).
 pub fn get_locs_from_rect(r: GRect, precision: i32) -> Result<Vec<String>, ElevationError> {
-    let mut a = Vec::new();
-    if r.max_lat <= r.min_lat || r.max_lon <= r.min_lon {
-        return Ok(a);
-    }
-    let (step_lat, step_lon) = match precision {
-        1 => (10.0, 20.0),
-        2 => (1.0, 2.0),
-        3 => (1.0 / 24.0, 2.0 / 24.0),
+    let divisions_per_field = match precision {
+        1 => 1,
+        2 => 10,
+        3 => 240,
         p => {
             return Err(ElevationError::InvalidArgument(format!(
                 "illegal precision value (1..3): {p}"
             )))
         }
     };
-    let mut lat = r.min_lat;
-    while lat <= r.max_lat {
-        let mut lon = r.min_lon;
-        while lon <= r.max_lon {
-            if let Some(l) =
-                maidenhead::loc_from_lat_lon(lat + 0.02, lon + 0.04, false, precision, false)?
-            {
-                a.push(l);
-            }
-            lon += step_lon;
-        }
-        lat += step_lat;
+    let mut locs = Vec::new();
+    if r.max_lat < r.min_lat
+        || !maidenhead::check_lat_lon(r.min_lat, r.min_lon)
+        || !maidenhead::check_lat_lon(r.max_lat, r.max_lon)
+    {
+        return Ok(locs);
     }
-    Ok(a)
+    let cells = 18 * divisions_per_field;
+    let step_lat = 10.0 / f64::from(divisions_per_field);
+    let step_lon = 20.0 / f64::from(divisions_per_field);
+    let first_lat = (((r.min_lat + 90.0) / step_lat).floor() as i32).min(cells - 1);
+    let last_lat = (((r.max_lat + 90.0) / step_lat).floor() as i32).min(cells - 1);
+    let min_lon = wrap_longitude(r.min_lon);
+    let max_lon = if r.min_lon == 180.0 {
+        wrap_longitude(r.max_lon)
+    } else {
+        r.max_lon
+    };
+    let cell = |lon: f64| (((lon + 180.0) / step_lon).floor() as i32).min(cells - 1);
+    let first_lon = cell(min_lon);
+    let last_lon = if max_lon == 180.0 {
+        // Retain the east-side interior and add the closed endpoint, which
+        // lookup assigns to the first cell of the next turn.
+        cells
+    } else if min_lon > max_lon {
+        cell(max_lon) + cells
+    } else {
+        cell(max_lon)
+    };
+    let last_lon = last_lon.min(first_lon + cells - 1);
+    for row in first_lat..=last_lat {
+        for col in first_lon..=last_lon {
+            let lat = (f64::from(row) + 0.5) * step_lat - 90.0;
+            let lon = (f64::from(col % cells) + 0.5) * step_lon - 180.0;
+            locs.extend(maidenhead::loc_from_lat_lon(
+                lat, lon, false, precision, false,
+            )?);
+        }
+    }
+    Ok(locs)
 }
 
 /// Tile catalogue of one elevation model, restricted to a rectangle.
@@ -110,7 +132,7 @@ impl Catalogue {
         let url = format!("{base}/files.zip");
         std::fs::create_dir_all(cache_dir)?;
         let zip_path = cache_dir.join(format!("{}-files.zip", model.dir_name().to_lowercase()));
-        as_net::download_if_newer(client, &url, &zip_path)?;
+        as_net::download_if_newer(client, &url, &zip_path, MAX_CATALOGUE_BYTES)?;
         let squares: BTreeSet<String> = get_locs_from_rect(rect, 2)?.into_iter().collect();
         // Filter while reading, so the map holds only the area's tiles (the old loop did the
         // same), and read through the cap: the downloaded zip is untrusted.

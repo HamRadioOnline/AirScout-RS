@@ -393,29 +393,14 @@ pub(crate) fn ground_elevation(
     })
 }
 
-/// Bounding box of the path points (one per km), padded by 0.01 degree. The antimeridian is not
-/// supported (`logic-findings.md` #15).
+/// Bounding box of the path points (one per km), padded by 0.01 degree.
 fn path_bbox(a: GPoint, b: GPoint) -> Result<GRect, String> {
     let d = latlon::distance(a.lat, a.lon, b.lat, b.lon);
     let brg = latlon::bearing(a.lat, a.lon, b.lat, b.lon);
-    let (mut min_lat, mut min_lon, mut max_lat, mut max_lon) =
-        (90.0f64, 180.0f64, -90.0f64, -180.0f64);
     let samples = (0..=d as usize).map(|k| latlon::destination_point(a.lat, a.lon, brg, k as f64));
-    for p in samples.chain([a, b]) {
-        min_lat = min_lat.min(p.lat);
-        min_lon = min_lon.min(p.lon);
-        max_lat = max_lat.max(p.lat);
-        max_lon = max_lon.max(p.lon);
-    }
-    if min_lon < -180.0 || max_lon > 180.0 || max_lon - min_lon > 180.0 {
-        return Err("path crosses the antimeridian (±180°), not supported yet".into());
-    }
-    Ok(GRect::new(
-        (min_lat - 0.01).max(-90.0),
-        (min_lon - 0.01).max(-180.0),
-        (max_lat + 0.01).min(90.0),
-        (max_lon + 0.01).min(180.0),
-    ))
+    GRect::bounding_points(samples.chain([a, b]), 0.01).ok_or_else(|| {
+        "path area has invalid coordinates or spans more than 180° of longitude".into()
+    })
 }
 
 pub(crate) fn client() -> Result<reqwest::blocking::Client, String> {
@@ -438,7 +423,7 @@ fn antenna(
         .ok()
         .flatten()
         .ok_or_else(|| format!("invalid position {}, {}", p.lat, p.lon))?;
-    antenna_of_loc(db, call, &loc, band)
+    antenna_of_loc(db, call, &loc, band, Some(p))
 }
 
 /// [`antenna`] for a station given by its locator.
@@ -447,9 +432,10 @@ pub(crate) fn antenna_of_loc(
     call: &str,
     loc: &str,
     band: as_geo::band::Band,
+    trusted: Option<GPoint>,
 ) -> Result<(f64, f64), String> {
     let q = db
-        .qrv_find_or_create_default(call, loc, band)
+        .qrv_find_or_create_default(call, loc, band, trusted)
         .map_err(|e| format!("station database: {e}"))?;
     let height = if q.antenna_height == 0.0 {
         default_antenna_height(band)
@@ -576,7 +562,8 @@ fn compute(
         Err(e) => note(e),
     }
 
-    let local_obstruction = local_obstruction(&paths.store, model, my_pos, dx_pos, h1)?;
+    // the obstruction is stored at the settings position, not at the best-case moved one (#105)
+    let local_obstruction = local_obstruction(&paths.store, model, req.my, target.pos, h1)?;
 
     let en = &s.elevation_enabled;
     let bs = s.current_band_settings();
@@ -593,8 +580,7 @@ fn compute(
         step_width_m: model.default_step_width_m(),
         local_obstruction,
     };
-    // The near-field suppression is set by the app (`Services::set_near_field_suppression`), never
-    // per computation: it is not part of the stored path's key.
+    // The engine snapshots the app's near-field setting for the calculation and its cache key.
     let path = paths
         .engine
         .find_or_create_path(model, &p, true, None)
@@ -617,6 +603,15 @@ fn compute(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn finding_15_path_bbox_wraps_at_the_antimeridian() {
+        let bounds = path_bbox(GPoint::new(10.0, 179.5), GPoint::new(10.0, -179.5)).unwrap();
+        assert_eq!(bounds.min_lon, 179.49);
+        assert_eq!(bounds.max_lon, -179.49);
+        assert_eq!(bounds.min_lat, 9.99);
+        assert!((10.01..10.011).contains(&bounds.max_lat));
+    }
 
     fn all() -> ElevationEnabled {
         ElevationEnabled {

@@ -135,14 +135,14 @@ impl Drop for TempDir {
 
 /// One `download_if_newer` of the catalogue zip into a fresh temp dir, then read it.
 fn download(url: &str, model: &str) -> Res<BTreeMap<String, DateTime<Utc>>> {
-    eprintln!("{model}: Downloading elevation tile catalogue from {url}");
+    eprintln!("{model}: Downloading elevation tile catalogue");
     let client = reqwest::blocking::Client::builder()
         .user_agent(as_net::user_agent())
         .timeout(std::time::Duration::from_secs(300))
         .build()?;
     let dir = TempDir::create()?;
     let zip = dir.0.join("files.zip");
-    as_net::download_if_newer(&client, url, &zip)?;
+    as_net::download_if_newer(&client, url, &zip, MAX_CATALOGUE_BYTES)?;
     read_catalogue(&zip)
 }
 

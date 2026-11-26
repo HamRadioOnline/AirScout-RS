@@ -104,6 +104,34 @@ fn maintenance_refused_while_a_job_runs() {
 }
 
 #[test]
+fn maintenance_refused_while_background_workers_run() {
+    let (mut st, rec) = state();
+    rec.0.borrow_mut().background_jobs = 1;
+    // a delete/clear issued before the workers are idle is refused with a status message (#155)
+    assert_eq!(
+        st.request_maintenance(MaintenanceJob::DeletePropagationPaths)
+            .unwrap_err(),
+        "wait for the background workers to stop"
+    );
+    assert_eq!(ids(&rec), 0);
+    // idle again: the delete is allowed
+    rec.0.borrow_mut().background_jobs = 0;
+    st.request_maintenance(MaintenanceJob::DeletePropagationPaths)
+        .unwrap();
+    st.confirm_maintenance().unwrap();
+    assert_eq!(ids(&rec), 1);
+}
+
+#[test]
+fn sizes_read_runs_while_background_workers_stop() {
+    let (mut st, rec) = state();
+    rec.0.borrow_mut().background_jobs = 1;
+    // reading the database sizes is read-only, so it is not refused while workers stop (#155)
+    st.request_maintenance(MaintenanceJob::Sizes).unwrap();
+    assert_eq!(ids(&rec), 1);
+}
+
+#[test]
 fn maintenance_refused_while_history_loads() {
     let (mut st, rec) = state();
     st.enter_history().unwrap();

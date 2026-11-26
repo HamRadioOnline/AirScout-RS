@@ -265,10 +265,6 @@ impl OmniDispatch for ComOmni {
     fn is_writeable(&mut self, n: u8, param: i32) -> Result<bool, OmniError> {
         self.call(n, "IsParamWriteable", param)
     }
-
-    fn call_missing(&mut self, n: u8, name: &str, param: i32) -> Result<bool, OmniError> {
-        self.call(n, name, param)
-    }
 }
 
 /// `StartOmniRig` (`OmniRigX.cs:87-152`): the ProgID `OmniRig.OmniRigX`, else the V1.19 CLSID

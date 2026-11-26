@@ -342,3 +342,20 @@ fn multi_targets_report_index_and_done() {
     );
     svc.stop();
 }
+
+#[test]
+fn finding_329_desktop_start_rejects_its_active_aircraft_listener() {
+    let dir = tempfile::tempdir().unwrap();
+    let paths = airscout::services::open_data(dir.path()).unwrap();
+    let mut settings = Settings {
+        feed: "AirScoutServer".into(),
+        ..Default::default()
+    };
+    settings.server.activate = true;
+    settings.web.port = 9872;
+    let (tx, _) = std::sync::mpsc::channel();
+    let error = FeedService::start(&paths, &settings, Arc::new(PlaneInfoCache::new()), tx, 1)
+        .err()
+        .unwrap();
+    assert!(error.to_string().contains("this process"));
+}

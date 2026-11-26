@@ -12,12 +12,8 @@ use chrono::{DateTime, Utc};
 use std::collections::BTreeMap;
 
 pub struct TickInput<'a> {
-    /// `CurrentTime`: the time the plane cache is read at and the tooltips show.
-    pub now: DateTime<Utc>,
-    /// The time passed to `GetNearestPlanes` (`DateTime.UtcNow`, `MapDlg.cs:5140`). Equal to
-    /// `now` in LIVE mode; in HISTORY it is the wall clock, ported 1:1: the first path's
-    /// crossings use the historic positions, later paths see the planes moved to the wall clock.
-    pub nearest_at: DateTime<Utc>,
+    /// `CurrentTime`: single analysis instant for cache reads, crossing maths and tooltips.
+    pub at: DateTime<Utc>,
     pub paths: &'a [PropagationPath],
     pub planes: Vec<PlaneInfo>,
     pub settings: &'a Settings,
@@ -60,46 +56,73 @@ pub struct TickResult {
 pub fn tick(input: TickInput) -> TickResult {
     let s = input.settings;
     let gui = &s.gui;
-    let max_distance = s.current_band_settings().max_distance;
-    let mut planes = input.planes;
+    let band = s.current_band_settings();
+    let max_distance = band.max_distance;
+    let max_squint = if band.max_squint.is_finite() && band.max_squint > 0.0 {
+        Some(band.max_squint.to_radians())
+    } else {
+        None
+    };
+    let max_elevation = if band.max_elevation.is_finite() && band.max_elevation > 0.0 {
+        Some(band.max_elevation.to_radians())
+    } else {
+        None
+    };
+    let floor_m = f64::from(s.planes_min_alt_m);
+    let passes = |p: &PlaneInfo| {
+        p.alt_m() >= floor_m
+            && p.category >= gui.planes_filter_min_category
+            && max_squint.is_none_or(|m| p.squint <= m)
+            && max_elevation.is_none_or(|m| p.theta1.abs() <= m && p.theta2.abs() <= m)
+    };
+    let better = |a: &PlaneInfo, b: &PlaneInfo| {
+        a.potential > b.potential || (a.potential == b.potential && a.int_qrb < b.int_qrb)
+    };
+    let planes = input.planes;
     let mut res = TickResult::default();
 
     // UpdatePlanes
     for path in input.paths {
-        res.nearest = None;
-        res.highest_potential = 0;
         let found = get_nearest_planes(
-            input.nearest_at,
+            input.at,
             path,
-            &mut planes,
+            &planes,
             gui.planes_filter_max_circumcircle_km,
             max_distance,
             f64::from(s.planes_max_alt_m),
             s.planes_max_delta_m,
         );
-        for p in &found {
-            if p.alt_m() >= f64::from(gui.planes_filter_min_alt_m)
-                && p.category >= gui.planes_filter_min_category
-                && p.potential > res.highest_potential
-            {
+        let mut per_path = 0;
+        for p in found.iter().filter(|p| passes(p)) {
+            if p.potential > per_path {
+                per_path = p.potential;
+            }
+            if p.potential > res.highest_potential {
                 res.highest_potential = p.potential;
             }
         }
-        res.per_path_potential.push(res.highest_potential);
-        res.nearest = nearest_plane(&found, max_distance).cloned();
+        res.per_path_potential.push(per_path);
+        if let Some(n) = nearest_plane(&found, max_distance)
+            .filter(|p| passes(p))
+            .cloned()
+        {
+            let replace = res.nearest.as_ref().is_none_or(|r| better(&n, r));
+            if replace {
+                res.nearest = Some(n);
+            }
+        }
         merge_active(&mut res.active, found);
     }
 
-    // DrawPlanes. The original filters here with `Planes_MinAlt`, not `Planes_Filter_Min_Alt`.
+    // DrawPlanes.
     let single = input.mode == PathMode::Single;
     for p in res.active.values() {
-        if p.alt_m() < f64::from(s.planes_min_alt_m) || p.category < gui.planes_filter_min_category
-        {
+        if !passes(p) {
             continue;
         }
         if gui.alarm_activate
             && (p.potential == 100 || p.potential == 75)
-            && p.int_qrb < gui.alarm_distance_km
+            && p.forward_qrb.is_some_and(|d| d < gui.alarm_distance_km)
         {
             if res.alarm.is_none() {
                 res.alarm = Some(p.clone());

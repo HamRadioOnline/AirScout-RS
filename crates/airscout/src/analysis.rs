@@ -178,6 +178,7 @@ fn load_history(ctx: &JobCtx, dir: &Path, ttl_min: i64) -> Result<(), String> {
             infos.insert(ap.hex.clone(), info);
         }
         let info = &infos[&ap.hex];
+        // Position history stores no altitude datum; legacy rows remain explicitly unknown.
         out.push(PlaneInfo {
             time: ap.last_updated,
             call: info.call.clone(),

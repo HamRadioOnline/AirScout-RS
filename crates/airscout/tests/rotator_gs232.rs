@@ -100,11 +100,25 @@ fn step_ok() -> TrackStep {
 #[test]
 fn commands_match_csharp() {
     assert_eq!(set_command(Gs232::Az, 123.4, 0.0), "M123");
-    assert_eq!(set_command(Gs232::Az, 359.6, 0.0), "M360");
     assert_eq!(set_command(Gs232::AzEl, 5.0, 45.2), "W005 045");
-    assert_eq!(set_command(Gs232::AzEl, 10.0, -5.0), "W010 -005");
     assert_eq!(query(Gs232::Az), "C");
     assert_eq!(query(Gs232::AzEl), "C2");
+}
+
+#[test]
+fn set_command_wraps_and_clamps() {
+    // #236: round-then-wrap azimuth mod 360, clamp elevation 0..=90; non-finite becomes 0.
+    assert_eq!(set_command(Gs232::Az, 359.6, 0.0), "M000");
+    assert_eq!(set_command(Gs232::Az, 359.4, 0.0), "M359");
+    assert_eq!(set_command(Gs232::Az, -0.1, 0.0), "M000");
+    assert_eq!(set_command(Gs232::Az, -5.0, 0.0), "M355");
+    assert_eq!(set_command(Gs232::AzEl, 10.0, -5.0), "W010 000");
+    assert_eq!(set_command(Gs232::AzEl, 0.0, 90.4), "W000 090");
+    assert_eq!(set_command(Gs232::Az, f64::NAN, 0.0), "M000");
+    assert_eq!(
+        set_command(Gs232::AzEl, f64::INFINITY, f64::NEG_INFINITY),
+        "W000 000"
+    );
 }
 
 #[test]
@@ -175,7 +189,7 @@ fn long_reply_fails() {
     reply(&sh, &[b'1'; 300]);
     let (mut o, _) = out(Gs232::Az, &sh);
     o.connect().unwrap();
-    assert!(matches!(o.send(1.0, 0.0), Err(OutputError::Failed(_))));
+    assert!(matches!(o.send(1.0, 0.0), Err(OutputError::SerialIo(_))));
     assert_eq!(written(&sh), b"C\r");
 }
 
@@ -240,7 +254,7 @@ fn timeout_leaves_output_not_connected() {
     let sh = Arc::new(Mutex::new(Shared::default()));
     let (mut o, _) = out(Gs232::Az, &sh);
     o.connect().unwrap();
-    assert!(matches!(o.send(1.0, 0.0), Err(OutputError::Failed(_))));
+    assert!(matches!(o.send(1.0, 0.0), Err(OutputError::SerialIo(_))));
     o.close();
     assert!(!o.is_connected());
 }
@@ -266,14 +280,14 @@ fn open_failure_is_shown_not_counted() {
 }
 
 #[test]
-fn serial_disabled_at_sixth_format_error() {
+fn serial_disabled_at_eleventh_format_error() {
     let sh = Arc::new(Mutex::new(Shared::default()));
-    for _ in 0..8 {
+    for _ in 0..12 {
         reply(&sh, b"?\r");
     }
     let (o, _) = out(Gs232::Az, &sh);
     let mut f = TrackFanout::new(vec![Box::new(o)]);
-    for i in 1..=5 {
+    for i in 1..=10 {
         let ev = f.step(&step_ok());
         assert!(
             !ev.iter().any(|e| matches!(e, TrackEvent::Disabled(_))),
@@ -284,4 +298,32 @@ fn serial_disabled_at_sixth_format_error() {
     assert!(ev.contains(&TrackEvent::Text("Tracking via Serial disabled.".into())));
     assert!(ev.contains(&TrackEvent::Rot(RotStatus::Error)));
     assert!(ev.contains(&TrackEvent::Disabled(OutputGroup::Serial)));
+}
+
+#[test]
+fn serial_io_error_counts_toward_switch_off() {
+    // #239: each serial timeout/I/O error counts once toward switch-off (the open failure stays
+    // uncounted, #238), so a dead rotator switches off at the 11th error, not retried forever.
+    let sh = Arc::new(Mutex::new(Shared::default()));
+    for _ in 0..12 {
+        sh.lock()
+            .unwrap()
+            .input
+            .push_back(Chunk::Err(io::ErrorKind::BrokenPipe));
+    }
+    let (o, opens) = out(Gs232::Az, &sh);
+    let mut f = TrackFanout::new(vec![Box::new(o)]);
+    for i in 1..=10 {
+        let ev = f.step(&step_ok());
+        assert!(
+            !ev.iter().any(|e| matches!(e, TrackEvent::Disabled(_))),
+            "step {i}"
+        );
+    }
+    let ev = f.step(&step_ok());
+    assert!(ev.contains(&TrackEvent::Text("Tracking via Serial disabled.".into())));
+    assert!(ev.contains(&TrackEvent::Rot(RotStatus::Error)));
+    assert!(ev.contains(&TrackEvent::Disabled(OutputGroup::Serial)));
+    // each I/O error closed the port and the next step reopened it
+    assert_eq!(opens.load(Ordering::SeqCst), 11);
 }

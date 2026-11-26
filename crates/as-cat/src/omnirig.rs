@@ -125,9 +125,6 @@ pub trait OmniDispatch: Send {
     fn set(&mut self, n: u8, p: OmniProp, v: i32) -> Result<(), OmniError>;
     fn is_readable(&mut self, n: u8, param: i32) -> Result<bool, OmniError>;
     fn is_writeable(&mut self, n: u8, param: i32) -> Result<bool, OmniError>;
-    /// Calls a method by name. Exists only so the C# call of `IsWritable` (OmniRig has
-    /// `IsParamWriteable`, no `IsWritable`) fails the way the late binding does.
-    fn call_missing(&mut self, n: u8, name: &str, param: i32) -> Result<bool, OmniError>;
 }
 
 /// Creates the engine (COM `CreateInstance` in the real backend).
@@ -317,8 +314,8 @@ impl RigRef<'_> {
         Ok(0)
     }
 
-    /// `IntSetRxFrequency` / `IntSetTxFrequency` (:837-936). OmniRig has no `IsWritable`
-    /// (the C# means `IsParamWriteable`), so the call errors and nothing is written.
+    /// `IntSetRxFrequency` / `IntSetTxFrequency` (:837-936). Writeability is the OmniRig
+    /// `IsParamWriteable` check (`PM_FREQ`/`PM_FREQA`/`PM_FREQB`), not the missing `IsWritable`.
     fn set_single(&mut self, hz: i64, tx: bool) -> Result<bool, OmniError> {
         use OmniProp::{Freq, FreqA, FreqB, Split};
         let n = self.n;
@@ -329,7 +326,7 @@ impl RigRef<'_> {
             (false, true) => &[(PM_FREQB, FreqB)],
         };
         for &(param, prop) in targets {
-            if self.d.call_missing(n, "IsWritable", param)? {
+            if self.w(param)? {
                 self.set_freq(prop, hz)?;
                 return Ok(true);
             }
@@ -447,9 +444,10 @@ impl Rig for OmniRig {
                 ST_PORTBUSY => return Ok(RigStatus::NoPort),
                 ST_NOTCONFIGURED | ST_DISABLED => return Ok(RigStatus::NoRig),
                 ST_NOTRESPONDING => return Ok(RigStatus::Offline),
-                _ => {}
+                ST_ONLINE => {}
+                _ => return Ok(RigStatus::Offline),
             }
-            if s == Doppler::A
+            if s.is_active()
                 && !(r.d.is_readable(r.n, PM_SPLITOFF)?
                     && r.d.is_readable(r.n, PM_SPLITON)?
                     && r.w(PM_SPLITOFF)?

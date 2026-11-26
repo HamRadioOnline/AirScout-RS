@@ -2,9 +2,9 @@
 //! 1:1, and the `.loc` writer.
 //!
 //! Ported 1:1 (the tiles are what the app reads): sample positions, void rules, the first
-//! extreme for min and max, tile names, and which tiles are written. In the SRTM branch
-//! `all_void` is set once per file (`:228`) and never reset, so only the all-void tiles before
-//! the first tile with data are skipped (finding 3).
+//! extreme for min and max, tile names, and which tiles are written. Stage 6 fixed two SRTM
+//! defects: the sample row reads `frows - 1` (georeferenced like GLOBE, #294) and `all_void`
+//! is decided per tile so an all-void tile after a data tile is skipped (#293).
 
 use crate::source::{Source, SourceKind};
 use as_elevation::{ElevationError, ElevationTile, ELV_MISSING};
@@ -158,8 +158,6 @@ pub fn srtm_tiles(
     let (frows, fcols) = (src.rows as i64, src.cols as i64);
     // `-1 % 2 != 0` in C# too: an odd negative base starts at 'M' (`:230`)
     let x0 = if src.lon_base % 2 == 0 { b'A' } else { b'M' };
-    // set once per file and never reset (`:228`, finding 3)
-    let mut all_void = true;
     let mut out = Vec::with_capacity(288);
     for i in 0..12u8 {
         for j in 0..24u8 {
@@ -171,17 +169,18 @@ pub fn srtm_tiles(
             let (i, j) = (i64::from(i), i64::from(j));
             let (tile, any_data) = build(&index, rows, columns, now, |k, l| {
                 let (k, l) = (k as i64, l as i64);
-                let r = frows - 2 - j * rows as i64 - l;
+                // `frows - 1` (not `frows - 2`, the C# `:251` off-by-one): read the cell's own
+                // row, matching the GLOBE branch (`:460`), so tiles are georeferenced like GLOBE
+                // (#294). The `all_void` flag is per tile here: `any_data` alone decides the
+                // outcome (#293, the C# `:228` flag is set once per file).
+                let r = frows - 1 - j * rows as i64 - l;
                 let c = i * columns as i64 + k;
                 read_i16(data, r * fcols + c, true)
             })?;
-            if any_data {
-                all_void = false;
-            }
-            out.push(if all_void {
-                Outcome::Void(index)
-            } else {
+            out.push(if any_data {
                 Outcome::Tile(tile)
+            } else {
+                Outcome::Void(index)
             });
         }
     }

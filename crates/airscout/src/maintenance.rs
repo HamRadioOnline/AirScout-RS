@@ -329,6 +329,8 @@ fn tables(db: DbId, paths: &Paths) -> Result<Vec<(String, String, u64)>, String>
     with_db(paths, db, |c| {
         as_db::table_list(c)?
             .into_iter()
+            // #385: the station-import bookkeeping tables are internal, not user data
+            .filter(|t| !as_stations::INTERNAL_TABLES.contains(&t.as_str()))
             .map(|t| {
                 let n = as_db::row_count(c, &t)?;
                 Ok((t.clone(), table_description(&t).to_string(), n))
@@ -341,7 +343,11 @@ fn clear_table(ctx: &JobCtx, paths: &Paths, db: DbId, table: &str) -> Result<(),
     if ctx.cancelled() {
         return Ok(());
     }
-    let n = with_db(paths, db, |c| as_db::clear_table(c, table))?;
+    let n = if db == DbId::Stations {
+        paths.stations.clear_table(table).map_err(err)?
+    } else {
+        with_db(paths, db, |c| as_db::clear_table(c, table))?
+    };
     ctx.progress(format!("{n} entries deleted from table {table}"));
     ctx.send(JobEvent::Tables(db, tables(db, paths)?));
     Ok(())

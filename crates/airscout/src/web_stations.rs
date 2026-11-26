@@ -1,8 +1,8 @@
 //! `/location.json`, `/qrv.json` and the station lookups of the C# web server
 //! (`AirScout/Webserver.cs:209-374`, `:500-619`).
 //!
-//! The lookups read stored data only: no elevation tile is downloaded, and only
-//! [`location_find_or_create`] writes (a new location, as in C#).
+//! The lookups read stored data only: no elevation tile is downloaded and no station is
+//! stored (read-only remote lookups, #265).
 //!
 //! Requests that never complete in C# answer here (L8 deviation): an unknown call
 //! without a locator, and every exception (a database error, a QRV locator shorter
@@ -12,6 +12,7 @@ use crate::services::ground_elevation_with;
 use crate::web_api::WebCtx;
 use as_elevation::{ElevationModel, ElevationStore, ElvMinMaxInfo, ELV_MISSING};
 use as_geo::band::Band;
+use as_geo::latlon::GPoint;
 use as_geo::maidenhead::{self, PositionInRectangle};
 use as_settings::{ElevationEnabled, Settings};
 use as_stations::{
@@ -23,9 +24,12 @@ use as_web::json::{to_indented, Num};
 use as_web::query::Query;
 use chrono::Utc;
 
-/// The models of the web lookups, most detailed first. Unlike the GUI, the web server
-/// never asks ASTER (`Webserver.cs:216-221`, `:381-419`).
-pub(crate) const WEB_MODEL_ORDER: [ElevationModel; 3] = [
+/// The models of the web lookups, most detailed first. ASTER is included (#264), so an
+/// ASTER-only user gets real ground elevation on the web routes (`Webserver.cs:216-221`,
+/// `:381-419`).
+pub(crate) const WEB_MODEL_ORDER: [ElevationModel; 5] = [
+    ElevationModel::Aster1,
+    ElevationModel::Aster3,
     ElevationModel::Srtm1,
     ElevationModel::Srtm3,
     ElevationModel::Globe,
@@ -38,6 +42,8 @@ pub struct WebLocation {
     pub loc: Location,
     pub elevation: i16,
     pub best_case: bool,
+    /// The position before the best-case shift, where a local obstruction is stored (#105).
+    pub raw: GPoint,
 }
 
 impl From<&WebLocation> for LocationJson {
@@ -88,43 +94,34 @@ pub fn web_elevation(store: &ElevationStore, en: &ElevationEnabled, lat: f64, lo
     web_elevation_with(en, |m| store.elevation(m, lat, lon, false))
 }
 
-/// `GetMinMaxElevationLoc` (`Webserver.cs:376-427`): the tile info of the first enabled
-/// model of [`WEB_MODEL_ORDER`] whose maximum is known.
-///
-/// It starts from the C# default `ElvMinMaxInfo()` (`ScoutBase.Elevation/ElevationTile.cs:225`):
-/// both elevations missing, all positions 0. A missing maximum or minimum becomes 0 at
-/// the end, so without a tile the result is elevation 0 at 0°/0° (1:1). A store error
-/// counts as "tile not stored".
-pub fn web_min_max(store: &ElevationStore, en: &ElevationEnabled, loc: &str) -> ElvMinMaxInfo {
+/// `GetMinMaxElevationLoc` (`Webserver.cs:376-427`): the tile info of the first enabled model
+/// of [`WEB_MODEL_ORDER`] whose maximum is known, or `None` when no tile covers the square.
+/// A missing maximum counts as "tile not stored" (it walks on to the next model), and a store
+/// error counts as "tile not stored".
+pub fn web_min_max(
+    store: &ElevationStore,
+    en: &ElevationEnabled,
+    loc: &str,
+) -> Option<ElvMinMaxInfo> {
     let missing = i32::from(ELV_MISSING);
-    let mut elv = ElvMinMaxInfo {
-        min_elv: missing,
-        min_lat: 0.0,
-        min_lon: 0.0,
-        max_elv: missing,
-        max_lat: 0.0,
-        max_lon: 0.0,
-    };
     for m in WEB_MODEL_ORDER {
-        if !en.is_enabled(m) || elv.max_elv != missing {
+        if !en.is_enabled(m) {
             continue;
         }
         if let Ok(Some(info)) = store.max_elv_loc(m, loc) {
-            elv = info;
+            if info.max_elv != missing {
+                return Some(info);
+            }
         }
     }
-    if elv.max_elv == missing {
-        elv.max_elv = 0;
-    }
-    if elv.min_elv == missing {
-        elv.min_elv = 0;
-    }
-    elv
+    None
 }
 
 /// The elevation and the best-case shift of `LocationFind` and its siblings
 /// (`Webserver.cs:269-286`). Nothing is stored. `from_best` sets the source to
-/// `FromBest`, which `LocationFindOrCreate` does not do (`:306-321`).
+/// `FromBest`, which `LocationFindOrCreate` does not do (`:306-321`). Without a tile that
+/// covers the square the station is not shifted (#263): it keeps its locator position,
+/// `best_case == false` and its source.
 fn web_location(
     store: &ElevationStore,
     en: &ElevationEnabled,
@@ -132,21 +129,24 @@ fn web_location(
     best: bool,
     from_best: bool,
 ) -> Result<WebLocation, String> {
+    let raw = GPoint::new(loc.lat, loc.lon);
     let mut w = WebLocation {
         elevation: web_elevation(store, en, loc.lat, loc.lon),
         loc,
         best_case: false,
+        raw,
     };
     if best && !maidenhead::is_precise(w.loc.lat, w.loc.lon, 3).map_err(|e| e.to_string())? {
-        let max = web_min_max(store, en, &w.loc.loc);
-        w.loc.lat = max.max_lat;
-        w.loc.lon = max.max_lon;
-        // a tile elevation is an `i16`
-        w.elevation = max.max_elv.clamp(i16::MIN.into(), i16::MAX.into()) as i16;
-        if from_best {
-            w.loc.source = GeoSource::FromBest;
+        if let Some(max) = web_min_max(store, en, &w.loc.loc) {
+            w.loc.lat = max.max_lat;
+            w.loc.lon = max.max_lon;
+            // a tile elevation is an `i16`
+            w.elevation = max.max_elv.clamp(i16::MIN.into(), i16::MAX.into()) as i16;
+            if from_best {
+                w.loc.source = GeoSource::FromBest;
+            }
+            w.best_case = true;
         }
-        w.best_case = true;
     }
     Ok(w)
 }
@@ -225,7 +225,9 @@ pub fn location_find_all(
 
 /// `LocationFindOrCreate` (`Webserver.cs:291-324`): the stored location, or a new one at
 /// the locator centre, which is stored. Best case follows the settings, and the source
-/// stays as stored (1:1). An invalid call or locator gives `None`.
+/// stays as stored (1:1). An invalid call or locator gives `None`. No route calls this any
+/// more: the remote lookups are read-only (#265), so this port is kept for completeness and
+/// is exercised only by its test.
 pub fn location_find_or_create(
     ctx: &WebCtx,
     s: &Settings,
@@ -250,10 +252,17 @@ pub fn location_find_or_create(
 
 /// `QRVFindOrCreateDefault` with the zero defaults of the path routes
 /// (`Webserver.cs:724-741`, `:871-889`, `:977-995`): a zero height, gain or power is the
-/// band default. Nothing is stored.
-pub fn qrv_defaulted(db: &StationDb, call: &str, loc: &str, band: Band) -> Result<Qrv, String> {
+/// band default. Nothing is stored. `trusted` is a station position inside the coarse
+/// locator that may derive the six-character key for an exact lookup (#13).
+pub fn qrv_defaulted(
+    db: &StationDb,
+    call: &str,
+    loc: &str,
+    band: Band,
+    trusted: Option<GPoint>,
+) -> Result<Qrv, String> {
     let mut q = db
-        .qrv_find_or_create_default(call, loc, band)
+        .qrv_find_or_create_default(call, loc, band, trusted)
         .map_err(|e| e.to_string())?;
     if q.antenna_height == 0.0 {
         q.antenna_height = default_antenna_height(band);
@@ -367,8 +376,8 @@ mod tests {
     }
 
     #[test]
-    fn web_elevation_skips_aster() {
-        // ASTER would answer 500 m; the web order never asks it
+    fn web_elevation_asks_aster_first() {
+        // ASTER-only users now get real ground elevation (#264): ASTER1 is asked first
         let mut asked = Vec::new();
         let e = web_elevation_with(&only(true, false), |m| {
             asked.push(m);
@@ -377,12 +386,12 @@ mod tests {
                 _ => ELV_MISSING,
             })
         });
-        assert_eq!(e, 0);
-        assert_eq!(asked, [ElevationModel::Srtm3, ElevationModel::Globe]);
+        assert_eq!(e, 500);
+        assert_eq!(asked, [ElevationModel::Aster1]);
     }
 
     #[test]
-    fn web_elevation_takes_srtm1_first() {
+    fn web_elevation_falls_through_to_srtm1() {
         let e = web_elevation_with(&only(true, true), |m| {
             Ok(match m {
                 ElevationModel::Srtm1 => 500,

@@ -70,17 +70,19 @@ impl PropagationPath {
         self.eps1_min.max(self.params.local_obstruction)
     }
 
-    /// `GetInfoPoints`: one point per km, `trunc(distance) + 2` points.
+    /// `GetInfoPoints`: one point per km plus the destination, keeping `trunc(distance) + 2` points.
     pub fn info_points(&self) -> Option<Vec<PropagationPoint>> {
         if self.params.step_width_m <= 0.0 {
             return None;
         }
-        let n = self.distance() as usize + 2;
-        (0..n).map(|i| self.info_point(i as f64)).collect()
+        let distance = self.distance();
+        let n = distance as usize + 2;
+        (0..n)
+            .map(|i| self.info_point((i as f64).min(distance)))
+            .collect()
     }
 
-    /// `GetInfoPoint`. Reproduces `logic-findings.md` #1 (F1 radius uses the full distance as
-    /// the first leg).
+    /// `GetInfoPoint`: ray heights and first Fresnel radius at a distance from station 1.
     pub fn info_point(&self, dist: f64) -> Option<PropagationPoint> {
         if self.params.step_width_m <= 0.0 {
             return None;
@@ -88,12 +90,17 @@ impl PropagationPath {
         let p = &self.params;
         let distance = self.distance();
         let g = latlon::destination_point(p.lat1, p.lon1, self.bearing12(), dist);
+        let remaining = distance - dist;
         Some(PropagationPoint {
             lat: g.lat,
             lon: g.lon,
             h1: height_from_epsilon(p.h1, dist, self.eps1_effective(), p.radius_km),
-            h2: height_from_epsilon(p.h2, distance - dist, self.eps2_min, p.radius_km),
-            f1: f1_radius(p.qrg_ghz, distance, distance - dist),
+            h2: if remaining == 0.0 {
+                p.h2
+            } else {
+                height_from_epsilon(p.h2, remaining, self.eps2_min, p.radius_km)
+            },
+            f1: f1_radius(p.qrg_ghz, dist, remaining),
         })
     }
 
@@ -105,7 +112,6 @@ impl PropagationPath {
 
     /// `GetIntersectionPoint`: where a plane at (lat, lon) flying `bearing` crosses the path.
     /// `max_distance`: < 0 no limit, 0 = half the path length, > 0 limit [km].
-    /// Reproduces `logic-findings.md` #2 (planes *closer* than `max_distance > 0` are rejected).
     pub fn intersection_point(
         &self,
         lat: f64,
@@ -134,7 +140,7 @@ impl PropagationPath {
         if max_distance == 0.0 && qrb > self.distance() / 2.0 {
             return None;
         }
-        if max_distance > 0.0 && qrb < max_distance {
+        if max_distance > 0.0 && qrb > max_distance {
             return None;
         }
         Some(ip)
