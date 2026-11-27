@@ -92,6 +92,22 @@ const DOCK_TOLERANCE: f32 = 2.0;
 /// Maximum split-ratio error, as a fraction of the container extent.
 const SPLIT_TOLERANCE: f32 = 0.05;
 
+/// The effective dock side of a control: its explicit `dock`, else the WinForms
+/// default for its type. WinForms docks a `StatusStrip` `Bottom` and a
+/// `MenuStrip`/`ToolStrip` `Top` by default, so the Designer omits `Dock` and
+/// the reference records `"dock": null` for those controls. Every dock read in
+/// `compare` and `trace_from_reference` goes through this helper.
+pub fn effective_dock(control: &Control) -> Option<&str> {
+    if let Some(dock) = control.dock.as_deref() {
+        return Some(dock);
+    }
+    match control.kind.as_str() {
+        "StatusStrip" => Some("Bottom"),
+        "MenuStrip" | "ToolStrip" => Some("Top"),
+        _ => None,
+    }
+}
+
 /// Compare a drawn `trace` against the `reference`, reporting every mismatch
 /// that is not approved by `allow` and recorded in `deviations`.
 pub fn compare(
@@ -232,7 +248,7 @@ fn raw_mismatches(reference: &Window, trace: &[Entry]) -> Vec<Mismatch> {
         if !control.visible {
             continue;
         }
-        let Some(dock) = control.dock.as_deref() else {
+        let Some(dock) = effective_dock(control) else {
             continue;
         };
         if !DOCK_SIDES.contains(&dock) {
@@ -252,7 +268,7 @@ fn raw_mismatches(reference: &Window, trace: &[Entry]) -> Vec<Mismatch> {
             let Some(entry) = entry_by_name(trace, &child.name) else {
                 continue;
             };
-            let dock = child.dock.as_deref().unwrap();
+            let dock = effective_dock(child).unwrap();
             if !touches(entry.rect, remaining, dock) {
                 out.push(Mismatch::WrongDockSide {
                     name: child.name.clone(),
@@ -700,6 +716,15 @@ const TAB_HEIGHT: f32 = 24.0;
 /// order matters, so a fixed width is enough.
 const TAB_HEADER_WIDTH: f32 = 80.0;
 
+/// Container kinds whose children without a `Location` flow left-to-right in
+/// `index` order (status-strip labels, list-view column headers).
+const FLOW_KINDS: &[&str] = &["StatusStrip", "ToolStrip", "ListView"];
+
+/// Width given to a flow item (status label, column header) whose designer
+/// `Size` is absent; only the left-to-right order matters, so a fixed width is
+/// enough.
+const FLOW_ITEM_WIDTH: i32 = 80;
+
 /// Lay out and emit every control whose parent is `container`, inside `area`.
 fn layout(reference: &Window, container: &str, area: Rect, out: &mut Vec<Entry>) {
     let mut children: Vec<&Control> = reference
@@ -714,7 +739,7 @@ fn layout(reference: &Window, container: &str, area: Rect, out: &mut Vec<Entry>)
     let docked: Vec<&Control> = children
         .iter()
         .copied()
-        .filter(|c| c.dock.is_some())
+        .filter(|c| effective_dock(c).is_some())
         .collect();
     let specs: Vec<(Dock, Vec2)> = docked
         .iter()
@@ -722,9 +747,28 @@ fn layout(reference: &Window, container: &str, area: Rect, out: &mut Vec<Entry>)
         .collect();
     let mut dock_rects = geometry::dock_layout(area, &specs).into_iter();
 
+    // Children of a StatusStrip/ToolStrip/ListView without a `Location` (status
+    // labels, column headers) flow left-to-right in index order instead of all
+    // stacking at (0, 0).
+    let flow = reference
+        .controls
+        .iter()
+        .find(|c| c.name == container)
+        .map(|c| FLOW_KINDS.contains(&c.kind.as_str()))
+        .unwrap_or(false);
+    let mut flow_x = area.min.x;
+
     for c in children {
-        let rect = if c.dock.is_some() {
+        let rect = if effective_dock(c).is_some() {
             dock_rects.next().unwrap_or(Rect::NOTHING)
+        } else if flow && c.location.is_none() {
+            let size = c.size.unwrap_or([FLOW_ITEM_WIDTH, 0]);
+            let rect = Rect::from_min_size(
+                pos2(flow_x, area.min.y),
+                vec2(size[0] as f32, size[1] as f32),
+            );
+            flow_x += size[0] as f32;
+            rect
         } else {
             geometry::designer_rect(area, c.location.unwrap_or([0, 0]), c.size.unwrap_or([0, 0]))
         };
@@ -851,7 +895,7 @@ fn entry_path(reference: &Window, control: &Control) -> Vec<String> {
 }
 
 fn dock_of(control: &Control) -> Dock {
-    match control.dock.as_deref() {
+    match effective_dock(control) {
         Some("Top") => Dock::Top,
         Some("Bottom") => Dock::Bottom,
         Some("Left") => Dock::Left,

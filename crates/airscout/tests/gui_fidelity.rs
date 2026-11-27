@@ -61,6 +61,21 @@ fn docked(mut c: Control, dock: &str) -> Control {
     c
 }
 
+/// A `ToolStripStatusLabel`/`ColumnHeader`-style flow item: no designer
+/// `Location` (WinForms lays these out left-to-right in `index` order).
+fn flow_item(
+    name: &str,
+    kind: &str,
+    parent: &str,
+    index: usize,
+    text: &str,
+    width: i32,
+) -> Control {
+    let mut c = control(name, kind, parent, index, Some(text), [0, 0], [width, 17]);
+    c.location = None;
+    c
+}
+
 /// The synthetic reference window used across most tests: a group box `gb`
 /// (labels `l1` at y 10, `l2` at y 30), a vertical split `sc` (distance 600 in
 /// 1000 width), and a top-docked label `ld`.
@@ -729,5 +744,294 @@ fn smoke_mapdlg_reference_renders_without_mismatch() {
         mismatches.is_empty(),
         "MapDlg reference rendered {} mismatch(es): {mismatches:#?}",
         mismatches.len()
+    );
+}
+
+#[test]
+fn statusstrip_default_bottom_dock_shrinks_parent() {
+    // WinForms docks a StatusStrip Bottom by default, so the Designer omits
+    // `Dock` and the reference records `"dock": null`. A Bottom-docked panel
+    // stacked above the strip must not false-fail, and a panel that overlaps the
+    // strip must be reported as `WrongDockSide`.
+    let mut w = Window::new("StatusDock");
+    w.client_size = Some([400, 200]);
+    w.controls = vec![
+        // The strip sits at the very bottom (highest index, as in
+        // CrossingHistoryDlg / DatabaseEditDlg / HorizonDlg).
+        control("ss", "StatusStrip", "$this", 2, None, [0, 178], [400, 22]),
+        docked(
+            control("panel", "Panel", "$this", 1, None, [0, 158], [400, 20]),
+            "Bottom",
+        ),
+    ];
+
+    // Correct stacking: strip at the bottom, panel above it.
+    let t = vec![
+        entry(
+            &[],
+            "ss",
+            Kind::Container,
+            "",
+            rect(0.0, 178.0, 400.0, 22.0),
+        ),
+        entry(
+            &[],
+            "panel",
+            Kind::Container,
+            "",
+            rect(0.0, 158.0, 400.0, 20.0),
+        ),
+    ];
+    assert_eq!(compare(&w, &t, &[], ""), vec![]);
+
+    // The panel overlaps the strip: after the strip has been stacked the panel
+    // no longer touches the Bottom side of the remaining rect.
+    let t = vec![
+        entry(
+            &[],
+            "ss",
+            Kind::Container,
+            "",
+            rect(0.0, 178.0, 400.0, 22.0),
+        ),
+        entry(
+            &[],
+            "panel",
+            Kind::Container,
+            "",
+            rect(0.0, 168.0, 400.0, 30.0),
+        ),
+    ];
+    assert_eq!(
+        compare(&w, &t, &[], ""),
+        vec![Mismatch::WrongDockSide {
+            name: "panel".to_string(),
+            dock: "Bottom".to_string(),
+        }]
+    );
+}
+
+#[test]
+fn independent_hand_built_trace_checks() {
+    // An independent sanity check that does NOT use `trace_from_reference`: a
+    // hand-built trace whose rects are computed by hand must pass, and each of
+    // four deliberate mutations (wrong split ratio, swapped tab order, swapped
+    // status labels, swapped stacked docks) must yield its expected mismatch.
+    let mut w = Window::new("Hand");
+    w.client_size = Some([400, 300]);
+    w.controls = vec![
+        {
+            // Vertical SplitContainer (orientation None → Vertical), dock Fill.
+            let mut c = control("sc", "SplitContainer", "$this", 0, None, [0, 0], [400, 238]);
+            c.splitter_distance = Some(120);
+            c.dock = Some("Fill".to_string());
+            c
+        },
+        control("tc", "TabControl", "sc.Panel2", 0, None, [0, 0], [276, 238]),
+        control(
+            "tp_a",
+            "TabPage",
+            "tc",
+            0,
+            Some("Alpha"),
+            [4, 22],
+            [268, 212],
+        ),
+        control(
+            "tp_b",
+            "TabPage",
+            "tc",
+            1,
+            Some("Beta"),
+            [4, 22],
+            [268, 212],
+        ),
+        // Two stacked Bottom docks (b1 above b2) plus the StatusStrip at the
+        // very bottom (highest index → docks first).
+        docked(
+            control("b1", "Panel", "$this", 1, None, [0, 238], [400, 20]),
+            "Bottom",
+        ),
+        docked(
+            control("b2", "Panel", "$this", 2, None, [0, 258], [400, 20]),
+            "Bottom",
+        ),
+        control("ss", "StatusStrip", "$this", 3, None, [0, 278], [400, 22]),
+        flow_item("tsl_0", "ToolStripStatusLabel", "ss", 0, "One", 40),
+        flow_item("tsl_1", "ToolStripStatusLabel", "ss", 1, "Two", 40),
+        flow_item("tsl_2", "ToolStripStatusLabel", "ss", 2, "Three", 40),
+    ];
+
+    // Hand-computed rects: sc fills 0..238; the two panels and the strip stack
+    // up from the bottom (b1 238..258, b2 258..278, ss 278..300); sc splits
+    // vertically at 120 (Panel1 0..120, Panel2 124..400); the tab headers sit
+    // 80 pt apart above the shared page body; the status labels flow left to
+    // right inside the strip.
+    let correct = vec![
+        entry(&[], "sc", Kind::Container, "", rect(0.0, 0.0, 400.0, 238.0)),
+        entry(
+            &["sc"],
+            "sc.Panel1",
+            Kind::Container,
+            "",
+            rect(0.0, 0.0, 120.0, 238.0),
+        ),
+        entry(
+            &["sc"],
+            "sc.Panel2",
+            Kind::Container,
+            "",
+            rect(124.0, 0.0, 276.0, 238.0),
+        ),
+        entry(
+            &["sc", "sc.Panel2"],
+            "tc",
+            Kind::Container,
+            "",
+            rect(124.0, 0.0, 276.0, 238.0),
+        ),
+        entry(
+            &["sc", "sc.Panel2", "tc"],
+            "tp_a",
+            Kind::Text,
+            "Alpha",
+            rect(124.0, 0.0, 80.0, 24.0),
+        ),
+        entry(
+            &["sc", "sc.Panel2", "tc"],
+            "tp_b",
+            Kind::Text,
+            "Beta",
+            rect(204.0, 0.0, 80.0, 24.0),
+        ),
+        entry(
+            &["sc", "sc.Panel2", "tc"],
+            "tp_a",
+            Kind::Container,
+            "",
+            rect(124.0, 24.0, 276.0, 214.0),
+        ),
+        entry(
+            &["sc", "sc.Panel2", "tc"],
+            "tp_b",
+            Kind::Container,
+            "",
+            rect(124.0, 24.0, 276.0, 214.0),
+        ),
+        entry(
+            &[],
+            "b1",
+            Kind::Container,
+            "",
+            rect(0.0, 238.0, 400.0, 20.0),
+        ),
+        entry(
+            &[],
+            "b2",
+            Kind::Container,
+            "",
+            rect(0.0, 258.0, 400.0, 20.0),
+        ),
+        entry(
+            &[],
+            "ss",
+            Kind::Container,
+            "",
+            rect(0.0, 278.0, 400.0, 22.0),
+        ),
+        entry(
+            &["ss"],
+            "tsl_0",
+            Kind::Text,
+            "One",
+            rect(0.0, 278.0, 40.0, 17.0),
+        ),
+        entry(
+            &["ss"],
+            "tsl_1",
+            Kind::Text,
+            "Two",
+            rect(40.0, 278.0, 40.0, 17.0),
+        ),
+        entry(
+            &["ss"],
+            "tsl_2",
+            Kind::Text,
+            "Three",
+            rect(80.0, 278.0, 40.0, 17.0),
+        ),
+    ];
+    assert_eq!(compare(&w, &correct, &[], ""), vec![]);
+
+    // Wrong split ratio: Panel1 200 wide instead of 120 → 0.5 vs 0.3.
+    let mut t = correct.clone();
+    t.iter_mut().find(|e| e.name == "sc.Panel1").unwrap().rect = rect(0.0, 0.0, 200.0, 238.0);
+    t.iter_mut().find(|e| e.name == "sc.Panel2").unwrap().rect = rect(204.0, 0.0, 196.0, 238.0);
+    assert_eq!(
+        compare(&w, &t, &[], ""),
+        vec![Mismatch::WrongSplit {
+            name: "sc".to_string(),
+            expected: 0.3,
+            got: 0.5,
+        }]
+    );
+
+    // Swapped tab order: the two headers exchange x positions.
+    let mut t = correct.clone();
+    t.iter_mut()
+        .find(|e| e.name == "tp_a" && e.kind == Kind::Text)
+        .unwrap()
+        .rect = rect(204.0, 0.0, 80.0, 24.0);
+    t.iter_mut()
+        .find(|e| e.name == "tp_b" && e.kind == Kind::Text)
+        .unwrap()
+        .rect = rect(124.0, 0.0, 80.0, 24.0);
+    assert_eq!(
+        compare(&w, &t, &[], ""),
+        vec![Mismatch::WrongOrder {
+            container: "tc".to_string(),
+            expected: vec!["tp_a".to_string(), "tp_b".to_string()],
+            got: vec!["tp_b".to_string(), "tp_a".to_string()],
+        }]
+    );
+
+    // Swapped status labels: the first two labels exchange x positions.
+    let mut t = correct.clone();
+    t.iter_mut().find(|e| e.name == "tsl_0").unwrap().rect = rect(40.0, 278.0, 40.0, 17.0);
+    t.iter_mut().find(|e| e.name == "tsl_1").unwrap().rect = rect(0.0, 278.0, 40.0, 17.0);
+    assert_eq!(
+        compare(&w, &t, &[], ""),
+        vec![Mismatch::WrongOrder {
+            container: "ss".to_string(),
+            expected: vec![
+                "tsl_0".to_string(),
+                "tsl_1".to_string(),
+                "tsl_2".to_string()
+            ],
+            got: vec![
+                "tsl_1".to_string(),
+                "tsl_0".to_string(),
+                "tsl_2".to_string()
+            ],
+        }]
+    );
+
+    // Swapped stacked docks: the two Bottom panels exchange y positions, so
+    // neither touches the Bottom side of the (shrunk) remaining rect.
+    let mut t = correct.clone();
+    t.iter_mut().find(|e| e.name == "b1").unwrap().rect = rect(0.0, 258.0, 400.0, 20.0);
+    t.iter_mut().find(|e| e.name == "b2").unwrap().rect = rect(0.0, 238.0, 400.0, 20.0);
+    assert_eq!(
+        compare(&w, &t, &[], ""),
+        vec![
+            Mismatch::WrongDockSide {
+                name: "b2".to_string(),
+                dock: "Bottom".to_string(),
+            },
+            Mismatch::WrongDockSide {
+                name: "b1".to_string(),
+                dock: "Bottom".to_string(),
+            },
+        ]
     );
 }
