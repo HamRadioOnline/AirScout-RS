@@ -550,6 +550,72 @@ fn nan_split_extent_reports_wrong_split_with_zero_got() {
 }
 
 #[test]
+fn non_finite_panel_or_extent_reports_wrong_split_with_zero_got() {
+    // A NaN/Inf Panel1 extent, or an infinite container extent, must yield
+    // WrongSplit with `got = 0.0`, never a NaN or Inf ratio.
+    let mut r = Window::new("NonFinite");
+    r.controls = vec![{
+        let mut c = control(
+            "sc",
+            "SplitContainer",
+            "$this",
+            0,
+            None,
+            [0, 0],
+            [1000, 600],
+        );
+        c.splitter_distance = Some(600);
+        c
+    }];
+    let cases = [
+        (1000.0, f32::NAN),
+        (1000.0, f32::INFINITY),
+        (f32::INFINITY, 600.0),
+    ];
+    for (sc_w, p1_w) in cases {
+        let t = vec![
+            entry(&[], "sc", Kind::Container, "", rect(0.0, 0.0, sc_w, 600.0)),
+            entry(
+                &["sc"],
+                "sc.Panel1",
+                Kind::Container,
+                "",
+                rect(0.0, 0.0, p1_w, 600.0),
+            ),
+            entry(
+                &["sc"],
+                "sc.Panel2",
+                Kind::Container,
+                "",
+                rect(604.0, 0.0, 396.0, 600.0),
+            ),
+        ];
+        assert_eq!(
+            compare(&r, &t, &[], ""),
+            vec![Mismatch::WrongSplit {
+                name: "sc".to_string(),
+                expected: 0.6,
+                got: 0.0,
+            }],
+            "sc width {sc_w}, Panel1 width {p1_w}"
+        );
+    }
+}
+
+#[test]
+fn committed_windows_skip_allowlist_files() {
+    // `*.allow.json` allowlists live next to the references; they are not
+    // windows and must not be loaded as one.
+    assert!(committed_windows().iter().all(|n| !n.ends_with(".allow")));
+    assert!(!is_window_reference(std::path::Path::new(
+        "docs/gui-reference/MapDlg.allow.json"
+    )));
+    assert!(is_window_reference(std::path::Path::new(
+        "docs/gui-reference/MapDlg.json"
+    )));
+}
+
+#[test]
 fn tab_pages_ordered_by_index_with_header_and_body() {
     // TabPages share location [4,22] and are declared in a different order than
     // their index; both the tab-header `Text` entry and the page-body
@@ -851,6 +917,16 @@ fn moved_allowlisted_control_still_checks_text() {
     );
 }
 
+/// Whether `p` is a window reference (`<Window>.json`), not an allowlist
+/// (`<Window>.allow.json`).
+fn is_window_reference(p: &std::path::Path) -> bool {
+    p.extension().and_then(|s| s.to_str()) == Some("json")
+        && !p
+            .file_name()
+            .and_then(|s| s.to_str())
+            .is_some_and(|n| n.ends_with(".allow.json"))
+}
+
 /// The names of every committed window reference under `docs/gui-reference/`.
 fn committed_windows() -> Vec<String> {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/gui-reference");
@@ -858,7 +934,7 @@ fn committed_windows() -> Vec<String> {
         .unwrap_or_else(|e| panic!("gui-reference dir not readable: {e}"))
         .filter_map(|e| e.ok())
         .map(|e| e.path())
-        .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("json"))
+        .filter(|p| is_window_reference(p))
         .filter_map(|p| p.file_stem().and_then(|s| s.to_str()).map(str::to_string))
         .collect();
     names.sort();
