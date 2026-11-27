@@ -55,8 +55,8 @@ fn args() -> FeedArgs {
         max_lon: 16.5,
         min_alt_m: 5000,
         max_alt_m: 12200,
-        my_lat: 50.937067,
-        my_lon: 10.68327,
+        my_lat: 50.020833,
+        my_lon: 10.041667,
         ..FeedArgs::default()
     }
 }

@@ -396,8 +396,8 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             my_call: "DL2ALF".into(),
-            my_lat: 50.937067,
-            my_lon: 10.68327,
+            my_lat: 50.020833,
+            my_lon: 10.041667,
             my_height_m: 14.0,
             dx_call: "GB3MHZ".into(),
             dx_lat: 52.05626084,

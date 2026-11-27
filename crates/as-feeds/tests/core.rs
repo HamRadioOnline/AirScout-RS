@@ -17,8 +17,8 @@ fn args() -> FeedArgs {
         max_lon: 16.5,
         min_alt_m: 5000,
         max_alt_m: 12200,
-        my_lat: 50.937067,
-        my_lon: 10.68327,
+        my_lat: 50.020833,
+        my_lon: 10.041667,
         dx_lat: 52.05626084,
         dx_lon: 1.28022909,
         keep_history: false,
@@ -41,7 +41,7 @@ fn vars_substitute_all() {
             ""
         )
         .unwrap(),
-        "https://api.adsb.one/v2/point/50.937067/10.68327/617.3928409746215"
+        "https://api.adsb.one/v2/point/50.020833/10.041667/644.0392794626265"
     );
     assert_eq!(
         substitute(
