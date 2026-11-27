@@ -9,6 +9,9 @@ use crate::ui::forms::geometry::{split, Orientation, SPLITTER_WIDTH};
 use crate::ui::forms::trace::{self, Kind};
 use eframe::egui::{self, pos2, vec2, Rect, Sense};
 
+/// Height reserved for a `group_box` title at the top of the frame.
+const GROUP_TITLE_HEIGHT: f32 = 20.0;
+
 /// Strip the WinForms mnemonic: `&&` renders a literal `&`, a lone `&`
 /// marks the following character and is not shown.
 fn strip_mnemonic(text: &str) -> String {
@@ -76,7 +79,28 @@ pub fn group_box<R>(
     rect: Rect,
     f: impl FnOnce(&mut egui::Ui) -> R,
 ) -> R {
-    trace::scope_with_text(ui, name, title, rect, f)
+    let display = strip_mnemonic(title);
+
+    // Draw a visible frame around the group.
+    ui.painter().rect_stroke(
+        rect,
+        0.0,
+        ui.visuals().widgets.noninteractive.bg_stroke,
+        egui::StrokeKind::Inside,
+    );
+
+    // The title sits at the top of the frame. Placed directly (not through
+    // [`label`]) so only the `Container` entry is recorded for the group.
+    if !display.is_empty() {
+        let title_rect = Rect::from_min_size(
+            rect.min + vec2(8.0, 0.0),
+            vec2((rect.width() - 8.0).max(0.0), GROUP_TITLE_HEIGHT),
+        );
+        ui.put(title_rect, egui::Label::new(display.clone()));
+    }
+
+    // Run the body in a child `Ui` bounded (and clipped) to the group rect.
+    trace::scope_with_text(ui, name, &display, rect, |ui| scoped(ui, rect, f))
 }
 
 /// A tab control: the `pages` (`(name, text)`) are selectable tabs along the
@@ -103,7 +127,10 @@ pub fn tab_control(
             x += width;
         }
     });
-    Rect::from_min_max(pos2(rect.min.x, rect.min.y + TAB_HEIGHT), rect.max)
+    // Clamp so a control shorter than the tab strip never yields an inverted
+    // (negative-height) content rect.
+    let content_top = (rect.min.y + TAB_HEIGHT).min(rect.max.y);
+    Rect::from_min_max(pos2(rect.min.x, content_top), rect.max)
 }
 
 /// A `SplitContainer`: splits `rect` into two panels at `*distance` and runs
@@ -150,10 +177,28 @@ pub fn split_container(
     };
     ui.painter().rect_filled(splitter, 0.0, splitter_color);
 
-    trace::scope(ui, name, rect, |ui| {
-        trace::scope(ui, &format!("{name}.Panel1"), panel1, first);
-        trace::scope(ui, &format!("{name}.Panel2"), panel2, second);
-    });
+    if trace::is_enabled(ui.ctx()) {
+        trace::scope(ui, name, rect, |ui| {
+            trace::scope(ui, &format!("{name}.Panel1"), panel1, |ui| {
+                scoped(ui, panel1, first);
+            });
+            trace::scope(ui, &format!("{name}.Panel2"), panel2, |ui| {
+                scoped(ui, panel2, second);
+            });
+        });
+    } else {
+        // Tracing off: run the panels directly, with no panel-name allocation.
+        scoped(ui, panel1, first);
+        scoped(ui, panel2, second);
+    }
+}
+
+/// Run `f` in a fresh child `Ui` bounded (and clipped) to `rect`, so the body
+/// can read its panel via `ui.max_rect()` and cannot paint outside `rect`.
+fn scoped<R>(ui: &mut egui::Ui, rect: Rect, f: impl FnOnce(&mut egui::Ui) -> R) -> R {
+    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect));
+    child.shrink_clip_rect(rect);
+    f(&mut child)
 }
 
 /// The gap between the two panels of a split container.

@@ -340,3 +340,116 @@ fn split_container_records_panels() {
     assert_eq!(label.kind, Kind::Text);
     assert_eq!(label.path, ["sc".to_owned(), "sc.Panel1".to_owned()]);
 }
+
+#[test]
+fn group_box_strips_mnemonic_draws_title_and_scopes_body() {
+    let gb = rect(0.0, 0.0, 300.0, 150.0);
+    let body = Rc::new(RefCell::new(Rect::NOTHING));
+    let body_in = Rc::clone(&body);
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        trace::enable(ui.ctx());
+        widgets::group_box(ui, "gb_Map", "&Map && Zoom", gb, |ui| {
+            *body_in.borrow_mut() = ui.max_rect();
+        });
+    });
+    trace::take(&h.ctx);
+    h.run();
+
+    // The group title is drawn (findable) with the mnemonic stripped.
+    h.get_by_label("Map & Zoom");
+
+    // The body runs in a child Ui scoped to the group rect.
+    assert_rect(*body.borrow(), gb);
+
+    // The trace records the container with the stripped title.
+    let entries = trace::take(&h.ctx);
+    let container = entries.iter().find(|e| e.name == "gb_Map").expect("gb_Map");
+    assert_eq!(container.kind, Kind::Container);
+    assert_eq!(container.text, "Map & Zoom");
+}
+
+#[test]
+fn split_container_scopes_panels_to_their_rects() {
+    let area = rect(0.0, 0.0, 600.0, 400.0);
+    let mut distance = 200.0f32;
+    let rects = Rc::new(RefCell::new(Vec::new()));
+    let rects_in = Rc::clone(&rects);
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        widgets::split_container(
+            ui,
+            "sc",
+            Orientation::Vertical,
+            &mut distance,
+            area,
+            |ui| rects_in.borrow_mut().push(ui.max_rect()),
+            |ui| rects_in.borrow_mut().push(ui.max_rect()),
+        );
+    });
+    h.run();
+    rects.borrow_mut().clear();
+    h.run();
+    let (panel1, panel2) = split(area, Orientation::Vertical, 200.0);
+    let rects = rects.borrow();
+    assert_eq!(rects.len(), 2);
+    assert_rect(rects[0], panel1);
+    assert_rect(rects[1], panel2);
+}
+
+#[test]
+fn tab_control_content_rect_clamps_short_control() {
+    let tc = rect(0.0, 0.0, 200.0, 10.0);
+    let content = Rc::new(RefCell::new(Rect::NOTHING));
+    let content_in = Rc::clone(&content);
+    let mut selected = 0usize;
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        *content_in.borrow_mut() =
+            widgets::tab_control(ui, "tc", &[("tp_A", "A")], &mut selected, tc);
+    });
+    h.run();
+    let r = *content.borrow();
+    assert!(r.min.y <= r.max.y, "content rect must not invert: {r:?}");
+    assert!(r.min.x <= r.max.x, "content rect must not invert: {r:?}");
+    assert_close(r.min.y, tc.max.y);
+    assert_close(r.max.y, tc.max.y);
+}
+
+#[test]
+fn split_container_drag_updates_distance_and_clamps() {
+    let area = rect(0.0, 0.0, 600.0, 400.0);
+    let distance = Rc::new(RefCell::new(200.0f32));
+    let distance_in = Rc::clone(&distance);
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        widgets::split_container(
+            ui,
+            "sc",
+            Orientation::Vertical,
+            &mut distance_in.borrow_mut(),
+            area,
+            |_ui| {},
+            |_ui| {},
+        );
+    });
+    h.run();
+
+    // The splitter gap sits between the panels at x = distance..distance + 4.
+    let splitter_center = pos2(200.0 + SPLITTER_WIDTH * 0.5, 200.0);
+
+    // Dragging the splitter right updates `*distance`.
+    h.drag_at(splitter_center);
+    h.run();
+    h.hover_at(pos2(400.0, 200.0));
+    h.run();
+    h.drop_at(pos2(400.0, 200.0));
+    h.run();
+    assert_close(*distance.borrow(), 400.0 - SPLITTER_WIDTH * 0.5);
+
+    // Dragging far past the right edge clamps to extent - SPLITTER_WIDTH.
+    let splitter_center = pos2(*distance.borrow() + SPLITTER_WIDTH * 0.5, 200.0);
+    h.drag_at(splitter_center);
+    h.run();
+    h.hover_at(pos2(700.0, 200.0));
+    h.run();
+    h.drop_at(pos2(700.0, 200.0));
+    h.run();
+    assert_close(*distance.borrow(), area.width() - SPLITTER_WIDTH);
+}
