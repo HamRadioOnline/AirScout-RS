@@ -222,22 +222,22 @@ fn raw_mismatches(reference: &Window, trace: &[Entry]) -> Vec<Mismatch> {
     // Rust-only extras inside reference containers with no reference children
     // (e.g. an empty `TabPage`) or inside Rust-only containers (e.g. a menu
     // strip): every distinct trace path not already covered by a reference
-    // container is scanned for extras under its innermost segment.
-    for e in trace {
-        if covered.contains(&e.path) {
-            continue;
-        }
-        if is_extra(reference, &e.name) {
-            let container = e
-                .path
-                .last()
-                .cloned()
-                .unwrap_or_else(|| "$this".to_string());
-            out.push(Mismatch::Extra {
-                name: e.name.clone(),
-                container,
-            });
-        }
+    // container is scanned for extras under its innermost segment. Deduplicated
+    // by (path, name) so a merged multi-tab trace reports each extra once.
+    for e in dedup_entries(
+        trace
+            .iter()
+            .filter(|e| !covered.contains(&e.path) && is_extra(reference, &e.name)),
+    ) {
+        let container = e
+            .path
+            .last()
+            .cloned()
+            .unwrap_or_else(|| "$this".to_string());
+        out.push(Mismatch::Extra {
+            name: e.name.clone(),
+            container,
+        });
     }
 
     // Dock sides, grouped per parent so stacked docking is verified in reverse
@@ -382,16 +382,17 @@ fn container_mismatches(reference: &Window, trace: &[Entry], container: &str) ->
     }
 
     // Rust-only extras (not allowlisted here; the caller applies the allowlist).
-    for e in trace {
-        if e.path != container_path {
-            continue;
-        }
-        if is_extra(reference, &e.name) {
-            out.push(Mismatch::Extra {
-                name: e.name.clone(),
-                container: container.to_string(),
-            });
-        }
+    // Deduplicated by (path, name) so a control recorded both as header and body
+    // (or once per merged frame) is reported once.
+    for e in dedup_entries(
+        trace
+            .iter()
+            .filter(|e| e.path == container_path && is_extra(reference, &e.name)),
+    ) {
+        out.push(Mismatch::Extra {
+            name: e.name.clone(),
+            container: container.to_string(),
+        });
     }
 
     out

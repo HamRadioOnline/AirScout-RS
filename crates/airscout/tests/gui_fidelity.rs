@@ -268,6 +268,34 @@ fn extra_needs_allowlist_and_known_deviation() {
 }
 
 #[test]
+fn duplicate_extra_emitted_once() {
+    // The same Rust-only control recorded twice (e.g. once per merged frame)
+    // must be reported as a single `Extra`, not one per duplicate entry.
+    let mut t = exact_trace();
+    t.push(entry(
+        &["gb"],
+        "x_dup",
+        Kind::Text,
+        "X",
+        rect(10.0, 80.0, 80.0, 20.0),
+    ));
+    t.push(entry(
+        &["gb"],
+        "x_dup",
+        Kind::Text,
+        "X",
+        rect(10.0, 80.0, 80.0, 20.0),
+    ));
+    assert_eq!(
+        compare(&reference(), &t, &[], ""),
+        vec![Mismatch::Extra {
+            name: "x_dup".to_string(),
+            container: "gb".to_string(),
+        }]
+    );
+}
+
+#[test]
 fn known_deviations_only_accept_d_heading() {
     // Only `## D-NNN` headings are deviations; an ordinary `## Notes` heading
     // must not be accepted as a deviation id.
