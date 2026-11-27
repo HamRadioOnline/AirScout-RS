@@ -630,7 +630,10 @@ fn known_deviations(deviations: &str) -> HashSet<String> {
             continue;
         };
         let id: String = rest.chars().take_while(|c| !c.is_whitespace()).collect();
-        if !id.is_empty() {
+        if id
+            .strip_prefix("D-")
+            .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+        {
             known.insert(id);
         }
     }

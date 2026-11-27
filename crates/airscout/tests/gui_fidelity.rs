@@ -268,6 +268,43 @@ fn extra_needs_allowlist_and_known_deviation() {
 }
 
 #[test]
+fn known_deviations_only_accept_d_heading() {
+    // Only `## D-NNN` headings are deviations; an ordinary `## Notes` heading
+    // must not be accepted as a deviation id.
+    let mut t = exact_trace();
+    t.push(entry(
+        &["gb"],
+        "x",
+        Kind::Text,
+        "x",
+        rect(10.0, 80.0, 80.0, 20.0),
+    ));
+    let dev = "## Notes\n## D-001 real\n";
+
+    let allow_d = vec![Allow {
+        name: "x".to_string(),
+        what: "extra".to_string(),
+        reason: "r".to_string(),
+        deviation: "D-001".to_string(),
+    }];
+    assert_eq!(compare(&reference(), &t, &allow_d, dev), vec![]);
+
+    let allow_notes = vec![Allow {
+        name: "x".to_string(),
+        what: "extra".to_string(),
+        reason: "r".to_string(),
+        deviation: "Notes".to_string(),
+    }];
+    assert_eq!(
+        compare(&reference(), &t, &allow_notes, dev),
+        vec![Mismatch::UnknownDeviation {
+            name: "x".to_string(),
+            deviation: "Notes".to_string(),
+        }]
+    );
+}
+
+#[test]
 fn split_and_dock_checks() {
     // Split ratio 0.5 instead of the reference 0.6.
     let mut t = exact_trace();
