@@ -1,8 +1,13 @@
-//! WinForms layout geometry: dock, split and anchor math (pure, no rendering).
+//! WinForms layout: dock/split/anchor math (pure) and the trace + widget helpers.
 use airscout::ui::forms::geometry::{
     anchored, designer_rect, dock_layout, split, Anchor, Dock, Orientation, SPLITTER_WIDTH,
 };
+use airscout::ui::forms::trace::{self, Entry, Kind};
+use airscout::ui::forms::widgets;
 use eframe::egui::{pos2, vec2, Rect};
+use egui_kittest::kittest::Queryable;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 const EPS: f32 = 1e-4;
 
@@ -183,4 +188,155 @@ fn anchor_stretch_clamps_shrunk_parent() {
     assert_close(a.min.x, 10.0);
     assert_close(a.width(), 0.0);
     assert_close(a.height(), 20.0);
+}
+
+#[test]
+fn trace_records_path_and_kinds() {
+    let gb = rect(0.0, 0.0, 200.0, 100.0);
+    let btn = rect(10.0, 30.0, 80.0, 24.0);
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        trace::enable(ui.ctx());
+        widgets::group_box(ui, "gb_Map_Zoom", "Map Zoom", gb, |ui| {
+            widgets::button(ui, "btn_Zoom_In", "+", btn);
+        });
+    });
+    // The harness runs a couple of setup frames; drop them for one clean frame.
+    trace::take(&h.ctx);
+    h.run();
+    let entries = trace::take(&h.ctx);
+
+    assert_eq!(entries.len(), 2, "container then the button inside it");
+    assert_eq!(entries[0].name, "gb_Map_Zoom");
+    assert_eq!(entries[0].kind, Kind::Container);
+    assert_eq!(entries[0].text, "Map Zoom");
+    assert!(entries[0].path.is_empty());
+    assert_eq!(entries[1].name, "btn_Zoom_In");
+    assert_eq!(entries[1].kind, Kind::Text);
+    assert_eq!(entries[1].text, "+");
+    assert_eq!(entries[1].path, ["gb_Map_Zoom".to_owned()]);
+
+    // Entries are kept only until taken: a second take is empty.
+    assert!(trace::take(&h.ctx).is_empty());
+}
+
+#[test]
+fn trace_off_records_nothing() {
+    let gb = rect(0.0, 0.0, 200.0, 100.0);
+    let btn = rect(10.0, 30.0, 80.0, 24.0);
+    let h = egui_kittest::Harness::new_ui(move |ui| {
+        widgets::group_box(ui, "gb_Map_Zoom", "Map Zoom", gb, |ui| {
+            widgets::button(ui, "btn_Zoom_In", "+", btn);
+        });
+    });
+    assert!(!trace::is_enabled(&h.ctx));
+    assert!(trace::take(&h.ctx).is_empty());
+}
+
+#[test]
+fn widgets_stay_findable_by_label() {
+    let btn = rect(10.0, 10.0, 120.0, 24.0);
+    let clicked = Rc::new(RefCell::new(false));
+    let clicked_in = Rc::clone(&clicked);
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        let response = widgets::button(ui, "btn_Options", "&Options", btn);
+        *clicked_in.borrow_mut() |= response.clicked();
+    });
+
+    // The mnemonic '&' is stripped from the label egui_kittest sees.
+    h.get_by_label("Options");
+    h.get_by_label("Options").click();
+    h.run();
+    assert!(*clicked.borrow(), "the button should report clicked()");
+}
+
+#[test]
+fn tab_control_switches_pages() {
+    let tc = rect(0.0, 0.0, 400.0, 200.0);
+    let selected = Rc::new(RefCell::new(0usize));
+    let selected_in = Rc::clone(&selected);
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        trace::enable(ui.ctx());
+        widgets::tab_control(
+            ui,
+            "tab_control",
+            &[("tp_Map", "Map"), ("tp_News", "Latest News")],
+            &mut selected_in.borrow_mut(),
+            tc,
+        );
+    });
+
+    h.get_by_label("Latest News").click();
+    h.run();
+    assert_eq!(*selected.borrow(), 1);
+
+    // Both page texts are Text entries recorded under the tab control's name.
+    let entries = trace::take(&h.ctx);
+    let pages: Vec<&Entry> = entries
+        .iter()
+        .filter(|e| e.kind == Kind::Text && e.path == ["tab_control".to_owned()])
+        .collect();
+    assert!(
+        pages.iter().any(|e| e.name == "tp_Map" && e.text == "Map"),
+        "tp_Map page missing from {pages:?}"
+    );
+    assert!(
+        pages
+            .iter()
+            .any(|e| e.name == "tp_News" && e.text == "Latest News"),
+        "tp_News page missing from {pages:?}"
+    );
+}
+
+#[test]
+fn split_container_records_panels() {
+    let area = rect(0.0, 0.0, 1000.0, 600.0);
+    let lbl = rect(4.0, 4.0, 120.0, 20.0);
+    let mut distance = 300.0f32;
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        trace::enable(ui.ctx());
+        widgets::split_container(
+            ui,
+            "sc",
+            Orientation::Vertical,
+            &mut distance,
+            area,
+            |ui| {
+                widgets::label(ui, "lbl_Inside", "inside", lbl);
+            },
+            |_ui| {},
+        );
+    });
+    trace::take(&h.ctx);
+    h.run();
+    let entries = trace::take(&h.ctx);
+
+    let (panel1, panel2) = split(area, Orientation::Vertical, 300.0);
+
+    let sc = entries.iter().find(|e| e.name == "sc").expect("sc");
+    assert_eq!(sc.kind, Kind::Container);
+    assert!(sc.path.is_empty());
+    assert_rect(sc.rect, area);
+
+    let p1 = entries
+        .iter()
+        .find(|e| e.name == "sc.Panel1")
+        .expect("Panel1");
+    assert_eq!(p1.kind, Kind::Container);
+    assert_eq!(p1.path, ["sc".to_owned()]);
+    assert_rect(p1.rect, panel1);
+
+    let p2 = entries
+        .iter()
+        .find(|e| e.name == "sc.Panel2")
+        .expect("Panel2");
+    assert_eq!(p2.kind, Kind::Container);
+    assert_eq!(p2.path, ["sc".to_owned()]);
+    assert_rect(p2.rect, panel2);
+
+    let label = entries
+        .iter()
+        .find(|e| e.name == "lbl_Inside")
+        .expect("label inside Panel1");
+    assert_eq!(label.kind, Kind::Text);
+    assert_eq!(label.path, ["sc".to_owned(), "sc.Panel1".to_owned()]);
 }
