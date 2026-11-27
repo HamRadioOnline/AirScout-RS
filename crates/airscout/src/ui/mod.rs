@@ -3,6 +3,7 @@
 pub mod analysis;
 pub mod control;
 pub mod dialogs;
+pub mod forms;
 pub mod map;
 pub mod map_geom;
 pub mod map_track;
