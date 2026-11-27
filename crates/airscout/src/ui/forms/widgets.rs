@@ -104,21 +104,30 @@ pub fn group_box<R>(
 }
 
 /// A tab control: the `pages` (`(name, text)`) are selectable tabs along the
-/// top of `rect`; returns the rect below the tab strip for the page contents.
+/// top of `rect`; the active page's `body` runs in a child `Ui` scoped to the
+/// content rect below the tab strip (which wraps onto additional rows when the
+/// next header would pass `rect.max.x`).
 pub fn tab_control(
     ui: &mut egui::Ui,
     name: &str,
+    rect: Rect,
     pages: &[(&str, &str)],
     selected: &mut usize,
-    rect: Rect,
-) -> Rect {
+    body: impl FnOnce(&mut egui::Ui, usize),
+) {
     const TAB_HEIGHT: f32 = 24.0;
     trace::scope(ui, name, rect, |ui| {
         let mut x = rect.min.x;
+        let mut y = rect.min.y;
         for (i, (page_name, text)) in pages.iter().enumerate() {
             let display = strip_mnemonic(text);
             let width = tab_width(ui, &display);
-            let header = Rect::from_min_size(pos2(x, rect.min.y), vec2(width, TAB_HEIGHT));
+            if x > rect.min.x && x + width > rect.max.x {
+                // Wrap onto a new header row instead of overflowing.
+                x = rect.min.x;
+                y += TAB_HEIGHT;
+            }
+            let header = Rect::from_min_size(pos2(x, y), vec2(width, TAB_HEIGHT));
             trace::record(ui, page_name, Kind::Text, &display, header);
             let response = ui.put(header, egui::Button::selectable(*selected == i, display));
             if response.clicked() {
@@ -126,11 +135,20 @@ pub fn tab_control(
             }
             x += width;
         }
+        // Clamp so a control shorter than the tab strip never yields an inverted
+        // (negative-height) content rect.
+        let content_top = (y + TAB_HEIGHT).min(rect.max.y);
+        let content_rect = Rect::from_min_max(pos2(rect.min.x, content_top), rect.max);
+
+        // The active page is recorded as a container at `[.., name, page_name]`
+        // and its body runs in a rect-scoped child Ui of the content rect.
+        let active = *selected;
+        if let Some((page_name, _)) = pages.get(active) {
+            trace::scope(ui, page_name, content_rect, |ui| {
+                scoped(ui, content_rect, |ui| body(ui, active));
+            });
+        }
     });
-    // Clamp so a control shorter than the tab strip never yields an inverted
-    // (negative-height) content rect.
-    let content_top = (rect.min.y + TAB_HEIGHT).min(rect.max.y);
-    Rect::from_min_max(pos2(rect.min.x, content_top), rect.max)
 }
 
 /// A `SplitContainer`: splits `rect` into two panels at `*distance` and runs

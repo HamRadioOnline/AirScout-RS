@@ -259,9 +259,10 @@ fn tab_control_switches_pages() {
         widgets::tab_control(
             ui,
             "tab_control",
+            tc,
             &[("tp_Map", "Map"), ("tp_News", "Latest News")],
             &mut selected_in.borrow_mut(),
-            tc,
+            |_ui, _i| {},
         );
     });
 
@@ -402,8 +403,9 @@ fn tab_control_content_rect_clamps_short_control() {
     let content_in = Rc::clone(&content);
     let mut selected = 0usize;
     let mut h = egui_kittest::Harness::new_ui(move |ui| {
-        *content_in.borrow_mut() =
-            widgets::tab_control(ui, "tc", &[("tp_A", "A")], &mut selected, tc);
+        widgets::tab_control(ui, "tc", tc, &[("tp_A", "A")], &mut selected, |ui, _i| {
+            *content_in.borrow_mut() = ui.max_rect();
+        });
     });
     h.run();
     let r = *content.borrow();
@@ -411,6 +413,90 @@ fn tab_control_content_rect_clamps_short_control() {
     assert!(r.min.x <= r.max.x, "content rect must not invert: {r:?}");
     assert_close(r.min.y, tc.max.y);
     assert_close(r.max.y, tc.max.y);
+}
+
+#[test]
+fn tab_control_body_control_is_scoped_under_page() {
+    let tc = rect(0.0, 0.0, 400.0, 200.0);
+    let lbl = rect(10.0, 40.0, 80.0, 20.0);
+    let mut selected = 0usize;
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        trace::enable(ui.ctx());
+        widgets::tab_control(
+            ui,
+            "tc",
+            tc,
+            &[("tp_Map", "Map"), ("tp_News", "Latest News")],
+            &mut selected,
+            |ui, i| {
+                if i == 0 {
+                    widgets::label(ui, "lbl_Inside", "inside", lbl);
+                }
+            },
+        );
+    });
+    trace::take(&h.ctx);
+    h.run();
+    let entries = trace::take(&h.ctx);
+    let label = entries
+        .iter()
+        .find(|e| e.name == "lbl_Inside")
+        .expect("label inside the active page");
+    assert_eq!(label.kind, Kind::Text);
+    assert_eq!(label.path, ["tc".to_owned(), "tp_Map".to_owned()]);
+}
+
+#[test]
+fn tab_control_wraps_headers_within_rect() {
+    let tc = rect(0.0, 0.0, 160.0, 200.0);
+    let names: Vec<String> = (0..12).map(|i| format!("tp_{i}")).collect();
+    let labels: Vec<String> = (0..12).map(|i| format!("Page {i}")).collect();
+    let pages: Vec<(&str, &str)> = names
+        .iter()
+        .zip(labels.iter())
+        .map(|(n, l)| (n.as_str(), l.as_str()))
+        .collect();
+    let pages_len = pages.len();
+    let content = Rc::new(RefCell::new(Rect::NOTHING));
+    let content_in = Rc::clone(&content);
+    let mut selected = 0usize;
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        trace::enable(ui.ctx());
+        widgets::tab_control(ui, "tc", tc, &pages, &mut selected, |ui, _i| {
+            *content_in.borrow_mut() = ui.max_rect();
+        });
+    });
+    trace::take(&h.ctx);
+    h.run();
+    let entries = trace::take(&h.ctx);
+
+    let headers: Vec<Rect> = entries
+        .iter()
+        .filter(|e| e.kind == Kind::Text && e.path == ["tc".to_owned()])
+        .map(|e| e.rect)
+        .collect();
+    assert_eq!(headers.len(), pages_len);
+
+    for r in &headers {
+        assert!(
+            r.min.x >= tc.min.x - EPS && r.max.x <= tc.max.x + EPS,
+            "header {r:?} overflows {tc:?}"
+        );
+    }
+
+    let min_y = headers.iter().map(|r| r.min.y).fold(f32::MAX, f32::min);
+    let max_y = headers.iter().map(|r| r.min.y).fold(f32::MIN, f32::max);
+    assert!(
+        max_y - min_y > EPS,
+        "expected multiple header rows, got y {min_y}..{max_y}"
+    );
+
+    let last_bottom = headers.iter().map(|r| r.max.y).fold(f32::MIN, f32::max);
+    assert!(
+        content.borrow().min.y >= last_bottom - EPS,
+        "content {:?} starts above the last header row bottom {last_bottom}",
+        *content.borrow()
+    );
 }
 
 #[test]
