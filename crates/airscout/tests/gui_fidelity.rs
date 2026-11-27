@@ -10,7 +10,7 @@ mod gui_ref;
 
 use airscout::ui::forms::trace::{Entry, Kind};
 use eframe::egui::{pos2, vec2, Rect};
-use gui_ref::fidelity::{compare, Allow, Mismatch};
+use gui_ref::fidelity::{compare, trace_from_reference, Allow, Mismatch};
 use gui_ref::model::{Control, Window};
 
 fn rect(min_x: f32, min_y: f32, w: f32, h: f32) -> Rect {
@@ -56,6 +56,11 @@ fn control(
     }
 }
 
+fn docked(mut c: Control, dock: &str) -> Control {
+    c.dock = Some(dock.to_string());
+    c
+}
+
 /// The synthetic reference window used across most tests: a group box `gb`
 /// (labels `l1` at y 10, `l2` at y 30), a vertical split `sc` (distance 600 in
 /// 1000 width), and a top-docked label `ld`.
@@ -88,11 +93,10 @@ fn reference() -> Window {
             c.orientation = Some("Vertical".to_string());
             c
         },
-        {
-            let mut c = control("ld", "Label", "$this", 2, Some("D"), [0, 0], [100, 20]);
-            c.dock = Some("Top".to_string());
-            c
-        },
+        docked(
+            control("ld", "Label", "$this", 2, Some("D"), [0, 0], [100, 20]),
+            "Top",
+        ),
     ];
     w
 }
@@ -291,10 +295,439 @@ fn mnemonic_and_newlines_normalised() {
     w.controls = vec![
         control("s", "Button", "$this", 0, Some("&Save"), [0, 0], [80, 24]),
         control("m", "Label", "$this", 1, Some("a\r\nb"), [0, 30], [80, 40]),
+        control(
+            "amp",
+            "Label",
+            "$this",
+            2,
+            Some("Save && Exit"),
+            [0, 60],
+            [80, 20],
+        ),
+        control(
+            "pad",
+            "Label",
+            "$this",
+            3,
+            Some("   padded   "),
+            [0, 80],
+            [80, 20],
+        ),
     ];
     let t = vec![
         entry(&[], "s", Kind::Text, "Save", rect(0.0, 0.0, 80.0, 24.0)),
         entry(&[], "m", Kind::Text, "a\nb", rect(0.0, 30.0, 80.0, 40.0)),
+        entry(
+            &[],
+            "amp",
+            Kind::Text,
+            "Save & Exit",
+            rect(0.0, 60.0, 80.0, 20.0),
+        ),
+        entry(
+            &[],
+            "pad",
+            Kind::Text,
+            "padded",
+            rect(0.0, 80.0, 80.0, 20.0),
+        ),
     ];
     assert_eq!(compare(&w, &t, &[], ""), vec![]);
+}
+
+#[test]
+fn split_orientation_defaults_to_vertical_and_zero_extent_fails() {
+    // A SplitContainer with `orientation: None` (WinForms default `Vertical`)
+    // must be checked along its width, not silently skipped.
+    let mut r = Window::new("Split");
+    r.controls = vec![{
+        let mut c = control(
+            "sc",
+            "SplitContainer",
+            "$this",
+            0,
+            None,
+            [0, 0],
+            [1000, 600],
+        );
+        c.splitter_distance = Some(600);
+        c // orientation stays None
+    }];
+
+    // Panel1 half the width: ratio 0.5 instead of 0.6 → WrongSplit.
+    let t = vec![
+        entry(
+            &[],
+            "sc",
+            Kind::Container,
+            "",
+            rect(0.0, 0.0, 1000.0, 600.0),
+        ),
+        entry(
+            &["sc"],
+            "sc.Panel1",
+            Kind::Container,
+            "",
+            rect(0.0, 0.0, 500.0, 600.0),
+        ),
+        entry(
+            &["sc"],
+            "sc.Panel2",
+            Kind::Container,
+            "",
+            rect(504.0, 0.0, 496.0, 600.0),
+        ),
+    ];
+    assert_eq!(
+        compare(&r, &t, &[], ""),
+        vec![Mismatch::WrongSplit {
+            name: "sc".to_string(),
+            expected: 0.6,
+            got: 0.5,
+        }]
+    );
+
+    // A zero-width container has no ratio: report WrongSplit rather than let a
+    // NaN/Inf ratio silently pass.
+    let t = vec![
+        entry(&[], "sc", Kind::Container, "", rect(0.0, 0.0, 0.0, 600.0)),
+        entry(
+            &["sc"],
+            "sc.Panel1",
+            Kind::Container,
+            "",
+            rect(0.0, 0.0, 0.0, 600.0),
+        ),
+        entry(
+            &["sc"],
+            "sc.Panel2",
+            Kind::Container,
+            "",
+            rect(0.0, 0.0, 0.0, 600.0),
+        ),
+    ];
+    let got = compare(&r, &t, &[], "");
+    assert_eq!(got.len(), 1);
+    assert!(
+        matches!(&got[0], Mismatch::WrongSplit { name, expected, .. }
+        if name == "sc" && (*expected - 0.6).abs() < 1e-6)
+    );
+}
+
+#[test]
+fn tab_pages_ordered_by_index_with_header_and_body() {
+    // TabPages share location [4,22] and are declared in a different order than
+    // their index; both the tab-header `Text` entry and the page-body
+    // `Container` entry are present, and a control docked inside a page is
+    // checked against the page body.
+    let mut w = Window::new("Tabs");
+    w.client_size = Some([300, 200]);
+    w.controls = vec![
+        control("tc", "TabControl", "$this", 0, None, [0, 0], [300, 200]),
+        // Declared out of index order: tp_b (index 1) first, tp_a (index 0) next.
+        control("tp_b", "TabPage", "tc", 1, Some("B"), [4, 22], [292, 174]),
+        control("tp_a", "TabPage", "tc", 0, Some("A"), [4, 22], [292, 174]),
+        docked(
+            control("btn", "Button", "tp_a", 0, Some("Go"), [0, 151], [80, 23]),
+            "Bottom",
+        ),
+    ];
+
+    let t = vec![
+        entry(&[], "tc", Kind::Container, "", rect(0.0, 0.0, 300.0, 200.0)),
+        entry(&["tc"], "tp_a", Kind::Text, "A", rect(0.0, 0.0, 80.0, 24.0)),
+        entry(
+            &["tc"],
+            "tp_b",
+            Kind::Text,
+            "B",
+            rect(80.0, 0.0, 80.0, 24.0),
+        ),
+        entry(
+            &["tc"],
+            "tp_a",
+            Kind::Container,
+            "",
+            rect(0.0, 24.0, 300.0, 176.0),
+        ),
+        entry(
+            &["tc"],
+            "tp_b",
+            Kind::Container,
+            "",
+            rect(0.0, 24.0, 300.0, 176.0),
+        ),
+        entry(
+            &["tc", "tp_a"],
+            "btn",
+            Kind::Text,
+            "Go",
+            rect(0.0, 177.0, 300.0, 23.0),
+        ),
+    ];
+    assert_eq!(compare(&w, &t, &[], ""), vec![]);
+}
+
+#[test]
+fn status_labels_ordered_by_index_without_location() {
+    // ToolStripStatusLabels have no location; declared out of index order, the
+    // comparer must order them by index.
+    let mut w = Window::new("Status");
+    w.controls = vec![
+        control("ss", "StatusStrip", "$this", 0, None, [0, 0], [400, 24]),
+        control(
+            "tsl_2",
+            "ToolStripStatusLabel",
+            "ss",
+            2,
+            Some("Third"),
+            [0, 0],
+            [80, 20],
+        ),
+        control(
+            "tsl_0",
+            "ToolStripStatusLabel",
+            "ss",
+            0,
+            Some("First"),
+            [0, 0],
+            [80, 20],
+        ),
+        control(
+            "tsl_1",
+            "ToolStripStatusLabel",
+            "ss",
+            1,
+            Some("Second"),
+            [0, 0],
+            [80, 20],
+        ),
+    ];
+
+    let t = vec![
+        entry(&[], "ss", Kind::Container, "", rect(0.0, 0.0, 400.0, 24.0)),
+        entry(
+            &["ss"],
+            "tsl_0",
+            Kind::Text,
+            "First",
+            rect(0.0, 0.0, 80.0, 20.0),
+        ),
+        entry(
+            &["ss"],
+            "tsl_1",
+            Kind::Text,
+            "Second",
+            rect(80.0, 0.0, 80.0, 20.0),
+        ),
+        entry(
+            &["ss"],
+            "tsl_2",
+            Kind::Text,
+            "Third",
+            rect(160.0, 0.0, 80.0, 20.0),
+        ),
+    ];
+    assert_eq!(compare(&w, &t, &[], ""), vec![]);
+}
+
+#[test]
+fn stacked_bottom_docked_controls() {
+    // Two controls docked Bottom in the same parent stack in reverse index
+    // order (b2 at the very bottom, b1 above it); a faithful trace passes and a
+    // wrongly placed one fails.
+    let mut w = Window::new("Dock");
+    w.client_size = Some([200, 200]);
+    w.controls = vec![
+        control("p", "Panel", "$this", 0, None, [0, 0], [200, 200]),
+        docked(
+            control("b1", "Panel", "p", 0, None, [0, 160], [200, 20]),
+            "Bottom",
+        ),
+        docked(
+            control("b2", "Panel", "p", 1, None, [0, 180], [200, 20]),
+            "Bottom",
+        ),
+    ];
+
+    // Correct stacking: b2 (index 1) at the bottom, b1 (index 0) above it.
+    let t = vec![
+        entry(&[], "p", Kind::Container, "", rect(0.0, 0.0, 200.0, 200.0)),
+        entry(
+            &["p"],
+            "b2",
+            Kind::Container,
+            "",
+            rect(0.0, 180.0, 200.0, 20.0),
+        ),
+        entry(
+            &["p"],
+            "b1",
+            Kind::Container,
+            "",
+            rect(0.0, 160.0, 200.0, 20.0),
+        ),
+    ];
+    assert_eq!(compare(&w, &t, &[], ""), vec![]);
+
+    // b1 placed 60 pt away from where the stack expects it.
+    let t = vec![
+        entry(&[], "p", Kind::Container, "", rect(0.0, 0.0, 200.0, 200.0)),
+        entry(
+            &["p"],
+            "b2",
+            Kind::Container,
+            "",
+            rect(0.0, 180.0, 200.0, 20.0),
+        ),
+        entry(
+            &["p"],
+            "b1",
+            Kind::Container,
+            "",
+            rect(0.0, 100.0, 200.0, 20.0),
+        ),
+    ];
+    assert_eq!(
+        compare(&w, &t, &[], ""),
+        vec![Mismatch::WrongDockSide {
+            name: "b1".to_string(),
+            dock: "Bottom".to_string(),
+        }]
+    );
+}
+
+#[test]
+fn extras_in_empty_and_rust_only_containers() {
+    // An extra inside a reference container with no reference children, and one
+    // inside a Rust-only container, are both reported unless allowlisted.
+    let mut w = Window::new("Extras");
+    w.client_size = Some([300, 200]);
+    w.controls = vec![
+        control("tc", "TabControl", "$this", 0, None, [0, 0], [300, 200]),
+        // tp has no children: an empty reference container.
+        control("tp", "TabPage", "tc", 0, Some("Page"), [4, 22], [292, 174]),
+    ];
+
+    let t = vec![
+        entry(&[], "tc", Kind::Container, "", rect(0.0, 0.0, 300.0, 200.0)),
+        entry(
+            &["tc"],
+            "tp",
+            Kind::Text,
+            "Page",
+            rect(0.0, 0.0, 80.0, 24.0),
+        ),
+        // Extra inside the empty reference container.
+        entry(
+            &["tc", "tp"],
+            "x_in_tab",
+            Kind::Text,
+            "x",
+            rect(0.0, 24.0, 80.0, 20.0),
+        ),
+        // Rust-only menu strip (not in the reference) and an item inside it.
+        entry(
+            &[],
+            "menu",
+            Kind::Container,
+            "",
+            rect(0.0, 0.0, 300.0, 20.0),
+        ),
+        entry(
+            &["menu"],
+            "x_menu_item",
+            Kind::Text,
+            "Download",
+            rect(0.0, 0.0, 80.0, 20.0),
+        ),
+    ];
+
+    let mut got = compare(&w, &t, &[], "");
+    // The comparer reports extras per reference container (sorted) first, then
+    // Rust-only containers, so sort before asserting.
+    got.sort_by(|a, b| format!("{a:?}").cmp(&format!("{b:?}")));
+    assert_eq!(
+        got,
+        vec![
+            Mismatch::Extra {
+                name: "menu".to_string(),
+                container: "$this".to_string(),
+            },
+            Mismatch::Extra {
+                name: "x_in_tab".to_string(),
+                container: "tp".to_string(),
+            },
+            Mismatch::Extra {
+                name: "x_menu_item".to_string(),
+                container: "menu".to_string(),
+            },
+        ]
+    );
+
+    // Allowlisted: the empty-container and Rust-only extras are suppressed.
+    let allow = vec![
+        Allow {
+            name: "x_in_tab".to_string(),
+            what: "extra".to_string(),
+            reason: "test".to_string(),
+            deviation: "D-001".to_string(),
+        },
+        Allow {
+            name: "menu".to_string(),
+            what: "extra".to_string(),
+            reason: "test".to_string(),
+            deviation: "D-002".to_string(),
+        },
+        Allow {
+            name: "x_menu_item".to_string(),
+            what: "extra".to_string(),
+            reason: "test".to_string(),
+            deviation: "D-002".to_string(),
+        },
+    ];
+    let dev = "## D-001 a\n## D-002 b\n";
+    assert_eq!(compare(&w, &t, &allow, dev), vec![]);
+}
+
+#[test]
+fn moved_allowlisted_control_still_checks_text() {
+    // A control moved to another container (and allowlisted as `moved`) must
+    // still have its text verified.
+    let mut t = exact_trace();
+    let l1 = t.iter_mut().find(|e| e.name == "l1").unwrap();
+    l1.path = vec![]; // moved out of `gb`
+    l1.text = "a".to_string(); // and the wrong text
+
+    let allow = vec![Allow {
+        name: "l1".to_string(),
+        what: "moved".to_string(),
+        reason: "moved for testing".to_string(),
+        deviation: "D-001".to_string(),
+    }];
+    let dev = "## D-001 moved\n";
+    assert_eq!(
+        compare(&reference(), &t, &allow, dev),
+        vec![Mismatch::WrongText {
+            name: "l1".to_string(),
+            expected: "A".to_string(),
+            got: "a".to_string(),
+        }]
+    );
+}
+
+#[test]
+fn smoke_mapdlg_reference_renders_without_mismatch() {
+    // A trace built from the real MapDlg reference (containers as Container
+    // entries, checked controls as Text entries, split panels from
+    // geometry::split, docked children from geometry::dock_layout) must be
+    // accepted as a faithful rendering.
+    let reference = gui_ref::load("MapDlg");
+    let trace = trace_from_reference(&reference);
+    let mismatches = compare(&reference, &trace, &[], "");
+    assert!(
+        mismatches.is_empty(),
+        "MapDlg reference rendered {} mismatch(es): {mismatches:#?}",
+        mismatches.len()
+    );
 }

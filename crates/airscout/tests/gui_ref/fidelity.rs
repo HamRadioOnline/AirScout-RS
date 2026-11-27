@@ -9,9 +9,11 @@
 //! reported unless allowlisted against a known deviation.
 
 use super::model::{Control, Window};
-use airscout::ui::forms::trace::Entry;
+use airscout::ui::forms::geometry::{self, Dock, Orientation};
+use airscout::ui::forms::trace::{Entry, Kind};
+use eframe::egui::{pos2, vec2, Vec2};
 use serde::Deserialize;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::path::PathBuf;
 
 /// One approved difference in `docs/gui-reference/<Window>.allow.json`.
@@ -161,7 +163,7 @@ fn raw_mismatches(reference: &Window, trace: &[Entry]) -> Vec<Mismatch> {
         }
         let expected_path = chain(reference, &control.parent);
         let text = normalize(control.text.as_deref().unwrap_or(""));
-        match trace.iter().find(|e| e.name == control.name) {
+        match entry_by_name(trace, &control.name) {
             None => out.push(Mismatch::Missing {
                 name: control.name.clone(),
                 text,
@@ -173,7 +175,10 @@ fn raw_mismatches(reference: &Window, trace: &[Entry]) -> Vec<Mismatch> {
                         expected: expected_path,
                         got: entry.path.clone(),
                     });
-                } else if normalize(&entry.text) != text {
+                }
+                // Independent of the container check: a moved/allowlisted
+                // control's text is still verified.
+                if normalize_trace(&entry.text) != text {
                     out.push(Mismatch::WrongText {
                         name: control.name.clone(),
                         expected: control.text.clone().unwrap_or_default(),
@@ -184,7 +189,7 @@ fn raw_mismatches(reference: &Window, trace: &[Entry]) -> Vec<Mismatch> {
         }
     }
 
-    // Order and extras, per container.
+    // Order and extras, per reference container.
     let mut containers = reference
         .controls
         .iter()
@@ -193,11 +198,36 @@ fn raw_mismatches(reference: &Window, trace: &[Entry]) -> Vec<Mismatch> {
     containers.push("$this".to_string());
     containers.sort();
     containers.dedup();
-    for container in containers {
-        out.extend(container_mismatches(reference, trace, &container));
+    let covered: HashSet<Vec<String>> = containers.iter().map(|c| chain(reference, c)).collect();
+    for container in &containers {
+        out.extend(container_mismatches(reference, trace, container));
     }
 
-    // Dock sides.
+    // Rust-only extras inside reference containers with no reference children
+    // (e.g. an empty `TabPage`) or inside Rust-only containers (e.g. a menu
+    // strip): every distinct trace path not already covered by a reference
+    // container is scanned for extras under its innermost segment.
+    for e in trace {
+        if covered.contains(&e.path) {
+            continue;
+        }
+        if is_extra(reference, &e.name) {
+            let container = e
+                .path
+                .last()
+                .cloned()
+                .unwrap_or_else(|| "$this".to_string());
+            out.push(Mismatch::Extra {
+                name: e.name.clone(),
+                container,
+            });
+        }
+    }
+
+    // Dock sides, grouped per parent so stacked docking is verified in reverse
+    // index order against a shrinking `remaining` rect (mirroring WinForms
+    // reverse z-order docking in `geometry::dock_layout`).
+    let mut docked: BTreeMap<&str, Vec<&Control>> = BTreeMap::new();
     for control in &reference.controls {
         if !control.visible {
             continue;
@@ -208,45 +238,51 @@ fn raw_mismatches(reference: &Window, trace: &[Entry]) -> Vec<Mismatch> {
         if !DOCK_SIDES.contains(&dock) {
             continue;
         }
-        let Some(entry) = trace.iter().find(|e| e.name == control.name) else {
+        docked
+            .entry(control.parent.as_str())
+            .or_default()
+            .push(control);
+    }
+    for (parent, mut children) in docked {
+        let Some(mut remaining) = parent_rect(reference, trace, parent) else {
             continue;
         };
-        let Some(parent) = parent_rect(reference, trace, control) else {
-            continue;
-        };
-        if !touches(entry.rect, parent, dock) {
-            out.push(Mismatch::WrongDockSide {
-                name: control.name.clone(),
-                dock: dock.to_string(),
-            });
+        children.sort_by_key(|c| std::cmp::Reverse(c.index));
+        for child in children {
+            let Some(entry) = entry_by_name(trace, &child.name) else {
+                continue;
+            };
+            let dock = child.dock.as_deref().unwrap();
+            if !touches(entry.rect, remaining, dock) {
+                out.push(Mismatch::WrongDockSide {
+                    name: child.name.clone(),
+                    dock: dock.to_string(),
+                });
+            }
+            remaining = shrink(remaining, entry.rect, dock);
         }
     }
 
     // Split ratios.
     for control in &reference.controls {
-        if control.kind != "SplitContainer" {
+        if control.kind != "SplitContainer" || !control.visible {
             continue;
         }
-        let (Some(distance), Some(orientation), Some(size)) = (
-            control.splitter_distance,
-            control.orientation.as_deref(),
-            control.size,
-        ) else {
+        let orientation = control.orientation.as_deref().unwrap_or("Vertical");
+        let (Some(distance), Some(size)) = (control.splitter_distance, control.size) else {
             continue;
         };
-        let expected = split_ratio(distance, size, orientation);
-        let Some(expected) = expected else {
+        let Some(expected) = split_ratio(distance, size, orientation) else {
             continue;
         };
-        let sc = trace.iter().find(|e| e.name == control.name);
-        let panel1 = trace
-            .iter()
-            .find(|e| e.name == format!("{}.Panel1", control.name));
+        let sc = entry_by_name(trace, &control.name);
+        let panel1 = entry_by_name(trace, &format!("{}.Panel1", control.name));
         let (Some(sc), Some(panel1)) = (sc, panel1) else {
             continue;
         };
-        let got = panel1.rect.extent(orientation) / sc.rect.extent(orientation);
-        if (expected - got).abs() > SPLIT_TOLERANCE {
+        let extent = sc.rect.extent(orientation);
+        let got = panel1.rect.extent(orientation) / extent;
+        if extent <= 0.0 || (expected - got).abs() > SPLIT_TOLERANCE {
             out.push(Mismatch::WrongSplit {
                 name: control.name.clone(),
                 expected,
@@ -262,7 +298,9 @@ fn raw_mismatches(reference: &Window, trace: &[Entry]) -> Vec<Mismatch> {
 fn container_mismatches(reference: &Window, trace: &[Entry], container: &str) -> Vec<Mismatch> {
     let mut out = Vec::new();
 
-    // Reference children of this container, in geometry order (checked only).
+    // Reference children of this container, in geometry order (checked only),
+    // with ties broken by `index` so `TabPage`s (identical location) and
+    // null-location items order by declaration index.
     let mut expected = Vec::new();
     for c in &reference.controls {
         if c.parent == container && is_checked(c) {
@@ -270,21 +308,19 @@ fn container_mismatches(reference: &Window, trace: &[Entry], container: &str) ->
         }
     }
     expected.sort_by(|a, b| {
-        let (a, b) = (control_by_name(reference, a), control_by_name(reference, b));
-        cmp_geom(geometry_key(a), geometry_key(b))
+        let (ca, cb) = (control_by_name(reference, a), control_by_name(reference, b));
+        cmp_geom(geometry_key(ca), geometry_key(cb)).then_with(|| ca.index.cmp(&cb.index))
     });
     let expected_set: HashSet<&str> = expected.iter().map(|s| s.as_str()).collect();
 
-    // Drawn children of this container, in geometry order (checked names and
-    // extras only; other entries such as split containers are ignored).
+    // Drawn children of this container, deduplicated so a control recorded
+    // both as its header (`Kind::Text`) and body (`Kind::Container`) is counted
+    // once, then sorted by geometry.
     let container_path = chain(reference, container);
-    let mut got: Vec<&Entry> = trace
-        .iter()
-        .filter(|e| {
-            e.path == container_path
-                && (expected_set.contains(e.name.as_str()) || is_extra(reference, &e.name))
-        })
-        .collect();
+    let mut got: Vec<&Entry> = dedup_entries(trace.iter().filter(|e| {
+        e.path == container_path
+            && (expected_set.contains(e.name.as_str()) || is_extra(reference, &e.name))
+    }));
     got.sort_by(|a, b| {
         cmp_geom(
             ((a.rect.min.y / 10.0).round(), a.rect.min.x),
@@ -378,19 +414,24 @@ fn parent_name(reference: &Window, name: &str) -> String {
 /// The drawn rect a docked control must touch: its parent container's rect, or
 /// the form's client area for a top-level control (falling back to the bounding
 /// box of every entry when the reference records no client size).
-fn parent_rect(reference: &Window, trace: &[Entry], control: &Control) -> Option<Rect> {
-    if control.parent == "$this" {
+///
+/// A parent recorded both as its header and its body (a `TabPage`) resolves to
+/// the `Container` body rect, so docked controls are measured against the page
+/// body rather than the 24 pt tab header.
+fn parent_rect(reference: &Window, trace: &[Entry], parent: &str) -> Option<Rect> {
+    if parent == "$this" {
         if let Some([w, h]) = reference.client_size {
             return Some(Rect::from_min_size(
-                eframe::egui::pos2(0.0, 0.0),
-                eframe::egui::vec2(w as f32, h as f32),
+                pos2(0.0, 0.0),
+                vec2(w as f32, h as f32),
             ));
         }
         return bounding_rect(trace);
     }
     trace
         .iter()
-        .find(|e| e.name == control.parent)
+        .filter(|e| e.name == parent)
+        .max_by_key(|e| e.kind == Kind::Container)
         .map(|e| e.rect)
 }
 
@@ -403,6 +444,19 @@ fn touches(rect: Rect, parent: Rect, dock: &str) -> bool {
         "Right" => (rect.max.x - parent.max.x).abs() <= DOCK_TOLERANCE,
         _ => true,
     }
+}
+
+/// Shrink `remaining` along `dock` to the inner edge of a docked `child`,
+/// mirroring the reverse z-order stacking of `geometry::dock_layout`.
+fn shrink(mut remaining: Rect, child: Rect, dock: &str) -> Rect {
+    match dock {
+        "Top" => remaining.min.y = child.max.y,
+        "Bottom" => remaining.max.y = child.min.y,
+        "Left" => remaining.min.x = child.max.x,
+        "Right" => remaining.max.x = child.min.x,
+        _ => {}
+    }
+    remaining
 }
 
 /// The bounding box of every entry, or `None` when the trace is empty.
@@ -446,6 +500,40 @@ fn is_pseudo_panel(name: &str) -> bool {
     name.ends_with(".Panel1") || name.ends_with(".Panel2")
 }
 
+/// The trace entry that represents `name`'s drawn control, preferring the
+/// `Kind::Text` entry (its header/title) over a `Kind::Container` body: a
+/// `TabPage` is recorded once as its tab header (`Kind::Text`) and once as its
+/// scoped page body (`Kind::Container`).
+fn entry_by_name<'a>(trace: &'a [Entry], name: &str) -> Option<&'a Entry> {
+    trace
+        .iter()
+        .filter(|e| e.name == name)
+        .max_by_key(|e| e.kind == Kind::Text)
+}
+
+/// Keep one entry per `(path, name)`, preferring a `Kind::Text` entry (the
+/// drawn header/title) over a `Kind::Container` body, so a `TabPage` recorded
+/// both as its tab header and its scoped body is counted once.
+fn dedup_entries<'a>(entries: impl Iterator<Item = &'a Entry>) -> Vec<&'a Entry> {
+    let mut out: Vec<&'a Entry> = Vec::new();
+    for e in entries {
+        match out
+            .iter_mut()
+            .find(|x| x.name == e.name && x.path == e.path)
+        {
+            Some(existing) => {
+                let prefer = (e.kind == Kind::Text && existing.kind != Kind::Text)
+                    || (!e.text.is_empty() && existing.text.is_empty());
+                if prefer {
+                    *existing = e;
+                }
+            }
+            None => out.push(e),
+        }
+    }
+    out
+}
+
 fn control_by_name<'a>(reference: &'a Window, name: &str) -> &'a Control {
     reference
         .controls
@@ -476,8 +564,8 @@ fn is_subsequence(needles: &[String], haystack: &[String]) -> bool {
     j == needles.len()
 }
 
-/// Strip the WinForms mnemonic (`&&` is a literal `&`, a lone `&` is dropped)
-/// and normalise `\r\n` to `\n` before comparing text.
+/// Strip the WinForms mnemonic (`&&` is a literal `&`, a lone `&` is dropped),
+/// normalise `\r\n` to `\n`, and trim leading/trailing whitespace.
 fn normalize(text: &str) -> String {
     let text = text.replace("\r\n", "\n");
     let mut out = String::with_capacity(text.len());
@@ -492,7 +580,14 @@ fn normalize(text: &str) -> String {
             out.push(c);
         }
     }
-    out
+    out.trim().to_string()
+}
+
+/// Normalise a recorded trace string. The widget has already stripped the
+/// mnemonic, so only newlines and ends are normalised here (re-stripping would
+/// corrupt a literal `&` produced from a reference `&&`).
+fn normalize_trace(text: &str) -> String {
+    text.replace("\r\n", "\n").trim().to_string()
 }
 
 /// The set of `D-NNN` ids that appear as `## D-NNN …` headings in the log.
@@ -581,6 +676,205 @@ fn load_allow(window: &str) -> Vec<Allow> {
 fn load_deviations() -> String {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/gui-deviations.md");
     std::fs::read_to_string(&path).unwrap_or_default()
+}
+
+/// Build a faithful trace for `reference` — the entries a correct renderer of
+/// this window would record — using only the reference's own geometry:
+/// [`geometry::dock_layout`] for docked children, [`geometry::split`] for split
+/// panels, and [`geometry::designer_rect`] for the rest. Phase 2 reuses this to
+/// cross-check its own rendering against a real reference such as `MapDlg`.
+pub fn trace_from_reference(reference: &Window) -> Vec<Entry> {
+    let client = match reference.client_size {
+        Some([w, h]) => Rect::from_min_size(pos2(0.0, 0.0), vec2(w as f32, h as f32)),
+        None => Rect::from_min_size(pos2(0.0, 0.0), vec2(0.0, 0.0)),
+    };
+    let mut out = Vec::new();
+    layout(reference, "$this", client, &mut out);
+    out
+}
+
+/// Height of a `TabControl` header strip.
+const TAB_HEIGHT: f32 = 24.0;
+
+/// Width given to each tab header in the synthetic trace; only the left-to-right
+/// order matters, so a fixed width is enough.
+const TAB_HEADER_WIDTH: f32 = 80.0;
+
+/// Lay out and emit every control whose parent is `container`, inside `area`.
+fn layout(reference: &Window, container: &str, area: Rect, out: &mut Vec<Entry>) {
+    let mut children: Vec<&Control> = reference
+        .controls
+        .iter()
+        .filter(|c| c.parent == container)
+        .collect();
+    children.sort_by_key(|c| c.index);
+
+    // Docked children are laid out in one `dock_layout` pass (reverse index
+    // stacking); non-docked children use their designer location.
+    let docked: Vec<&Control> = children
+        .iter()
+        .copied()
+        .filter(|c| c.dock.is_some())
+        .collect();
+    let specs: Vec<(Dock, Vec2)> = docked
+        .iter()
+        .map(|c| (dock_of(c), control_size(c)))
+        .collect();
+    let mut dock_rects = geometry::dock_layout(area, &specs).into_iter();
+
+    for c in children {
+        let rect = if c.dock.is_some() {
+            dock_rects.next().unwrap_or(Rect::NOTHING)
+        } else {
+            geometry::designer_rect(area, c.location.unwrap_or([0, 0]), c.size.unwrap_or([0, 0]))
+        };
+        emit(reference, c, rect, out);
+    }
+}
+
+/// Emit the entries for a single control `c` at `rect` (and its children).
+fn emit(reference: &Window, c: &Control, rect: Rect, out: &mut Vec<Entry>) {
+    match c.kind.as_str() {
+        "SplitContainer" => emit_split_container(reference, c, rect, out),
+        "TabControl" => emit_tab_control(reference, c, rect, out),
+        "TabPage" => {
+            // The body is scoped around the page's children (the tab header was
+            // already emitted by the owning `TabControl`).
+            out.push(Entry {
+                path: entry_path(reference, c),
+                name: c.name.clone(),
+                kind: Kind::Container,
+                text: String::new(),
+                rect,
+            });
+            layout(reference, &c.name, rect, out);
+        }
+        "GroupBox" => {
+            // A group box records a single `Container` entry carrying its title.
+            out.push(Entry {
+                path: entry_path(reference, c),
+                name: c.name.clone(),
+                kind: Kind::Container,
+                text: normalize(c.text.as_deref().unwrap_or("")),
+                rect,
+            });
+            layout(reference, &c.name, rect, out);
+        }
+        _ => {
+            if has_children(reference, &c.name) {
+                out.push(Entry {
+                    path: entry_path(reference, c),
+                    name: c.name.clone(),
+                    kind: Kind::Container,
+                    text: normalize(c.text.as_deref().unwrap_or("")),
+                    rect,
+                });
+                layout(reference, &c.name, rect, out);
+            } else if is_checked(c) {
+                out.push(Entry {
+                    path: entry_path(reference, c),
+                    name: c.name.clone(),
+                    kind: Kind::Text,
+                    text: normalize(c.text.as_deref().unwrap_or("")),
+                    rect,
+                });
+            }
+        }
+    }
+}
+
+fn emit_split_container(reference: &Window, c: &Control, rect: Rect, out: &mut Vec<Entry>) {
+    out.push(Entry {
+        path: entry_path(reference, c),
+        name: c.name.clone(),
+        kind: Kind::Container,
+        text: String::new(),
+        rect,
+    });
+    let orientation = orientation_of(c);
+    let distance = c.splitter_distance.unwrap_or(0) as f32;
+    let (panel1, panel2) = geometry::split(rect, orientation, distance);
+    let panel1_name = format!("{}.Panel1", c.name);
+    let panel2_name = format!("{}.Panel2", c.name);
+    out.push(Entry {
+        path: chain(reference, &c.name),
+        name: panel1_name.clone(),
+        kind: Kind::Container,
+        text: String::new(),
+        rect: panel1,
+    });
+    layout(reference, &panel1_name, panel1, out);
+    out.push(Entry {
+        path: chain(reference, &c.name),
+        name: panel2_name.clone(),
+        kind: Kind::Container,
+        text: String::new(),
+        rect: panel2,
+    });
+    layout(reference, &panel2_name, panel2, out);
+}
+
+fn emit_tab_control(reference: &Window, c: &Control, rect: Rect, out: &mut Vec<Entry>) {
+    out.push(Entry {
+        path: entry_path(reference, c),
+        name: c.name.clone(),
+        kind: Kind::Container,
+        text: String::new(),
+        rect,
+    });
+    let content_top = (rect.min.y + TAB_HEIGHT).min(rect.max.y);
+    let content_rect = Rect::from_min_max(pos2(rect.min.x, content_top), rect.max);
+    let mut pages: Vec<&Control> = reference
+        .controls
+        .iter()
+        .filter(|p| p.parent == c.name)
+        .collect();
+    pages.sort_by_key(|p| p.index);
+    let mut x = rect.min.x;
+    for page in pages {
+        let header = Rect::from_min_size(pos2(x, rect.min.y), vec2(TAB_HEADER_WIDTH, TAB_HEIGHT));
+        out.push(Entry {
+            path: entry_path(reference, page),
+            name: page.name.clone(),
+            kind: Kind::Text,
+            text: normalize(page.text.as_deref().unwrap_or("")),
+            rect: header,
+        });
+        x += TAB_HEADER_WIDTH;
+        emit(reference, page, content_rect, out);
+    }
+}
+
+/// The trace path of a control: its parent's ancestor chain.
+fn entry_path(reference: &Window, control: &Control) -> Vec<String> {
+    chain(reference, &control.parent)
+}
+
+fn dock_of(control: &Control) -> Dock {
+    match control.dock.as_deref() {
+        Some("Top") => Dock::Top,
+        Some("Bottom") => Dock::Bottom,
+        Some("Left") => Dock::Left,
+        Some("Right") => Dock::Right,
+        Some("Fill") => Dock::Fill,
+        _ => Dock::None,
+    }
+}
+
+fn orientation_of(control: &Control) -> Orientation {
+    match control.orientation.as_deref() {
+        Some("Horizontal") => Orientation::Horizontal,
+        _ => Orientation::Vertical,
+    }
+}
+
+fn control_size(control: &Control) -> Vec2 {
+    let [w, h] = control.size.unwrap_or([0, 0]);
+    vec2(w as f32, h as f32)
+}
+
+fn has_children(reference: &Window, name: &str) -> bool {
+    reference.controls.iter().any(|c| c.parent == name)
 }
 
 /// The `Rect` type the trace entries carry.
