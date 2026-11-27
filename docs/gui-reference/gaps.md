@@ -120,23 +120,23 @@ Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
 | wp_GLOBE | WizardPage | GLOBE | Commit: wp_GLOBE_Commit, Enter: wp_GLOBE_Enter, Leave: wp_GLOBE_Leave | missing | No per-model download page in the wizard. |
 | lbl_GLOBE_Status | Label | Status |  | missing | No per-model download page in the wizard. |
 | label5 | Label | (G)lobal (L)and (O)ne-km (B)ase (E)levation Project |  | missing | No per-model download page in the wizard. |
-| cb_GLOBE_EnableCache | CheckBox | Keep downloaded elevation tiles in cache |  | missing | Elevation tiles are always cached; there is no toggle. |
+| cb_GLOBE_EnableCache | CheckBox | Keep downloaded elevation tiles in cache |  | missing | Raw zip-file cache (FileCacheEnabled) not ported; only a global download toggle. |
 | wp_SRTM3 | WizardPage | SRTM3 | Enter: wp_SRTM3_Enter, Leave: wp_SRTM3_Leave | missing | No per-model download page in the wizard. |
 | lbl_SRTM3_Status | Label | Status |  | missing | No per-model download page in the wizard. |
 | label21 | Label | (S)huttle (R)adar (T)opography (M)ission 3 arcsec |  | missing | No per-model download page in the wizard. |
-| cb_SRTM3_EnableCache | CheckBox | Keep downloaded elevation tiles in cache |  | missing | Elevation tiles are always cached; there is no toggle. |
+| cb_SRTM3_EnableCache | CheckBox | Keep downloaded elevation tiles in cache |  | missing | Raw zip-file cache (FileCacheEnabled) not ported; only a global download toggle. |
 | wp_SRTM1 | WizardPage | SRTM1 | Enter: wp_SRTM1_Enter, Leave: wp_SRTM1_Leave | missing | No per-model download page in the wizard. |
 | lbl_SRTM1_Status | Label | Status |  | missing | No per-model download page in the wizard. |
 | label7 | Label | (S)huttle (R)adar (T)opography (M)ission 1 arcsec |  | missing | No per-model download page in the wizard. |
-| cb_SRTM1_EnableCache | CheckBox | Keep downloaded elevation tiles in cache |  | missing | Elevation tiles are always cached; there is no toggle. |
+| cb_SRTM1_EnableCache | CheckBox | Keep downloaded elevation tiles in cache |  | missing | Raw zip-file cache (FileCacheEnabled) not ported; only a global download toggle. |
 | wp_ASTER3 | WizardPage | ASTER3 | Enter: wp_ASTER3_Enter, Leave: wp_ASTER3_Leave | missing | No per-model download page in the wizard. |
 | lbl_ASTER3_Status | Label | Status |  | missing | No per-model download page in the wizard. |
 | label23 | Label | (A)dvanced (S)paceborne (T)hermal (E)mission and (R)eflection 3 arcsec |  | missing | No per-model download page in the wizard. |
-| cb_ASTER3_EnableCache | CheckBox | Keep downloaded elevation tiles in cache |  | missing | Elevation tiles are always cached; there is no toggle. |
+| cb_ASTER3_EnableCache | CheckBox | Keep downloaded elevation tiles in cache |  | missing | Raw zip-file cache (FileCacheEnabled) not ported; only a global download toggle. |
 | wp_ASTER1 | WizardPage | ASTER1 | Enter: wp_ASTER1_Enter, Leave: wp_ASTER1_Leave | missing | No per-model download page in the wizard. |
 | lbl_ASTER1_Status | Label | Status |  | missing | No per-model download page in the wizard. |
 | label25 | Label | (A)dvanced (S)paceborne (T)hermal (E)mission and (R)eflection 1 arcsec |  | missing | No per-model download page in the wizard. |
-| cb_ASTER1_EnableCache | CheckBox | Keep downloaded elevation tiles in cache |  | missing | Elevation tiles are always cached; there is no toggle. |
+| cb_ASTER1_EnableCache | CheckBox | Keep downloaded elevation tiles in cache |  | missing | Raw zip-file cache (FileCacheEnabled) not ported; only a global download toggle. |
 | wp_UserDetails | WizardPage | User Details | Enter: wp_UserDetails_Enter | ok ui/dialogs/wizard.rs:255 |  |
 | label19 | Label | Update your user details here. Exact lat/long values are essential for calculation of the radio horizon. Start with entering a valid callsign into the callsign box. Use the lat/lon textboxes for numeric input or enter a valid Maidenhead Locator. Drag the needle on the map for exact location. Use mouse wheel to zoom in and out. |  | ok ui/dialogs/wizard.rs:273 |  |
 | label18 | Label | Map Zoom: |  | missing | The wizard user page has no map. |
@@ -330,8 +330,8 @@ Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
 | tp_Control_Single | TabPage | Single | Enter: tp_Control_Single_Enter | ok ui/control.rs:34 |  |
 | gb_Map_Info | GroupBox | Info |  | ok ui/control.rs:81 |  |
 | cb_DXCall | CallsignComboBox |  | DropDown: cb_DXCall_DropDown, SelectedIndexChanged: cb_DXCall_SelectedIndexChanged, TextChanged: cb_DXCall_TextChanged | missing | DropDown fills the watchlist; TextChanged/SelectedIndexChanged look the call up in the station DB and auto-fill locator/lat/lon/elevation. |
-| cb_DXLoc | LocatorComboBox |  | DropDown: cb_DXLoc_DropDown, SelectedIndexChanged: cb_DXLoc_SelectedIndexChanged, SelectionChangeCommitted: cb_DXLoc_SelectionChangeCommittedWithNoUpdate, TextChanged: cb_DXLoc_TextChanged | ok ui/control.rs:101 |  |
-| cb_MyLoc | LocatorComboBox |  | DropDown: cb_MyLoc_DropDown, SelectedIndexChanged: cb_MyLoc_SelectedIndexChanged, SelectionChangeCommitted: cb_MyLoc_SelectionChangeCommittedWithNoUpdate, TextChanged: cb_MyLoc_TextChanged | ok ui/control.rs:90 |  |
+| cb_DXLoc | LocatorComboBox |  | DropDown: cb_DXLoc_DropDown, SelectedIndexChanged: cb_DXLoc_SelectedIndexChanged, SelectionChangeCommitted: cb_DXLoc_SelectionChangeCommittedWithNoUpdate, TextChanged: cb_DXLoc_TextChanged | missing | DropDown lists all DB locators (LocationFindAll) and SelectedIndexChanged applies the GeoLocation; the Rust field is a plain TextEdit. |
+| cb_MyLoc | LocatorComboBox |  | DropDown: cb_MyLoc_DropDown, SelectedIndexChanged: cb_MyLoc_SelectedIndexChanged, SelectionChangeCommitted: cb_MyLoc_SelectionChangeCommittedWithNoUpdate, TextChanged: cb_MyLoc_TextChanged | missing | DropDown lists all DB locators (LocationFindAll) and SelectedIndexChanged applies the GeoLocation; the Rust field is a plain TextEdit. |
 | cb_MyCall | CallsignComboBox |  | DropDown: cb_MyCall_DropDown, SelectedIndexChanged: cb_MyCall_SelectedIndexChanged, TextChanged: cb_MyCall_TextChanged | missing | DropDown fills the MRU MyCalls; TextChanged/SelectedIndexChanged look the call up in the station DB and auto-fill locator/lat/lon/elevation. |
 | label6 | Label | QTF |  | ok ui/control.rs:106 |  |
 | label16 | Label | QRB |  | ok ui/control.rs:107 |  |
@@ -548,7 +548,7 @@ Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
 | btn_Options_DXMap | Button | Map | Click: btn_Options_DXMap_Click | ok ui/options/stations.rs:360 |  |
 | tb_Options_DXLon | DoubleTextBox |  | TextChanged: tb_Options_DXLon_TextChanged | ok ui/options/stations.rs:333 |  |
 | tb_Options_DXLat | DoubleTextBox |  | TextChanged: tb_Options_DXLat_TextChanged | ok ui/options/stations.rs:324 |  |
-| tb_Options_DXCall | CallsignTextBox |  | TextChanged: tb_Options_DXCall_TextChanged | ok ui/options/stations.rs:309 |  |
+| tb_Options_DXCall | CallsignTextBox |  | TextChanged: tb_Options_DXCall_TextChanged | missing | TextChanged looks the call up in the station DB (LocationFind) and auto-fills lat/lon/locator/elevation/QRV. |
 | label21 | Label | m asl |  | missing | Ground elevation above sea level (m asl) is absent; the Rust 'height [m]' field is antenna height above ground. |
 | label14 | Label | Lon: |  | ok ui/options/stations.rs:331 |  |
 | label15 | Label | Lat: |  | ok ui/options/stations.rs:322 |  |
@@ -560,7 +560,7 @@ Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
 | btn_Options_MyMap | Button | Map | Click: btn_Options_MyMap_Click | ok ui/options/stations.rs:360 |  |
 | tb_Options_MyLon | DoubleTextBox |  | TextChanged: tb_Options_MyLon_TextChanged | ok ui/options/stations.rs:333 |  |
 | tb_Options_MyLat | DoubleTextBox |  | TextChanged: tb_Options_MyLat_TextChanged | ok ui/options/stations.rs:324 |  |
-| tb_Options_MyCall | CallsignTextBox |  | TextChanged: tb_Options_MyCall_TextChanged | ok ui/options/stations.rs:309 |  |
+| tb_Options_MyCall | CallsignTextBox |  | TextChanged: tb_Options_MyCall_TextChanged | missing | TextChanged looks the call up in the station DB (LocationFind) and auto-fills lat/lon/locator/elevation/QRV. |
 | label18 | Label | m asl |  | missing | Ground elevation above sea level (m asl) is absent; the Rust 'height [m]' field is antenna height above ground. |
 | label40 | Label | Lon: |  | ok ui/options/stations.rs:331 |  |
 | label39 | Label | Lat: |  | ok ui/options/stations.rs:322 |  |
@@ -603,11 +603,11 @@ Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
 | lbl_Options_Elevation_SRTM3_Database_FileName | Label |  | Click: lbl_Options_Elevation_SRTM3_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
 | lbl_Options_Elevation_SRTM1_Database_FileName | Label |  | Click: lbl_Options_Elevation_SRTM1_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
 | lbl_Options_Map_Database_FileName | Label |  | Click: lbl_Options_Map_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
-| btn_Options_Map_Database_Maintenance | Button | Database Maintenance |  | ok ui/options/database.rs:108 |  |
-| label38 | Label | MB |  | ok ui/options/database.rs:106 |  |
-| tb_Options_Map_Database_FileSize | TextBox |  |  | ok ui/options/database.rs:106 |  |
-| label140 | Label | Size: |  | ok ui/options/database.rs:106 |  |
-| label142 | Label | Map Data: |  | ok ui/options/database.rs:104 |  |
+| btn_Options_Map_Database_Maintenance | Button | Database Maintenance |  | missing | No Map Data row/button; DbId::all() has no Map Data entry. |
+| label38 | Label | MB |  | missing | Map Data companion label; no Map Data row in DbId::all(). |
+| tb_Options_Map_Database_FileSize | TextBox |  |  | missing | No Map Data tile-cache size; DbId::all() has no Map Data entry. |
+| label140 | Label | Size: |  | missing | Map Data companion label; no Map Data row in DbId::all(). |
+| label142 | Label | Map Data: |  | missing | Map Data companion label; no Map Data row in DbId::all(). |
 | btn_Options_Elevation_SRTM1_Database_Maintenance | Button | Database Maintenance | Click: btn_Options_Elevation_SRTM1_Database_Maintenance_Click | ok ui/options/database.rs:108 |  |
 | btn_Options_Elevation_SRTM3_Database_Maintenance | Button | Database Maintenance | Click: btn_Options_Elevation_SRTM3_Database_Maintenance_Click | ok ui/options/database.rs:108 |  |
 | btn_Options_Elevation_GLOBE_Database_Maintenance | Button | Database Maintenance | Click: btn_Options_Elevation_GLOBE_Database_Maintenance_Click | ok ui/options/database.rs:108 |  |
@@ -874,15 +874,15 @@ Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
 | cb_Options_Map_Preloader_Enabled | CheckBox | Enable Map Preloading |  | ok ui/options/map.rs:56 |  |
 | ud_Options_Map_Opacity | PercentageControl |  |  | ok ui/options/map.rs:42 |  |
 | ud_Options_Map_Preloader_MaxZoom | NumericUpDown |  |  | ok ui/options/map.rs:63 |  |
-| cb_Options_Elevation_GLOBE_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Per-model tile cache not ported; one global download toggle. |
+| cb_Options_Elevation_GLOBE_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Raw zip-file cache (FileCacheEnabled) not ported; only a global download toggle. |
 | cb_Options_Elevation_GLOBE | CheckBox | Use GLOBE elevation data |  | ok ui/options/elevation.rs:30 |  |
-| cb_Options_Elevation_SRTM3_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Per-model tile cache not ported; one global download toggle. |
+| cb_Options_Elevation_SRTM3_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Raw zip-file cache (FileCacheEnabled) not ported; only a global download toggle. |
 | cb_Options_Elevation_SRTM3 | CheckBox | Use SRTM3 elevation data |  | ok ui/options/elevation.rs:30 |  |
-| cb_Options_Elevation_SRTM1_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Per-model tile cache not ported; one global download toggle. |
+| cb_Options_Elevation_SRTM1_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Raw zip-file cache (FileCacheEnabled) not ported; only a global download toggle. |
 | cb_Options_Elevation_SRTM1 | CheckBox | Use SRTM1 elevation data |  | ok ui/options/elevation.rs:30 |  |
-| cb_Options_Elevation_ASTER3_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Per-model tile cache not ported; one global download toggle. |
+| cb_Options_Elevation_ASTER3_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Raw zip-file cache (FileCacheEnabled) not ported; only a global download toggle. |
 | cb_Options_Elevation_ASTER3 | CheckBox | Use ASTER3 elevation data |  | ok ui/options/elevation.rs:30 |  |
-| cb_Options_Elevation_ASTER1_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Per-model tile cache not ported; one global download toggle. |
+| cb_Options_Elevation_ASTER1_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Raw zip-file cache (FileCacheEnabled) not ported; only a global download toggle. |
 | cb_Options_Elevation_ASTER1 | CheckBox | Use ASTER1 elevation data |  | ok ui/options/elevation.rs:30 |  |
 | tb_Options_Path_MaxLength | DoubleTextBox |  |  | ok ui/options/path.rs:47 |  |
 | cb_Options_Path_BestCaseElevation | CheckBox | Use best case elevation from grid square for both stations if precise location is unknown |  | ok ui/options/path.rs:42 |  |
@@ -1041,10 +1041,10 @@ Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
 | HorizonDlg | 28 | 26 | 2 | 0 |
 | LicenseDlg | 1 | 1 | 0 | 0 |
 | LocalObstructionsDlg | 4 | 4 | 0 | 0 |
-| MapDlg | 115 | 108 | 7 | 0 |
+| MapDlg | 115 | 106 | 9 | 0 |
 | MapProviderDlg | 2 | 0 | 2 | 0 |
 | MapStationDlg | 21 | 14 | 7 | 0 |
-| OptionsDlg | 541 | 403 | 135 | 3 |
+| OptionsDlg | 541 | 396 | 142 | 3 |
 | PercentageControl | 0 | 0 | 0 | 0 |
 | PlaneFeedDisclaimerDlg | 2 | 2 | 0 | 0 |
 | PlaneFeedSettingsDlg | 5 | 1 | 4 | 0 |

@@ -587,32 +587,12 @@ fn gap_row_md_with(control: &Control, rust: &str, notes: &str) -> String {
     )
 }
 
-/// One markdown row for `control` (Rust column `?`, Notes empty).
-fn gap_row_md(control: &Control) -> String {
-    gap_row_md_with(control, "?", "")
-}
+/// The markdown table header for every window section.
+const GAP_HEADER: &str =
+    "| Control | Kind | Text | C# handlers | Rust | Notes |\n|---|---|---|---|---|---|\n";
 
-/// Generates `docs/gui-reference/gaps.md`: one `## <Window>` section per
-/// reference window with a row per gap-inventory control, Rust column set to
-/// `?`. Never clobbers filled work: existing non-`?` Rust cells (and their Notes)
-/// are kept, missing rows/sections are generated, and the `## Summary` table is
-/// preserved verbatim.
-#[test]
-#[ignore]
-fn generate_gaps_skeleton() {
-    let path = gaps_path();
-    let existing = if path.exists() {
-        std::fs::read_to_string(&path).expect("read gaps.md")
-    } else {
-        String::new()
-    };
-    let filled = existing_filled(&existing);
-    let summary = existing
-        .find("\n## Summary")
-        .map(|i| existing[i + 1..].to_string())
-        .unwrap_or_default();
-
-    let mut out = String::new();
+/// The `gaps.md` header and path-convention preamble.
+fn render_header(out: &mut String) {
     out.push_str("# GUI 1:1 gap inventory\n\n");
     out.push_str(&format!(
         "Upstream pinned at `{PINNED_SHA}`. For every control of every upstream window:\n\
@@ -626,43 +606,85 @@ fn generate_gaps_skeleton() {
          Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.\n\
          `ui/options/cat.rs:41`); settings fields are under `as-settings/`.\n\n"
     ));
+}
 
+/// The `## Summary` bucket a Rust cell contributes to (`""` when unfilled).
+fn rust_status(rust: &str) -> &'static str {
+    if rust.starts_with("ok ") {
+        "ok"
+    } else if rust == "missing" {
+        "missing"
+    } else if rust.starts_with("not ported") {
+        "not ported"
+    } else {
+        ""
+    }
+}
+
+/// Render the full `gaps.md` body from the committed reference windows, merging
+/// filled Rust/Notes cells from `existing_body` (keyed by window + control) and
+/// recomputing the `## Summary` table from the emitted rows. Rows are never
+/// dropped: every gap-inventory control is emitted, and filled cells survive.
+fn render_gaps(existing_body: &str) -> String {
+    let filled = existing_filled(existing_body);
+
+    let mut out = String::new();
+    render_header(&mut out);
+
+    let mut summary: BTreeMap<String, (usize, usize, usize, usize)> = BTreeMap::new();
     for window in committed_windows() {
         let w = gui_ref::load(&window);
         out.push_str(&format!("## {window}\n\n"));
-        out.push_str("| Control | Kind | Text | C# handlers | Rust | Notes |\n");
-        out.push_str("|---|---|---|---|---|---|\n");
+        out.push_str(GAP_HEADER);
+        let mut counts = (0usize, 0usize, 0usize, 0usize);
         for control in &w.controls {
             if gap_row(control) {
-                match filled.get(&(window.clone(), control.name.clone())) {
-                    Some((rust, notes)) => {
-                        out.push_str(&gap_row_md_with(control, rust, notes));
-                    }
-                    None => out.push_str(&gap_row_md(control)),
-                }
+                let (rust, notes) = filled
+                    .get(&(window.clone(), control.name.clone()))
+                    .cloned()
+                    .unwrap_or_else(|| ("?".to_string(), String::new()));
+                out.push_str(&gap_row_md_with(control, &rust, &notes));
                 out.push('\n');
+                counts.0 += 1;
+                match rust_status(&rust) {
+                    "ok" => counts.1 += 1,
+                    "missing" => counts.2 += 1,
+                    "not ported" => counts.3 += 1,
+                    _ => {}
+                }
             }
         }
         out.push('\n');
+        summary.insert(window.clone(), counts);
     }
 
-    if !summary.is_empty() {
-        out.push_str(&summary);
-        if !summary.ends_with('\n') {
-            out.push('\n');
-        }
+    out.push_str("## Summary\n\n");
+    out.push_str("| Window | rows | ok | missing | not ported |\n");
+    out.push_str("|---|---|---|---|---|\n");
+    for (window, (rows, ok, missing, not_ported)) in &summary {
+        out.push_str(&format!(
+            "| {window} | {rows} | {ok} | {missing} | {not_ported} |\n"
+        ));
     }
-
-    std::fs::write(&path, out).expect("write gaps.md");
+    out
 }
 
-/// Whether a `gaps.md` body has at least one filled Rust cell (non-empty,
-/// non-`?`). The generator merges rather than clobbering such a file.
-fn has_filled_rust(body: &str) -> bool {
-    table_rows(body).iter().any(|row| {
-        let rust = rust_cell(row);
-        !rust.is_empty() && rust != "?"
-    })
+/// Generates `docs/gui-reference/gaps.md` by merging filled Rust/Notes cells
+/// from the existing file (if any) into a fresh render that recomputes the
+/// Summary table. Never clobbers filled work: existing non-`?` Rust cells (and
+/// their Notes) are kept, no row is dropped, and the `## Summary` table is
+/// recomputed from the rows.
+#[test]
+#[ignore]
+fn generate_gaps_skeleton() {
+    let path = gaps_path();
+    let existing = if path.exists() {
+        std::fs::read_to_string(&path).expect("read gaps.md")
+    } else {
+        String::new()
+    };
+    let out = render_gaps(&existing);
+    std::fs::write(&path, out).expect("write gaps.md");
 }
 
 /// The filled Rust cells of a `gaps.md` body, keyed by `(window, control name)`:
@@ -671,6 +693,9 @@ fn existing_filled(body: &str) -> BTreeMap<(String, String), (String, String)> {
     let mut out = BTreeMap::new();
     let mut section = String::new();
     for line in body.lines() {
+        if line == "## Summary" {
+            break;
+        }
         if let Some(name) = line.strip_prefix("## ") {
             section = name.trim().to_string();
             continue;
@@ -788,23 +813,69 @@ fn gaps_covers_every_reference_window() {
 
 // --- Fix round 1: one test per review finding. ---
 
-const GAP_HEADER: &str =
-    "| Control | Kind | Text | C# handlers | Rust | Notes |\n|---|---|---|---|---|---|\n";
-
-/// Finding (Important #1): a partially filled body is detected as filled, so the
-/// generator merges instead of clobbering it.
+/// Finding (R9): filled cells survive regeneration (merge, not clobber).
 #[test]
-fn has_filled_rust_detects_partial_and_full_fill() {
-    let partial = format!("## MapDlg\n\n{GAP_HEADER}| a | Label | x |  | ok ui/mod.rs:1 |  |\n| b | Label | y |  | ? |  |\n");
-    assert!(
-        has_filled_rust(&partial),
-        "a partially filled body has at least one filled cell"
+fn merge_preserves_filled_cells() {
+    // A filled Rust cell for a real reference control must survive regeneration.
+    let existing = format!(
+        "## MapDlg\n\n{GAP_HEADER}| cb_Band | ComboBox |  |  | ok ui/mod.rs:107 | band note |\n"
     );
+    let out = render_gaps(&existing);
+    let row = table_rows(&out)
+        .into_iter()
+        .find(|r| split_cells(r).get(1).map(|c| c.as_str()) == Some("cb_Band"))
+        .expect("cb_Band row present");
+    assert_eq!(rust_cell(&row), "ok ui/mod.rs:107");
+    assert_eq!(
+        split_cells(&row).get(6).map(|c| c.as_str()),
+        Some("band note")
+    );
+}
 
-    let unfilled = format!("## MapDlg\n\n{GAP_HEADER}| a | Label | x |  | ? |  |\n");
+/// Finding (R9): the `## Summary` table is recomputed from the rows, not
+/// preserved verbatim, so stale counts are replaced.
+#[test]
+fn summary_recomputed_after_merge() {
+    let existing = format!(
+        "## MapDlg\n\n{GAP_HEADER}| cb_Band | ComboBox |  |  | ok ui/mod.rs:107 |  |\n\n\
+         ## Summary\n\n\
+         | Window | rows | ok | missing | not ported |\n\
+         |---|---|---|---|---|\n\
+         | MapDlg | 999 | 999 | 0 | 0 |\n"
+    );
+    let out = render_gaps(&existing);
+
+    let mapdlg_rows = {
+        let mut in_map = false;
+        let mut n = 0;
+        for line in out.lines() {
+            if line == "## MapDlg" {
+                in_map = true;
+                continue;
+            }
+            if in_map && line.starts_with("## ") {
+                break;
+            }
+            if in_map
+                && line.starts_with('|')
+                && !line.starts_with("| Control ")
+                && !line.trim_start().starts_with("|---")
+            {
+                n += 1;
+            }
+        }
+        n
+    };
+
+    let summary = out[out.find("## Summary").expect("summary present")..].to_string();
     assert!(
-        !has_filled_rust(&unfilled),
-        "an all-`?` body has no filled cell"
+        !summary.contains("999"),
+        "stale summary count must be recomputed: {summary}"
+    );
+    // Only cb_Band is filled, so MapDlg's ok count is 1 and the rest are `?`.
+    assert!(
+        summary.contains(&format!("| MapDlg | {mapdlg_rows} | 1 | 0 | 0 |")),
+        "summary must reflect merged rows: {summary}"
     );
 }
 
