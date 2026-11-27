@@ -5,9 +5,13 @@ is there Rust logic behind it?
 
 Rows: every checked control (visible, non-empty text, kind in the fidelity list),
 every control with a subscribed C# event, and every settings field
-(`ComboBox`/`TextBox`/`NumericUpDown`/`CheckBox`). The `Rust` column is
+(`ComboBox`/`TextBox`/`NumericUpDown`/`CheckBox` and AirScout's `*TextBox`/
+`*UpDown`/`*ComboBox`/`PercentageControl` subclasses). The `Rust` column is
 `ok <path>:<line>` where the Rust code has the same effect, `missing` where it
 does not, or `not ported: <reason>` for the spec's non-goals only.
+
+Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
+`ui/options/cat.rs:41`); settings fields are under `as-settings/`.
 
 ## AircraftDatabaseMaintenanceDlg
 
@@ -145,7 +149,7 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | label9 | Label | Latitude: |  | ok ui/dialogs/wizard.rs:285 |  |
 | label8 | Label | Callsign: |  | ok ui/dialogs/wizard.rs:277 |  |
 | gm_Callsign | GMapControl |  | OnMarkerEnter: gm_Callsign_OnMarkerEnter, OnMapZoomChanged: gm_Callsign_OnMapZoomChanged, MouseDown: gm_Callsign_MouseDown, MouseMove: gm_Callsign_MouseMove, MouseUp: gm_Callsign_MouseUp | missing | The wizard user page has no map. |
-| tb_Callsign | CallsignTextBox |  | TextChanged: tb_Callsign_TextChanged | ok ui/dialogs/wizard.rs:278 |  |
+| tb_Callsign | CallsignTextBox |  | TextChanged: tb_Callsign_TextChanged | missing | TextChanged looks the callsign up in the station DB and auto-fills latitude/longitude. |
 | tb_Locator | LocatorTextBox |  | TextChanged: tb_Locator_TextChanged | ok ui/dialogs/wizard.rs:282 |  |
 | tb_Longitude | DoubleTextBox |  | TextChanged: tb_Longitude_TextChanged | ok ui/dialogs/wizard.rs:286 |  |
 | tb_Latitude | DoubleTextBox |  | TextChanged: tb_Latitude_TextChanged | ok ui/dialogs/wizard.rs:285 |  |
@@ -230,7 +234,7 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 
 | Control | Kind | Text | C# handlers | Rust | Notes |
 |---|---|---|---|---|---|
-| sc_Map | SplitContainer |  | SplitterMoved: sc_Map_SplitterMoved | ok ui/mod.rs:35 |  |
+| sc_Map | SplitContainer |  | SplitterMoved: sc_Map_SplitterMoved | ok ui/mod.rs:44 |  |
 | tc_Map | TabControl |  | Selecting: tc_Map_Selecting | missing | No Map/News tab: the map is always central and the News tab is dropped. |
 | tp_Map | TabPage | Map | Enter: tp_Map_Enter | ok ui/mod.rs:60 |  |
 | gm_Main | GMapControl |  | OnMarkerClick: gm_Main_OnMarkerClick, OnMarkerEnter: gm_Main_OnMarkerEnter, OnMarkerLeave: gm_Main_OnMarkerLeave, OnPositionChanged: gm_Main_OnPositionChanged, OnTileLoadComplete: gm_Main_OnTileLoadComplete, OnMapDrag: gm_Main_OnMapDrag, OnMapZoomChanged: gm_Main_OnMapZoomChanged, SizeChanged: gm_Main_SizeChanged, Paint: gm_Main_Paint, MouseDown: gm_Main_MouseDown, MouseMove: gm_Main_MouseMove, MouseUp: gm_Main_MouseUp | ok ui/map.rs:169 |  |
@@ -300,7 +304,7 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | tsl_Rot | ToolStripStatusLabel | ROT |  | ok ui/status.rs:59 |  |
 | tsl_CAT | ToolStripStatusLabel | CAT |  | ok ui/status.rs:61 |  |
 | btn_Map_PlayPause | Button |  | Click: btn_Map_PlayPause_Click | ok ui/control.rs:15 |  |
-| btn_Map_Save | Button | Save | Click: btn_Map_Save_Click | missing | Settings are saved automatically; there is no Save button. |
+| btn_Map_Save | Button | Save | Click: btn_Map_Save_Click | missing | Saves a window screenshot (CopyFromScreen) to `<Band>_<MyCall>_<DXCall>_<yyyyMMdd>_<HHmmss>.jpg` in the Tmp directory. |
 | btn_Options | Button | Options | Click: btn_Options_Click | ok ui/control.rs:25 |  |
 | cb_Band | ComboBox |  | SelectedIndexChanged: cb_Band_SelectedIndexChanged | ok ui/mod.rs:107 |  |
 | tb_QTF | TextBox |  |  | ok ui/control.rs:106 |  |
@@ -313,6 +317,8 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | btn_Zoom_Out | Button | - | Click: btn_Zoom_Out_Click | ok ui/control.rs:118 |  |
 | btn_Zoom_In | Button | + | Click: btn_Zoom_In_Click | ok ui/control.rs:115 |  |
 | gb_Map_Filter | GroupBox | Planes Filter |  | ok ui/control.rs:124 |  |
+| tb_Planes_Filter_Min_Alt | Int32TextBox |  |  | ok ui/control.rs:129 |  |
+| tb_Planes_Filter_Max_Circumcircle | Int32TextBox |  |  | ok ui/control.rs:132 |  |
 | label12 | Label | km |  | ok ui/control.rs:131 |  |
 | label13 | Label | Max. Circ.: |  | ok ui/control.rs:131 |  |
 | cb_Planes_Filter_Min_Cat | ComboBox |  | SelectedIndexChanged: cb_Planes_Filter_Min_Category_SelectedIndexChanged | ok ui/control.rs:134 |  |
@@ -323,10 +329,10 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | tc_Control | TabControl |  | DrawItem: tc_Control_DrawItem, Selecting: tc_Control_Selecting | ok ui/control.rs:33 |  |
 | tp_Control_Single | TabPage | Single | Enter: tp_Control_Single_Enter | ok ui/control.rs:34 |  |
 | gb_Map_Info | GroupBox | Info |  | ok ui/control.rs:81 |  |
-| cb_DXCall | CallsignComboBox |  | DropDown: cb_DXCall_DropDown, SelectedIndexChanged: cb_DXCall_SelectedIndexChanged, TextChanged: cb_DXCall_TextChanged | ok ui/control.rs:93 |  |
+| cb_DXCall | CallsignComboBox |  | DropDown: cb_DXCall_DropDown, SelectedIndexChanged: cb_DXCall_SelectedIndexChanged, TextChanged: cb_DXCall_TextChanged | missing | DropDown fills the watchlist; TextChanged/SelectedIndexChanged look the call up in the station DB and auto-fill locator/lat/lon/elevation. |
 | cb_DXLoc | LocatorComboBox |  | DropDown: cb_DXLoc_DropDown, SelectedIndexChanged: cb_DXLoc_SelectedIndexChanged, SelectionChangeCommitted: cb_DXLoc_SelectionChangeCommittedWithNoUpdate, TextChanged: cb_DXLoc_TextChanged | ok ui/control.rs:101 |  |
 | cb_MyLoc | LocatorComboBox |  | DropDown: cb_MyLoc_DropDown, SelectedIndexChanged: cb_MyLoc_SelectedIndexChanged, SelectionChangeCommitted: cb_MyLoc_SelectionChangeCommittedWithNoUpdate, TextChanged: cb_MyLoc_TextChanged | ok ui/control.rs:90 |  |
-| cb_MyCall | CallsignComboBox |  | DropDown: cb_MyCall_DropDown, SelectedIndexChanged: cb_MyCall_SelectedIndexChanged, TextChanged: cb_MyCall_TextChanged | ok ui/control.rs:86 |  |
+| cb_MyCall | CallsignComboBox |  | DropDown: cb_MyCall_DropDown, SelectedIndexChanged: cb_MyCall_SelectedIndexChanged, TextChanged: cb_MyCall_TextChanged | missing | DropDown fills the MRU MyCalls; TextChanged/SelectedIndexChanged look the call up in the station DB and auto-fill locator/lat/lon/elevation. |
 | label6 | Label | QTF |  | ok ui/control.rs:106 |  |
 | label16 | Label | QRB |  | ok ui/control.rs:107 |  |
 | label17 | Label | DX Loc |  | ok ui/control.rs:101 |  |
@@ -365,11 +371,13 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | label9 | Label | Latitude: |  | ok ui/dialogs/map_station.rs:245 |  |
 | label8 | Label | Callsign: |  | ok ui/dialogs/map_station.rs:222 |  |
 | gm_Callsign | GMapControl |  | OnMarkerEnter: gm_Callsign_OnMarkerEnter, OnMapZoomChanged: gm_Callsign_OnMapZoomChanged, MouseDown: gm_Callsign_MouseDown, MouseMove: gm_Callsign_MouseMove, MouseUp: gm_Callsign_MouseUp | ok ui/dialogs/map_station.rs:301 |  |
+| tb_Callsign | CallsignTextBox |  |  | ok ui/dialogs/map_station.rs:222 | Shown as a read-only heading. |
 | tb_Longitude | DoubleTextBox |  | TextChanged: tb_Longitude_TextChanged | ok ui/dialogs/map_station.rs:256 |  |
 | tb_Latitude | DoubleTextBox |  | TextChanged: tb_Latitude_TextChanged | ok ui/dialogs/map_station.rs:247 |  |
 | btn_Cancel | Button | Cancel | Click: btn_Cancel_Click | ok ui/dialogs/map_station.rs:233 |  |
 | btn_OK | Button | OK |  | ok ui/dialogs/map_station.rs:230 |  |
 | label1 | Label | Elevation: |  | missing | No elevation readout next to the station. |
+| tb_Elevation | DoubleTextBox |  |  | missing | No elevation readout next to the station. |
 | label2 | Label | m asl |  | missing | No elevation readout next to the station. |
 | tsl_Status | ToolStripStatusLabel | Status |  | ok ui/dialogs/map_station.rs:227 |  |
 | tb_Locator | LocatorTextBox |  | TextChanged: tb_Locator_TextChanged | ok ui/dialogs/map_station.rs:265 |  |
@@ -420,15 +428,15 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | label96 | Label | You can change the values here or in the Main Window. |  | ok ui/options/planes.rs:23 |  |
 | label94 | Label | km |  | missing | The max-circumcircle filter lives in the main window, not the Planes tab. |
 | label95 | Label | Maximal Path Midpoint Circumcircle (Filter AUTO = 0) (Filter OFF = -1): |  | missing | The max-circumcircle filter lives in the main window, not the Planes tab. |
-| label92 | Label | m |  | ok ui/options/planes.rs:27 |  |
-| label220 | Label | m |  | ok ui/options/planes.rs:28 |  |
-| label93 | Label | Minimal Altitude  (Filter OFF = 0: |  | ok ui/options/planes.rs:27 |  |
+| label92 | Label | m |  | missing | Live position filter; editable in the main window, not the Planes tab. |
+| label220 | Label | m |  | missing | Live position filter; editable in the main window, not the Planes tab. |
+| label93 | Label | Minimal Altitude  (Filter OFF = 0: |  | missing | Live position filter; editable in the main window, not the Planes tab. |
 | label91 | Label | Minimal Category: |  | ok ui/options/planes.rs:43 |  |
 | cb_Options_Planes_Filter_Min_Cat | ComboBox |  | SelectedIndexChanged: cb_Options_Planes_Filter_Min_Cat_SelectedIndexChanged | ok ui/options/planes.rs:43 |  |
 | groupBox6 | GroupBox | Plane Feeds |  | ok ui/options/planes.rs:77 |  |
-| btn_Options_PlaneFeed3_Default | Button | Default | Click: btn_Options_PlaneFeed3_Default_Click | missing | Feed defaults are restored inside the feed settings dialog. |
-| btn_Options_PlaneFeed2_Default | Button | Default | Click: btn_Options_PlaneFeed2_Default_Click | missing | Feed defaults are restored inside the feed settings dialog. |
-| btn_Options_PlaneFeed1_Default | Button | Default | Click: btn_Options_PlaneFeed1_Default_Click | missing | Feed defaults are restored inside the feed settings dialog. |
+| btn_Options_PlaneFeed3_Default | Button | Default | Click: btn_Options_PlaneFeed3_Default_Click | ok ui/dialogs/feed_settings.rs:147 | Resets the feed settings to defaults (in the feed settings dialog). |
+| btn_Options_PlaneFeed2_Default | Button | Default | Click: btn_Options_PlaneFeed2_Default_Click | ok ui/dialogs/feed_settings.rs:147 | Resets the feed settings to defaults (in the feed settings dialog). |
+| btn_Options_PlaneFeed1_Default | Button | Default | Click: btn_Options_PlaneFeed1_Default_Click | ok ui/dialogs/feed_settings.rs:147 | Resets the feed settings to defaults (in the feed settings dialog). |
 | btn_Options_PlaneFeed3_Export | Button | Export | Click: btn_Options_PlaneFeed3_Export_Click | missing | Feed file export is not ported. |
 | btn_Options_PlaneFeed2_Export | Button | Export | Click: btn_Options_PlaneFeed2_Export_Click | missing | Feed file export is not ported. |
 | btn_Options_PlaneFeed1_Export | Button | Export | Click: btn_Options_PlaneFeed1_Export_Click | missing | Feed file export is not ported. |
@@ -507,6 +515,9 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | groupBox46 | GroupBox | DX QRV |  | ok ui/options/stations.rs:373 |  |
 | lbl_Options_DXLastUpdated | Label | LastUpdated |  | missing | No QRV last-updated timestamp is shown. |
 | label128 | Label | Last Updated: |  | missing | No QRV last-updated timestamp is shown. |
+| tb_Options_DXPower | DoubleTextBox |  |  | ok ui/options/stations.rs:402 |  |
+| tb_Options_DXAntennaGain | DoubleTextBox |  |  | ok ui/options/stations.rs:401 |  |
+| tb_Options_DXAntennaHeight | DoubleTextBox |  |  | ok ui/options/stations.rs:400 |  |
 | label13 | Label | W |  | ok ui/options/stations.rs:402 |  |
 | label58 | Label | Power: |  | ok ui/options/stations.rs:391 |  |
 | label107 | Label | dbD |  | ok ui/options/stations.rs:390 |  |
@@ -520,14 +531,17 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | groupBox44 | GroupBox | My QRV |  | ok ui/options/stations.rs:373 |  |
 | lbl_Options_MyLastUpdated | Label | LastUpdated |  | missing | No QRV last-updated timestamp is shown. |
 | label127 | Label | Last Updated: |  | missing | No QRV last-updated timestamp is shown. |
+| tb_Options_MyPower | DoubleTextBox |  |  | ok ui/options/stations.rs:402 |  |
+| tb_Options_MyAntennaGain | DoubleTextBox |  |  | ok ui/options/stations.rs:401 |  |
+| tb_Options_MyAntennaHeight | DoubleTextBox |  |  | ok ui/options/stations.rs:400 |  |
 | label122 | Label | W |  | ok ui/options/stations.rs:402 |  |
 | label123 | Label | Power: |  | ok ui/options/stations.rs:391 |  |
 | label106 | Label | dbD |  | ok ui/options/stations.rs:390 |  |
 | label121 | Label | Antenna Gain: |  | ok ui/options/stations.rs:390 |  |
 | label28 | Label | m |  | ok ui/options/stations.rs:389 |  |
 | label41 | Label | Antenna Height: |  | ok ui/options/stations.rs:389 |  |
-| groupBox14 | GroupBox | Location Settings |  | ok ui/options/stations.rs:126 |  |
-| label48 | Label | Number of Locator digits (6 ..14): |  | ok ui/options/stations.rs:126 |  |
+| groupBox14 | GroupBox | Location Settings |  | missing | The Location Settings group (locator length/auto-length/subsquares) is not rendered. |
+| label48 | Label | Number of Locator digits (6 ..14): |  | missing | Locator digit count is fixed (LOCATOR_MAX_LENGTH); the 6..14 spinner is not ported. |
 | groupBox16 | GroupBox | Stations Information |  | ok ui/options/stations.rs:265 |  |
 | label52 | Label | Information from callsign database and other sources are used to prefill fields. You can overwrite and complete entries here. Your local database is updated. If you want to share the information with the AirScout community please use the "Send Update!" buttons. |  | ok ui/options/stations.rs:265 |  |
 | groupBox5 | GroupBox | DX Station |  | ok ui/options/stations.rs:305 |  |
@@ -535,24 +549,24 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | tb_Options_DXLon | DoubleTextBox |  | TextChanged: tb_Options_DXLon_TextChanged | ok ui/options/stations.rs:333 |  |
 | tb_Options_DXLat | DoubleTextBox |  | TextChanged: tb_Options_DXLat_TextChanged | ok ui/options/stations.rs:324 |  |
 | tb_Options_DXCall | CallsignTextBox |  | TextChanged: tb_Options_DXCall_TextChanged | ok ui/options/stations.rs:309 |  |
-| label21 | Label | m asl |  | ok ui/options/stations.rs:355 |  |
+| label21 | Label | m asl |  | missing | Ground elevation above sea level (m asl) is absent; the Rust 'height [m]' field is antenna height above ground. |
 | label14 | Label | Lon: |  | ok ui/options/stations.rs:331 |  |
 | label15 | Label | Lat: |  | ok ui/options/stations.rs:322 |  |
 | label42 | Label | Call: |  | ok ui/options/stations.rs:307 |  |
-| tb_Options_DXElevation | TextBox |  |  | ok ui/options/stations.rs:355 |  |
-| label43 | Label | Elevation: |  | ok ui/options/stations.rs:354 |  |
+| tb_Options_DXElevation | TextBox |  |  | missing | Ground elevation above sea level (m asl) is absent; the Rust 'height [m]' field is antenna height above ground. |
+| label43 | Label | Elevation: |  | missing | Ground elevation above sea level (m asl) is absent; the Rust 'height [m]' field is antenna height above ground. |
 | label44 | Label | Loc: |  | ok ui/options/stations.rs:342 |  |
 | groupBox4 | GroupBox | My Station |  | ok ui/options/stations.rs:305 |  |
 | btn_Options_MyMap | Button | Map | Click: btn_Options_MyMap_Click | ok ui/options/stations.rs:360 |  |
 | tb_Options_MyLon | DoubleTextBox |  | TextChanged: tb_Options_MyLon_TextChanged | ok ui/options/stations.rs:333 |  |
 | tb_Options_MyLat | DoubleTextBox |  | TextChanged: tb_Options_MyLat_TextChanged | ok ui/options/stations.rs:324 |  |
 | tb_Options_MyCall | CallsignTextBox |  | TextChanged: tb_Options_MyCall_TextChanged | ok ui/options/stations.rs:309 |  |
-| label18 | Label | m asl |  | ok ui/options/stations.rs:355 |  |
+| label18 | Label | m asl |  | missing | Ground elevation above sea level (m asl) is absent; the Rust 'height [m]' field is antenna height above ground. |
 | label40 | Label | Lon: |  | ok ui/options/stations.rs:331 |  |
 | label39 | Label | Lat: |  | ok ui/options/stations.rs:322 |  |
 | label10 | Label | Call: |  | ok ui/options/stations.rs:307 |  |
-| tb_Options_MyElevation | TextBox |  |  | ok ui/options/stations.rs:355 |  |
-| label12 | Label | Elevation: |  | ok ui/options/stations.rs:354 |  |
+| tb_Options_MyElevation | TextBox |  |  | missing | Ground elevation above sea level (m asl) is absent; the Rust 'height [m]' field is antenna height above ground. |
+| label12 | Label | Elevation: |  | missing | Ground elevation above sea level (m asl) is absent; the Rust 'height [m]' field is antenna height above ground. |
 | label11 | Label | Loc: |  | ok ui/options/stations.rs:342 |  |
 | tab_Options_General | TabPage | General | Enter: tab_Options_General_Enter, Validating: tab_Options_General_Validating | ok ui/options/general.rs:7 |  |
 | groupBox25 | GroupBox | Covered Area |  | ok ui/options/general.rs:8 |  |
@@ -580,15 +594,15 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | tb_Options_Elevation_ASTER3_Database_FileSize | TextBox |  |  | ok ui/options/database.rs:106 |  |
 | label202 | Label | Size: |  | ok ui/options/database.rs:106 |  |
 | label203 | Label | ASTER3 Elevation Data: |  | ok ui/options/database.rs:104 |  |
-| lbl_Options_ScoutBase_Database_FileName | Label |  | Click: lbl_Options_ScoutBase_Database_FileName_Click | ok ui/options/database.rs:105 |  |
-| lbl_Options_AirScout_Database_FileName | Label |  | Click: lbl_Options_AirScout_Database_FileName_Click | ok ui/options/database.rs:105 |  |
-| lbl_Options_Propagation_GLOBE_Database_FileName | Label |  | Click: lbl_Options_Propagation_GLOBE_Database_FileName_Click | ok ui/options/database.rs:105 |  |
-| lbl_Options_Propagation_SRTM3_Database_FileName | Label |  | Click: lbl_Options_Propagation_SRTM3_Database_FileName_Click | ok ui/options/database.rs:105 |  |
-| lbl_Options_Propagation_SRTM1_Database_FileName | Label |  | Click: lbl_Options_Propagation_SRTM1_Database_FileName_Click | ok ui/options/database.rs:105 |  |
-| lbl_Options_Elevation_GLOBE_Database_FileName | Label |  | Click: lbl_Options_Elevation_GLOBE_Database_FileName_Click | ok ui/options/database.rs:105 |  |
-| lbl_Options_Elevation_SRTM3_Database_FileName | Label |  | Click: lbl_Options_Elevation_SRTM3_Database_FileName_Click | ok ui/options/database.rs:105 |  |
-| lbl_Options_Elevation_SRTM1_Database_FileName | Label |  | Click: lbl_Options_Elevation_SRTM1_Database_FileName_Click | ok ui/options/database.rs:105 |  |
-| lbl_Options_Map_Database_FileName | Label |  | Click: lbl_Options_Map_Database_FileName_Click | ok ui/options/database.rs:105 |  |
+| lbl_Options_ScoutBase_Database_FileName | Label |  | Click: lbl_Options_ScoutBase_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
+| lbl_Options_AirScout_Database_FileName | Label |  | Click: lbl_Options_AirScout_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
+| lbl_Options_Propagation_GLOBE_Database_FileName | Label |  | Click: lbl_Options_Propagation_GLOBE_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
+| lbl_Options_Propagation_SRTM3_Database_FileName | Label |  | Click: lbl_Options_Propagation_SRTM3_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
+| lbl_Options_Propagation_SRTM1_Database_FileName | Label |  | Click: lbl_Options_Propagation_SRTM1_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
+| lbl_Options_Elevation_GLOBE_Database_FileName | Label |  | Click: lbl_Options_Elevation_GLOBE_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
+| lbl_Options_Elevation_SRTM3_Database_FileName | Label |  | Click: lbl_Options_Elevation_SRTM3_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
+| lbl_Options_Elevation_SRTM1_Database_FileName | Label |  | Click: lbl_Options_Elevation_SRTM1_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
+| lbl_Options_Map_Database_FileName | Label |  | Click: lbl_Options_Map_Database_FileName_Click | missing | Click opens the database directory in Explorer (Process.Start). |
 | btn_Options_Map_Database_Maintenance | Button | Database Maintenance |  | ok ui/options/database.rs:108 |  |
 | label38 | Label | MB |  | ok ui/options/database.rs:106 |  |
 | tb_Options_Map_Database_FileSize | TextBox |  |  | ok ui/options/database.rs:106 |  |
@@ -722,9 +736,9 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | rb_Options_Track_File_None | RadioButton | None | CheckedChanged: gb_Options_Track_File_CheckedChanged | ok ui/options/track.rs:81 |  |
 | rb_Options_Track_File_WSJT | RadioButton | WSJT Az/El | CheckedChanged: gb_Options_Track_File_CheckedChanged | ok ui/options/track.rs:83 |  |
 | rb_Options_Track_File_Native | RadioButton | Native Az/El | CheckedChanged: gb_Options_Track_File_CheckedChanged | ok ui/options/track.rs:82 |  |
-| gb_Options_Track_DDE | GroupBox | Rotator Control DDE Output |  | missing | DDE is Windows-only and is not shown on this platform. |
-| rb_Options_Track_DDE_None | RadioButton | None | CheckedChanged: gb_Options_Track_DDE_CheckedChanged | missing | DDE is Windows-only and is not shown on this platform. |
-| rb_Options_Track_DDE_HRD | RadioButton | Ham Radio Deluxe (HRDRotator.exe) | CheckedChanged: gb_Options_Track_DDE_CheckedChanged | missing | DDE is Windows-only and is not shown on this platform. |
+| gb_Options_Track_DDE | GroupBox | Rotator Control DDE Output |  | ok ui/options/track.rs:98 | (windows only) |
+| rb_Options_Track_DDE_None | RadioButton | None | CheckedChanged: gb_Options_Track_DDE_CheckedChanged | ok ui/options/track.rs:100 | (windows only) |
+| rb_Options_Track_DDE_HRD | RadioButton | Ham Radio Deluxe (HRDRotator.exe) | CheckedChanged: gb_Options_Track_DDE_CheckedChanged | ok ui/options/track.rs:101 | (windows only) |
 | gb_Options_Track_UDP | GroupBox | Rotator Control Network Output |  | ok ui/options/track.rs:61 |  |
 | label90 | Label | Port: |  | ok ui/options/track.rs:75 |  |
 | label89 | Label | Port: |  | ok ui/options/track.rs:68 |  |
@@ -742,25 +756,25 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | label185 | Label | ms |  | missing | No track refresh-rate field. |
 | label151 | Label | Track Refresh Rate: |  | missing | No track refresh-rate field. |
 | tab_Options_CAT | TabPage | CAT | Enter: tab_Options_CAT_Enter | ok ui/options/cat.rs:41 |  |
-| gb_Options_CAT_PortSettings | GroupBox | Serial Port Settings |  | missing | Serial port settings are shown only for the native hamlib engine. |
+| gb_Options_CAT_PortSettings | GroupBox | Serial Port Settings |  | ok ui/options/cat.rs:239 | (hamlib) |
 | ud_Options_CAT_Timeout | NumericUpDown |  | ValueChanged: ud_Options_CAT_Timeout_ValueChanged | ok ui/options/cat.rs:176 |  |
 | label149 | Label | Timeout [ms]: |  | ok ui/options/cat.rs:176 |  |
-| ud_Options_CAT_Poll | NumericUpDown |  | ValueChanged: ud_Options_CAT_Poll_ValueChanged | ok ui/options/cat.rs:49 |  |
-| label190 | Label | Poll Int [ms]: |  | ok ui/options/cat.rs:49 |  |
-| label191 | Label | DTR: |  | missing | Serial flow-control settings are shown only for the native hamlib engine. |
-| cb_Options_CAT_DTR | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_DTR_SelectedIndexChanged | missing | Serial flow-control settings are shown only for the native hamlib engine. |
-| label192 | Label | RTS: |  | missing | Serial flow-control settings are shown only for the native hamlib engine. |
-| cb_Options_CAT_RTS | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_RTS_SelectedIndexChanged | missing | Serial flow-control settings are shown only for the native hamlib engine. |
-| label193 | Label | Stopbits: |  | missing | Serial port settings are shown only for the native hamlib engine. |
-| cb_Options_CAT_StopBits | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_Stopbits_SelectedIndexChanged | missing | Serial port settings are shown only for the native hamlib engine. |
-| label194 | Label | Parity: |  | missing | Serial port settings are shown only for the native hamlib engine. |
-| cb_Options_CAT_Parity | ComboBox |  | SelectedIndexChanged: cb_Parity_SelectedIndexChanged | missing | Serial port settings are shown only for the native hamlib engine. |
-| label195 | Label | Databits: |  | missing | Serial port settings are shown only for the native hamlib engine. |
-| cb_Options_CAT_DataBits | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_DataBits_SelectedIndexChanged | missing | Serial port settings are shown only for the native hamlib engine. |
-| label196 | Label | Baudrate: |  | missing | Serial port settings are shown only for the native hamlib engine. |
-| cb_Options_CAT_Baudrate | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_Baudrate_SelectedIndexChanged | missing | Serial port settings are shown only for the native hamlib engine. |
-| label197 | Label | PortName: |  | missing | Serial port settings are shown only for the native hamlib engine. |
-| cb_Options_CAT_PortName | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_PortName_SelectedIndexChanged | missing | Serial port settings are shown only for the native hamlib engine. |
+| ud_Options_CAT_Poll | NumericUpDown |  | ValueChanged: ud_Options_CAT_Poll_ValueChanged | missing | CAT_Poll (poll interval) has no Rust field; only CAT_Update (refresh interval) exists. |
+| label190 | Label | Poll Int [ms]: |  | missing | CAT_Poll (poll interval) has no Rust field; only CAT_Update (refresh interval) exists. |
+| label191 | Label | DTR: |  | ok ui/options/cat.rs:252 | (hamlib) |
+| cb_Options_CAT_DTR | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_DTR_SelectedIndexChanged | ok ui/options/cat.rs:252 | (hamlib) |
+| label192 | Label | RTS: |  | ok ui/options/cat.rs:251 | (hamlib) |
+| cb_Options_CAT_RTS | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_RTS_SelectedIndexChanged | ok ui/options/cat.rs:251 | (hamlib) |
+| label193 | Label | Stopbits: |  | ok ui/options/cat.rs:250 | (hamlib) |
+| cb_Options_CAT_StopBits | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_Stopbits_SelectedIndexChanged | ok ui/options/cat.rs:250 | (hamlib) |
+| label194 | Label | Parity: |  | ok ui/options/cat.rs:249 | (hamlib) |
+| cb_Options_CAT_Parity | ComboBox |  | SelectedIndexChanged: cb_Parity_SelectedIndexChanged | ok ui/options/cat.rs:249 | (hamlib) |
+| label195 | Label | Databits: |  | ok ui/options/cat.rs:248 | (hamlib) |
+| cb_Options_CAT_DataBits | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_DataBits_SelectedIndexChanged | ok ui/options/cat.rs:248 | (hamlib) |
+| label196 | Label | Baudrate: |  | ok ui/options/cat.rs:246 | (hamlib) |
+| cb_Options_CAT_Baudrate | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_Baudrate_SelectedIndexChanged | ok ui/options/cat.rs:246 | (hamlib) |
+| label197 | Label | PortName: |  | ok ui/options/cat.rs:244 | (hamlib) |
+| cb_Options_CAT_PortName | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_PortName_SelectedIndexChanged | ok ui/options/cat.rs:244 | (hamlib) |
 | gb_Options_CAT_RigType | GroupBox | Rig Type |  | ok ui/options/cat.rs:88 |  |
 | label199 | Label | Select CAT-Engine  Rig-Type: |  | ok ui/options/cat.rs:92 |  |
 | cb_Options_CAT_Rig | ComboBox |  | SelectedIndexChanged: cb_Options_CAT_Rig_SelectedIndexChanged | ok ui/options/cat.rs:97 |  |
@@ -775,7 +789,7 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | btn_Options_Watchlist_Clear | Button | Clear Watchlist | Click: btn_Options_Watchlist_Clear_Click | ok ui/options/watchlist.rs:20 |  |
 | groupBox17 | GroupBox | General |  | ok ui/options/watchlist.rs:9 |  |
 | label31 | Label | Number of entrys to keep in list: |  | ok ui/options/watchlist.rs:10 |  |
-| btn_Options_Watchlist_Manage | Button | Manage Watchlist | Click: btn_Options_Watchlist_Manage_Click | ok ui/multi.rs:58 |  |
+| btn_Options_Watchlist_Manage | Button | Manage Watchlist | Click: btn_Options_Watchlist_Manage_Click | missing | No Manage button in the Options → Watchlist tab; the Manage button lives in the Multi tab (btn_Control_Manage_Watchlist → ui/multi.rs:58). |
 | tab_Options_Misc | TabPage | Misc. |  | missing | There is no Misc tab; its actions are not ported. |
 | groupBox35 | GroupBox | News Feed |  | missing | The news feed is not ported. |
 | label143 | Label | You can change various settings here or do miscellaneous actions here. Most of them were not directly related to one of the Options categories. |  | missing | The Misc tab is not ported. |
@@ -814,11 +828,15 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | cb_Options_Background_Calculations_Enable | CheckBox | Enable Background Pre-Calculations for paths/horizons etc. |  | ok ui/options/database.rs:55 |  |
 | ud_Options_Database_Update_Period | NumericUpDown |  |  | ok ui/options/database.rs:51 |  |
 | cb_Options_Locations_RestrictToAreaOfInterest | CheckBox | Restrict locations to current Area of Interest |  | missing | No Options field; the setting is applied to background location updates. |
-| cb_Options_SmallLettersForSubSquares | CheckBox | Small letters for subsquares: | CheckedChanged: cb_Options_SmallLettersForSubSquares_CheckedChanged | missing | No checkbox UI; the setting is fixed at its default. |
+| cb_Options_SmallLettersForSubSquares | CheckBox | Small letters for subsquares: | CheckedChanged: cb_Options_SmallLettersForSubSquares_CheckedChanged | missing | The setting is live (gui.locator_small_letters_for_subsquares, read by map.rs and stations.rs); only the Options checkbox is missing. |
 | cb_Options_Locator_AutoLength | CheckBox | Cut locator to significant digits automatically (Minimum 6 digits): |  | missing | Fixed at its C# default; no Options field. |
 | ud_Options_Locator_MaxLength | NumericUpDown |  |  | missing | Fixed at its C# default (10); no Options field. |
 | tb_Options_DXLoc | LocatorTextBox |  | TextChanged: tb_Options_DXLoc_TextChanged | ok ui/options/stations.rs:342 |  |
 | tb_Options_MyLoc | LocatorTextBox |  | TextChanged: tb_Options_MyLoc_TextChanged | ok ui/options/stations.rs:342 |  |
+| cb_Options_UserSupplied_MaxLat | DoubleTextBox |  |  | missing | The user-supplied overlay image is not ported. |
+| tb_Options_UserSupplied_MinLat | DoubleTextBox |  |  | missing | The user-supplied overlay image is not ported. |
+| cb_Options_UserSupplied_MaxLon | DoubleTextBox |  |  | missing | The user-supplied overlay image is not ported. |
+| cb_Options_UserSupplied_MinLon | DoubleTextBox |  |  | missing | The user-supplied overlay image is not ported. |
 | cb_Options_Gauges_Show | CheckBox | Show large Tracking Display on map |  | ok ui/options/track.rs:108 |  |
 | ud_Options_Gauges_Width | NumericUpDown |  |  | missing | Gauge width has no UI. |
 | cb_Options_Map_SmallMarkers | CheckBox | Use Small Markers for all Path Marks |  | missing | Small-marker toggle is not ported. |
@@ -829,6 +847,10 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | cb_Options_Locators_Activate | CheckBox | Locator Grid |  | missing | Locator-grid toggle is not ported. |
 | cb_Options_Watchlist_Activate | CheckBox | Watchlist Locations |  | missing | Watchlist-locations toggle is not ported. |
 | cb_Options_Airports_Activate | CheckBox | Airports |  | missing | Airports toggle is not ported. |
+| tb_Options_Planes_IconSize_S | Int32TextBox |  |  | ok ui/options/map.rs:47 |  |
+| tb_Options_Planes_IconSize_H | Int32TextBox |  |  | ok ui/options/map.rs:47 |  |
+| tb_Options_Planes_IconSize_M | Int32TextBox |  |  | ok ui/options/map.rs:47 |  |
+| tb_Options_Planes_IconSize_L | Int32TextBox |  |  | ok ui/options/map.rs:47 |  |
 | cb_Options_InfoWin_MyElevation | CheckBox | My Elevation |  | ok ui/options/planes.rs:67 |  |
 | cb_Options_InfoWin_MyAzimuth | CheckBox | My Azimuth |  | ok ui/options/planes.rs:66 |  |
 | cb_Options_InfoWin_MyDoppler | CheckBox | My Doppler |  | ok ui/options/planes.rs:68 |  |
@@ -848,7 +870,9 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | cb_Options_InfoWin_Track | CheckBox | Plane Track |  | ok ui/options/planes.rs:60 |  |
 | cb_Options_InfoWin_Type | CheckBox | Plane Type |  | ok ui/options/planes.rs:61 |  |
 | cb_Options_InfoWin_Speed | CheckBox | Plane Speed |  | ok ui/options/planes.rs:64 |  |
+| tb_Options_Map_Update_Interval | Int32TextBox |  |  | ok ui/options/map.rs:49 |  |
 | cb_Options_Map_Preloader_Enabled | CheckBox | Enable Map Preloading |  | ok ui/options/map.rs:56 |  |
+| ud_Options_Map_Opacity | PercentageControl |  |  | ok ui/options/map.rs:42 |  |
 | ud_Options_Map_Preloader_MaxZoom | NumericUpDown |  |  | ok ui/options/map.rs:63 |  |
 | cb_Options_Elevation_GLOBE_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Per-model tile cache not ported; one global download toggle. |
 | cb_Options_Elevation_GLOBE | CheckBox | Use GLOBE elevation data |  | ok ui/options/elevation.rs:30 |  |
@@ -860,28 +884,50 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | cb_Options_Elevation_ASTER3 | CheckBox | Use ASTER3 elevation data |  | ok ui/options/elevation.rs:30 |  |
 | cb_Options_Elevation_ASTER1_EnableCache | CheckBox | Keep downloaded elevation tiles |  | missing | Per-model tile cache not ported; one global download toggle. |
 | cb_Options_Elevation_ASTER1 | CheckBox | Use ASTER1 elevation data |  | ok ui/options/elevation.rs:30 |  |
+| tb_Options_Path_MaxLength | DoubleTextBox |  |  | ok ui/options/path.rs:47 |  |
 | cb_Options_Path_BestCaseElevation | CheckBox | Use best case elevation from grid square for both stations if precise location is unknown |  | ok ui/options/path.rs:42 |  |
 | cb_Options_TracePositions | CheckBox | Trace aircraft positions to files (Caution: this will cause a lot of files in <AirScout's Temp directory>/PlanePositions!) |  | missing | Tracing positions to files is not ported. |
+| int32TextBox1 | Int32TextBox |  |  | missing | No UI for the plausibility-check max-error distance. |
 | cb_Options_Planes_ExtendedPlausibilityCheck_Enabled | CheckBox | Enable extended plausibility check of aircraft info |  | missing | No Options field; the setting feeds the feed worker only. |
+| tb_Options_Planes_Interval | Int32TextBox |  |  | missing | No UI for the feed poll interval. |
 | cb_Options_Planes_LogErrors | CheckBox | Log errors as warnings to AirScout's main logfile |  | missing | Feed log-errors toggle is not ported. |
 | cb_Options_Planes_KeepHistory | CheckBox | Keep Plane Position History |  | missing | No Options field; the setting feeds the feed worker only. |
 | ud_Options_Planes_Position_DatabaseLifetime | NumericUpDown |  |  | missing | Keeping positions for N days is not ported. |
+| tb_Options_Planes_Positions_TTL | Int32TextBox |  |  | ok ui/options/planes.rs:31 |  |
+| tb_Options_Planes_MaxAlt | Int32TextBox |  |  | ok ui/options/planes.rs:28 |  |
+| tb_Options_Planes_MinAlt | Int32TextBox |  |  | ok ui/options/planes.rs:27 |  |
+| tb_Options_Planes_Filter_MinAlt | Int32TextBox |  |  | missing | Live position filter; editable in the main window, not the Planes tab. |
+| tb_Options_Planes_Filter_Max_Circumcircle | Int32TextBox |  |  | missing | Live position filter; editable in the main window, not the Planes tab. |
 | cb_Options_Alarm_Activate | CheckBox | Activate Alarm |  | ok ui/options/alarm.rs:9 |  |
 | cb_Options_Alarm_PlaySound | CheckBox | Play sound |  | ok ui/options/alarm.rs:19 |  |
+| tb_Options_Alarm_Distance | DoubleTextBox |  |  | ok ui/options/alarm.rs:14 |  |
+| tb_Options_Webserver_Port | Int32TextBox |  |  | ok ui/options/network.rs:34 |  |
 | cb_Options_Server_Activate | CheckBox | Activate Network Server |  | ok ui/options/network.rs:12 |  |
+| tb_Options_Server_Port | Int32TextBox |  |  | ok ui/options/network.rs:21 |  |
 | tb_Options_Server_Name | TextBox |  |  | ok ui/options/network.rs:24 |  |
+| tb_Options_SpecLab_UpdateInterval | DoubleTextBox |  |  | ok ui/options/speclab.rs:15 |  |
+| tb_Options_SpecLab_F2 | Int32TextBox |  |  | ok ui/options/speclab.rs:14 |  |
+| tb_Options_SpecLab_F1 | Int32TextBox |  |  | ok ui/options/speclab.rs:13 |  |
 | tb_SpecLab_FileName | TextBox |  |  | ok ui/options/speclab.rs:12 |  |
 | tb_SpecLab_URL | TextBox |  |  | ok ui/options/speclab.rs:11 |  |
 | cb_SpecLab_Enabled | CheckBox | Activate Connection |  | ok ui/options/speclab.rs:9 |  |
+| tb_Options_Track_UDP_AirScout_Port | Int32TextBox |  |  | ok ui/options/track.rs:76 |  |
+| tb_Options_Track_UDP_WinTest_Port | Int32TextBox |  |  | ok ui/options/track.rs:69 |  |
+| tb_Options_Track_Serial_Baudrate | Int32TextBox |  |  | ok ui/options/track.rs:94 |  |
 | tb_Options_Track_Serial_Port | TextBox |  |  | ok ui/options/track.rs:92 |  |
+| tb_Options_Track_Offset | Int32TextBox |  |  | ok ui/options/track.rs:54 |  |
+| int32TextBox2 | Int32TextBox |  |  | missing | No track refresh-rate field in the UI. |
 | cb_Options_Track_Activate | CheckBox | Activate Tracking | CheckedChanged: cb_Options_Track_Activate_CheckedChanged | ok ui/options/track.rs:50 |  |
 | cb_Options_Watchlist_SyncWithKST | CheckBox | Keep in sync with KST user list (needs wtKST > V3.1 and network functions activated): | CheckedChanged: cb_Options_Watchlist_SyncWithKST_CheckedChanged | ok ui/options/watchlist.rs:15 |  |
+| tb_Options_Watchlist_MaxCount | Int32TextBox |  |  | ok ui/options/watchlist.rs:10 |  |
 | cb_Options_NewsFeed | CheckBox | Notify me on news published by www.airscout.eu |  | missing | The news feed is not ported. |
 | label209 | Label | Filename: |  | missing | The user-supplied overlay is not ported. |
 | label210 | Label | Opacity: |  | missing | The user-supplied overlay is not ported. |
+| pc_Options_UserSupplied_Opacity | PercentageControl |  |  | missing | The user-supplied overlay image is not ported. |
 | tb_Options_UserSupplied_Filename | TextBox |  |  | missing | The user-supplied overlay is not ported. |
 | btn_Options_UserSupplied_Filename | Button | Select | Click: btn_Options_UserSupplied_Filename_Click | missing | The user-supplied overlay is not ported. |
 | labelMaxDelta | Label | Max. el. delta path to plane |  | ok ui/options/planes.rs:38 |  |
+| tb_Options_Planes_MaxDelta | Int32TextBox |  |  | ok ui/options/planes.rs:37 |  |
 
 ## PercentageControl
 
@@ -990,15 +1036,15 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | DatabaseMaintenanceDlg | 8 | 8 | 0 | 0 |
 | DeleteSingleStationDlg | 7 | 7 | 0 | 0 |
 | ElevationCopyrightDlg | 0 | 0 | 0 | 0 |
-| FirstRunWizard | 67 | 36 | 31 | 0 |
+| FirstRunWizard | 67 | 35 | 32 | 0 |
 | HistoryFromURLDlg | 12 | 11 | 1 | 0 |
 | HorizonDlg | 28 | 26 | 2 | 0 |
 | LicenseDlg | 1 | 1 | 0 | 0 |
 | LocalObstructionsDlg | 4 | 4 | 0 | 0 |
-| MapDlg | 113 | 108 | 5 | 0 |
+| MapDlg | 115 | 108 | 7 | 0 |
 | MapProviderDlg | 2 | 0 | 2 | 0 |
-| MapStationDlg | 19 | 13 | 6 | 0 |
-| OptionsDlg | 503 | 377 | 123 | 3 |
+| MapStationDlg | 21 | 14 | 7 | 0 |
+| OptionsDlg | 541 | 403 | 135 | 3 |
 | PercentageControl | 0 | 0 | 0 | 0 |
 | PlaneFeedDisclaimerDlg | 2 | 2 | 0 | 0 |
 | PlaneFeedSettingsDlg | 5 | 1 | 4 | 0 |
@@ -1008,4 +1054,3 @@ does not, or `not ported: <reason>` for the spec's non-goals only.
 | Splash | 1 | 0 | 1 | 0 |
 | TrafficDlg | 10 | 10 | 0 | 0 |
 | WatchlistDlg | 13 | 12 | 1 | 0 |
-

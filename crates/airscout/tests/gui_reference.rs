@@ -11,6 +11,7 @@ mod gui_ref;
 use gui_ref::designer::parse;
 use gui_ref::model::{Control, Event, Window};
 use gui_ref::resx::lookup;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -518,9 +519,30 @@ fn reference_has_no_unparsed_statements() {
 /// `as-settings` field edited from some UI (see the task brief).
 const SETTINGS_KINDS: &[&str] = &["ComboBox", "TextBox", "NumericUpDown", "CheckBox"];
 
+/// AirScout's C# settings-input subclasses (in addition to the four base kinds
+/// above). These appear in the Designer files as `ScoutBase.Core.*` controls and
+/// are settings fields even when the Designer subscribes no event (R7). `RichTextBox`
+/// is *not* a settings field: it is a standard read-only display control.
+const SUBCLASS_KINDS: &[&str] = &[
+    "Int32TextBox",
+    "DoubleTextBox",
+    "LongTextBox",
+    "CallsignTextBox",
+    "LocatorTextBox",
+    "CallsignComboBox",
+    "LocatorComboBox",
+    "PercentageControl",
+];
+
 /// Path of the gap inventory `docs/gui-reference/gaps.md`.
 fn gaps_path() -> PathBuf {
     reference_dir().join("gaps.md")
+}
+
+/// Whether `kind` is a settings-input control: one of the brief's four base
+/// kinds or an AirScout custom subclass used in the Designer files.
+fn is_settings_kind(kind: &str) -> bool {
+    SETTINGS_KINDS.contains(&kind) || SUBCLASS_KINDS.contains(&kind)
 }
 
 /// Whether `control` gets a row in the gap inventory: a checked control
@@ -528,7 +550,7 @@ fn gaps_path() -> PathBuf {
 fn gap_row(control: &Control) -> bool {
     gui_ref::fidelity::is_checked(control)
         || !control.events.is_empty()
-        || SETTINGS_KINDS.contains(&control.kind.as_str())
+        || is_settings_kind(&control.kind)
 }
 
 /// Escape a cell value for a markdown table: pipes are escaped and newlines
@@ -551,31 +573,44 @@ fn handlers_cell(control: &Control) -> String {
         .join(", ")
 }
 
-/// One markdown row for `control` (Rust column `?`, Notes empty).
-fn gap_row_md(control: &Control) -> String {
+/// One markdown row for `control` with the given Rust and Notes cells.
+fn gap_row_md_with(control: &Control, rust: &str, notes: &str) -> String {
     let text = gui_ref::fidelity::normalize(control.text.as_deref().unwrap_or(""));
     format!(
-        "| {} | {} | {} | {} | ? |  |",
+        "| {} | {} | {} | {} | {} | {} |",
         md_cell(&control.name),
         md_cell(&control.kind),
         md_cell(&text),
         md_cell(&handlers_cell(control)),
+        md_cell(rust),
+        md_cell(notes),
     )
+}
+
+/// One markdown row for `control` (Rust column `?`, Notes empty).
+fn gap_row_md(control: &Control) -> String {
+    gap_row_md_with(control, "?", "")
 }
 
 /// Generates `docs/gui-reference/gaps.md`: one `## <Window>` section per
 /// reference window with a row per gap-inventory control, Rust column set to
-/// `?`. Refuses to overwrite a file whose Rust column is already filled.
+/// `?`. Never clobbers filled work: existing non-`?` Rust cells (and their Notes)
+/// are kept, missing rows/sections are generated, and the `## Summary` table is
+/// preserved verbatim.
 #[test]
 #[ignore]
 fn generate_gaps_skeleton() {
     let path = gaps_path();
-    if path.exists() {
-        let existing = std::fs::read_to_string(&path).expect("read gaps.md");
-        if !has_unfilled_rust(&existing) {
-            panic!("gaps.md already has filled Rust values; refusing to overwrite");
-        }
-    }
+    let existing = if path.exists() {
+        std::fs::read_to_string(&path).expect("read gaps.md")
+    } else {
+        String::new()
+    };
+    let filled = existing_filled(&existing);
+    let summary = existing
+        .find("\n## Summary")
+        .map(|i| existing[i + 1..].to_string())
+        .unwrap_or_default();
 
     let mut out = String::new();
     out.push_str("# GUI 1:1 gap inventory\n\n");
@@ -584,9 +619,12 @@ fn generate_gaps_skeleton() {
          is there Rust logic behind it?\n\n\
          Rows: every checked control (visible, non-empty text, kind in the fidelity list),\n\
          every control with a subscribed C# event, and every settings field\n\
-         (`ComboBox`/`TextBox`/`NumericUpDown`/`CheckBox`). The `Rust` column is\n\
+         (`ComboBox`/`TextBox`/`NumericUpDown`/`CheckBox` and AirScout's `*TextBox`/\n\
+         `*UpDown`/`*ComboBox`/`PercentageControl` subclasses). The `Rust` column is\n\
          `ok <path>:<line>` where the Rust code has the same effect, `missing` where it\n\
-         does not, or `not ported: <reason>` for the spec's non-goals only.\n\n"
+         does not, or `not ported: <reason>` for the spec's non-goals only.\n\n\
+         Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.\n\
+         `ui/options/cat.rs:41`); settings fields are under `as-settings/`.\n\n"
     ));
 
     for window in committed_windows() {
@@ -596,26 +634,72 @@ fn generate_gaps_skeleton() {
         out.push_str("|---|---|---|---|---|---|\n");
         for control in &w.controls {
             if gap_row(control) {
-                out.push_str(&gap_row_md(control));
+                match filled.get(&(window.clone(), control.name.clone())) {
+                    Some((rust, notes)) => {
+                        out.push_str(&gap_row_md_with(control, rust, notes));
+                    }
+                    None => out.push_str(&gap_row_md(control)),
+                }
                 out.push('\n');
             }
         }
         out.push('\n');
     }
 
+    if !summary.is_empty() {
+        out.push_str(&summary);
+        if !summary.ends_with('\n') {
+            out.push('\n');
+        }
+    }
+
     std::fs::write(&path, out).expect("write gaps.md");
 }
 
-/// Whether a `gaps.md` body still has an unfilled Rust column (a `?` or empty
-/// cell). Used by the generator to avoid clobbering filled work.
-fn has_unfilled_rust(body: &str) -> bool {
-    for row in table_rows(body) {
-        let rust = rust_cell(&row);
-        if rust.is_empty() || rust == "?" {
-            return true;
+/// Whether a `gaps.md` body has at least one filled Rust cell (non-empty,
+/// non-`?`). The generator merges rather than clobbering such a file.
+fn has_filled_rust(body: &str) -> bool {
+    table_rows(body).iter().any(|row| {
+        let rust = rust_cell(row);
+        !rust.is_empty() && rust != "?"
+    })
+}
+
+/// The filled Rust cells of a `gaps.md` body, keyed by `(window, control name)`:
+/// the Rust and Notes cells of every row whose Rust cell is already filled.
+fn existing_filled(body: &str) -> BTreeMap<(String, String), (String, String)> {
+    let mut out = BTreeMap::new();
+    let mut section = String::new();
+    for line in body.lines() {
+        if let Some(name) = line.strip_prefix("## ") {
+            section = name.trim().to_string();
+            continue;
         }
+        if !line.starts_with('|') {
+            continue;
+        }
+        if line.starts_with("| Control ") || line.trim_start().starts_with("|---") {
+            continue;
+        }
+        let cells = split_cells(line);
+        let control = cells
+            .get(1)
+            .map(|c| c.trim().to_string())
+            .unwrap_or_default();
+        let rust = cells
+            .get(5)
+            .map(|c| c.trim().to_string())
+            .unwrap_or_default();
+        let notes = cells
+            .get(6)
+            .map(|c| c.trim().to_string())
+            .unwrap_or_default();
+        if rust.is_empty() || rust == "?" {
+            continue;
+        }
+        out.insert((section.clone(), control), (rust, notes));
     }
-    false
+    out
 }
 
 /// The `## <Window>` sections present in a `gaps.md` body.
@@ -626,22 +710,55 @@ fn section_windows(body: &str) -> Vec<String> {
         .collect()
 }
 
-/// The markdown table rows (excluding the header and separator rows) of `body`.
+/// The markdown table rows (excluding the header and separator rows) of `body`,
+/// stopping at the `## Summary` table (which is not a window section).
 fn table_rows(body: &str) -> Vec<String> {
-    body.lines()
-        .filter(|l| l.starts_with('|'))
-        .filter(|l| !l.starts_with("| Control ") && !l.trim_start().starts_with("|---"))
-        .map(|l| l.to_string())
-        .collect()
+    let mut rows = Vec::new();
+    for line in body.lines() {
+        if line == "## Summary" {
+            break;
+        }
+        if !line.starts_with('|') {
+            continue;
+        }
+        if line.starts_with("| Control ") || line.trim_start().starts_with("|---") {
+            continue;
+        }
+        rows.push(line.to_string());
+    }
+    rows
+}
+
+/// Split a markdown table row into cells on unescaped `|` only (`\|` is a
+/// literal pipe, kept as part of its cell).
+fn split_cells(row: &str) -> Vec<String> {
+    let mut cells = Vec::new();
+    let mut cur = String::new();
+    let mut chars = row.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' => match chars.next() {
+                Some('|') => cur.push('|'),
+                Some(other) => {
+                    cur.push('\\');
+                    cur.push(other);
+                }
+                None => cur.push('\\'),
+            },
+            '|' => {
+                cells.push(cur.trim().to_string());
+                cur = String::new();
+            }
+            _ => cur.push(c),
+        }
+    }
+    cells.push(cur.trim().to_string());
+    cells
 }
 
 /// The Rust cell (6th column) of a markdown table row.
 fn rust_cell(row: &str) -> String {
-    let cells: Vec<&str> = row.split('|').collect();
-    cells
-        .get(5)
-        .map(|c| c.trim().to_string())
-        .unwrap_or_default()
+    split_cells(row).get(5).cloned().unwrap_or_default()
 }
 
 /// Every window in `docs/gui-reference/*.json` has a `## <Window>` section and
@@ -667,4 +784,94 @@ fn gaps_covers_every_reference_window() {
             "unfilled Rust cell in row: {row}"
         );
     }
+}
+
+// --- Fix round 1: one test per review finding. ---
+
+const GAP_HEADER: &str =
+    "| Control | Kind | Text | C# handlers | Rust | Notes |\n|---|---|---|---|---|---|\n";
+
+/// Finding (Important #1): a partially filled body is detected as filled, so the
+/// generator merges instead of clobbering it.
+#[test]
+fn has_filled_rust_detects_partial_and_full_fill() {
+    let partial = format!("## MapDlg\n\n{GAP_HEADER}| a | Label | x |  | ok ui/mod.rs:1 |  |\n| b | Label | y |  | ? |  |\n");
+    assert!(
+        has_filled_rust(&partial),
+        "a partially filled body has at least one filled cell"
+    );
+
+    let unfilled = format!("## MapDlg\n\n{GAP_HEADER}| a | Label | x |  | ? |  |\n");
+    assert!(
+        !has_filled_rust(&unfilled),
+        "an all-`?` body has no filled cell"
+    );
+}
+
+/// Finding (Important #1): filled cells are read per `(window, control)` and `?`
+/// cells are ignored, so regeneration keeps existing work and only adds rows.
+#[test]
+fn existing_filled_reads_only_filled_cells() {
+    let body = format!(
+        "## MapDlg\n\n{GAP_HEADER}| cb_Band | ComboBox |  |  | ok ui/mod.rs:107 | a note |\n| tb_X | TextBox |  |  | ? |  |\n"
+    );
+    let m = existing_filled(&body);
+    assert_eq!(
+        m.get(&("MapDlg".to_string(), "cb_Band".to_string())),
+        Some(&("ok ui/mod.rs:107".to_string(), "a note".to_string()))
+    );
+    assert!(!m.contains_key(&("MapDlg".to_string(), "tb_X".to_string())));
+}
+
+/// Finding (Important #2): the Summary table is not a window section and must be
+/// excluded from `table_rows`.
+#[test]
+fn table_rows_stops_at_summary() {
+    let body = format!(
+        "## MapDlg\n\n{GAP_HEADER}| cb_Band | ComboBox |  |  | ok ui/mod.rs:107 |  |\n\n## Summary\n\n| Window | rows | ok | missing | not ported |\n|---|---|---|---|---|\n| MapDlg | 1 | 1 | 0 | 0 |\n"
+    );
+    let rows = table_rows(&body);
+    assert_eq!(rows.len(), 1);
+    assert!(rows[0].contains("cb_Band"));
+}
+
+/// Finding (Important #2): an escaped `\|` in a cell must not shift the Rust
+/// column when `rust_cell` splits the row.
+#[test]
+fn rust_cell_splits_on_unescaped_pipe_only() {
+    let row = "| label94 | Label | km \\| mi |  | ok ui/options/planes.rs:27 |  |";
+    assert_eq!(rust_cell(row), "ok ui/options/planes.rs:27");
+}
+
+/// Finding (Important #4, controller ruling R7): AirScout's custom
+/// settings-input subclasses get a row even with no subscribed event.
+#[test]
+fn settings_input_subclasses_are_settings_rows() {
+    let src = r#"
+        this.a = new ScoutBase.Core.Int32TextBox();
+        this.b = new ScoutBase.Core.DoubleTextBox();
+        this.c = new ScoutBase.Core.CallsignTextBox();
+        this.d = new ScoutBase.Core.PercentageControl();
+        this.e = new ScoutBase.Core.LongTextBox();
+        this.f = new ScoutBase.Core.LocatorComboBox();
+        this.Controls.Add(this.a);
+        this.Controls.Add(this.b);
+        this.Controls.Add(this.c);
+        this.Controls.Add(this.d);
+        this.Controls.Add(this.e);
+        this.Controls.Add(this.f);
+    "#;
+    let w = parse_src(src);
+    for name in ["a", "b", "c", "d", "e", "f"] {
+        assert!(gap_row(control(&w, name)), "{name} must be a settings row");
+    }
+    let w2 = parse_src("this.l = new System.Windows.Forms.Label(); this.Controls.Add(this.l);");
+    assert!(!gap_row(control(&w2, "l")));
+    // `RichTextBox` is a standard read-only display control, not a settings field.
+    let w3 =
+        parse_src("this.r = new System.Windows.Forms.RichTextBox(); this.Controls.Add(this.r);");
+    assert!(
+        !gap_row(control(&w3, "r")),
+        "RichTextBox must not be a settings row"
+    );
 }
