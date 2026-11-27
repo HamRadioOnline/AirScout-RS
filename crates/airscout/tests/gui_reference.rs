@@ -511,3 +511,160 @@ fn reference_has_no_unparsed_statements() {
         .expect("MapDlg has sc_Main");
     assert_eq!(sc_main.splitter_distance, Some(852));
 }
+
+// --- Task 6: gap inventory skeleton. ---
+
+/// Control kinds that are settings fields: their Rust counterpart is an
+/// `as-settings` field edited from some UI (see the task brief).
+const SETTINGS_KINDS: &[&str] = &["ComboBox", "TextBox", "NumericUpDown", "CheckBox"];
+
+/// Path of the gap inventory `docs/gui-reference/gaps.md`.
+fn gaps_path() -> PathBuf {
+    reference_dir().join("gaps.md")
+}
+
+/// Whether `control` gets a row in the gap inventory: a checked control
+/// (Task 5 rule), a control with a subscribed event, or a settings field.
+fn gap_row(control: &Control) -> bool {
+    gui_ref::fidelity::is_checked(control)
+        || !control.events.is_empty()
+        || SETTINGS_KINDS.contains(&control.kind.as_str())
+}
+
+/// Escape a cell value for a markdown table: pipes are escaped and newlines
+/// become spaces (a cell cannot contain a literal newline).
+fn md_cell(s: &str) -> String {
+    s.replace("\r\n", "\n")
+        .replace('\n', " ")
+        .replace('|', "\\|")
+        .trim()
+        .to_string()
+}
+
+/// The C# handlers column: `event: handler` pairs, comma-separated.
+fn handlers_cell(control: &Control) -> String {
+    control
+        .events
+        .iter()
+        .map(|e| format!("{}: {}", e.event, e.handler))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// One markdown row for `control` (Rust column `?`, Notes empty).
+fn gap_row_md(control: &Control) -> String {
+    let text = gui_ref::fidelity::normalize(control.text.as_deref().unwrap_or(""));
+    format!(
+        "| {} | {} | {} | {} | ? |  |",
+        md_cell(&control.name),
+        md_cell(&control.kind),
+        md_cell(&text),
+        md_cell(&handlers_cell(control)),
+    )
+}
+
+/// Generates `docs/gui-reference/gaps.md`: one `## <Window>` section per
+/// reference window with a row per gap-inventory control, Rust column set to
+/// `?`. Refuses to overwrite a file whose Rust column is already filled.
+#[test]
+#[ignore]
+fn generate_gaps_skeleton() {
+    let path = gaps_path();
+    if path.exists() {
+        let existing = std::fs::read_to_string(&path).expect("read gaps.md");
+        if !has_unfilled_rust(&existing) {
+            panic!("gaps.md already has filled Rust values; refusing to overwrite");
+        }
+    }
+
+    let mut out = String::new();
+    out.push_str("# GUI 1:1 gap inventory\n\n");
+    out.push_str(&format!(
+        "Upstream pinned at `{PINNED_SHA}`. For every control of every upstream window:\n\
+         is there Rust logic behind it?\n\n\
+         Rows: every checked control (visible, non-empty text, kind in the fidelity list),\n\
+         every control with a subscribed C# event, and every settings field\n\
+         (`ComboBox`/`TextBox`/`NumericUpDown`/`CheckBox`). The `Rust` column is\n\
+         `ok <path>:<line>` where the Rust code has the same effect, `missing` where it\n\
+         does not, or `not ported: <reason>` for the spec's non-goals only.\n\n"
+    ));
+
+    for window in committed_windows() {
+        let w = gui_ref::load(&window);
+        out.push_str(&format!("## {window}\n\n"));
+        out.push_str("| Control | Kind | Text | C# handlers | Rust | Notes |\n");
+        out.push_str("|---|---|---|---|---|---|\n");
+        for control in &w.controls {
+            if gap_row(control) {
+                out.push_str(&gap_row_md(control));
+                out.push('\n');
+            }
+        }
+        out.push('\n');
+    }
+
+    std::fs::write(&path, out).expect("write gaps.md");
+}
+
+/// Whether a `gaps.md` body still has an unfilled Rust column (a `?` or empty
+/// cell). Used by the generator to avoid clobbering filled work.
+fn has_unfilled_rust(body: &str) -> bool {
+    for row in table_rows(body) {
+        let rust = rust_cell(&row);
+        if rust.is_empty() || rust == "?" {
+            return true;
+        }
+    }
+    false
+}
+
+/// The `## <Window>` sections present in a `gaps.md` body.
+fn section_windows(body: &str) -> Vec<String> {
+    body.lines()
+        .filter_map(|l| l.strip_prefix("## ").map(|s| s.trim().to_string()))
+        .filter(|s| !s.is_empty() && s != "Summary")
+        .collect()
+}
+
+/// The markdown table rows (excluding the header and separator rows) of `body`.
+fn table_rows(body: &str) -> Vec<String> {
+    body.lines()
+        .filter(|l| l.starts_with('|'))
+        .filter(|l| !l.starts_with("| Control ") && !l.trim_start().starts_with("|---"))
+        .map(|l| l.to_string())
+        .collect()
+}
+
+/// The Rust cell (6th column) of a markdown table row.
+fn rust_cell(row: &str) -> String {
+    let cells: Vec<&str> = row.split('|').collect();
+    cells
+        .get(5)
+        .map(|c| c.trim().to_string())
+        .unwrap_or_default()
+}
+
+/// Every window in `docs/gui-reference/*.json` has a `## <Window>` section and
+/// no Rust cell is empty or `?`.
+#[test]
+fn gaps_covers_every_reference_window() {
+    let body =
+        std::fs::read_to_string(gaps_path()).expect("gaps.md exists (run generate_gaps_skeleton)");
+
+    let sections = section_windows(&body);
+    let windows = committed_windows();
+    for window in &windows {
+        assert!(
+            sections.iter().any(|s| s == window),
+            "gaps.md has no `## {window}` section"
+        );
+    }
+
+    for row in table_rows(&body) {
+        let rust = rust_cell(&row);
+        assert!(
+            !rust.is_empty() && rust != "?",
+            "unfilled Rust cell in row: {row}"
+        );
+    }
+}

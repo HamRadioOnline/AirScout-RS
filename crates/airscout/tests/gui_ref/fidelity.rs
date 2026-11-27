@@ -71,7 +71,7 @@ pub enum Mismatch {
 }
 
 /// Control kinds whose visible text must exist, 1:1, in the drawn window.
-const CHECKED_KINDS: &[&str] = &[
+pub const CHECKED_KINDS: &[&str] = &[
     "Label",
     "LinkLabel",
     "Button",
@@ -496,7 +496,7 @@ fn split_ratio(distance: i32, size: [i32; 2], orientation: &str) -> Option<f32> 
 }
 
 /// Whether `control` must exist, 1:1, in the drawn window.
-fn is_checked(control: &Control) -> bool {
+pub fn is_checked(control: &Control) -> bool {
     control.visible
         && CHECKED_KINDS.contains(&control.kind.as_str())
         && control
@@ -582,7 +582,7 @@ fn is_subsequence(needles: &[String], haystack: &[String]) -> bool {
 
 /// Strip the WinForms mnemonic (`&&` is a literal `&`, a lone `&` is dropped),
 /// normalise `\r\n` to `\n`, and trim leading/trailing whitespace.
-fn normalize(text: &str) -> String {
+pub fn normalize(text: &str) -> String {
     let text = text.replace("\r\n", "\n");
     let mut out = String::with_capacity(text.len());
     let mut chars = text.chars();
