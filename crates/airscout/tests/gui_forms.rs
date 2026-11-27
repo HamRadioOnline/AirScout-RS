@@ -452,4 +452,14 @@ fn split_container_drag_updates_distance_and_clamps() {
     h.drop_at(pos2(700.0, 200.0));
     h.run();
     assert_close(*distance.borrow(), area.width() - SPLITTER_WIDTH);
+
+    // Dragging far past the left edge clamps to 0.0.
+    let splitter_center = pos2(*distance.borrow() + SPLITTER_WIDTH * 0.5, 200.0);
+    h.drag_at(splitter_center);
+    h.run();
+    h.hover_at(pos2(-50.0, 200.0));
+    h.run();
+    h.drop_at(pos2(-50.0, 200.0));
+    h.run();
+    assert_close(*distance.borrow(), 0.0);
 }
