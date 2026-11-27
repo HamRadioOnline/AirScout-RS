@@ -333,14 +333,21 @@ fn container_mismatches(reference: &Window, trace: &[Entry], container: &str) ->
     // both as its header (`Kind::Text`) and body (`Kind::Container`) is counted
     // once, then sorted by geometry.
     let container_path = chain(reference, container);
+    // Reference `location`s are parent-relative, while trace rects are
+    // screen-absolute, so the order key must measure both from the container's
+    // own origin or a parent offset (e.g. `pa_Buttons` at y 285) shifts the
+    // 10 pt rounding cliffs between the two sides.
+    let origin_y = parent_rect(reference, trace, container)
+        .map(|r| r.min.y)
+        .unwrap_or(0.0);
     let mut got: Vec<&Entry> = dedup_entries(trace.iter().filter(|e| {
         e.path == container_path
             && (expected_set.contains(e.name.as_str()) || is_extra(reference, &e.name))
     }));
     got.sort_by(|a, b| {
         cmp_geom(
-            ((a.rect.min.y / 10.0).round(), a.rect.min.x),
-            ((b.rect.min.y / 10.0).round(), b.rect.min.x),
+            (((a.rect.min.y - origin_y) / 10.0).round(), a.rect.min.x),
+            (((b.rect.min.y - origin_y) / 10.0).round(), b.rect.min.x),
         )
     });
 

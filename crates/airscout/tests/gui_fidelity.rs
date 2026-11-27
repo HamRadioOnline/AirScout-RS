@@ -731,20 +731,38 @@ fn moved_allowlisted_control_still_checks_text() {
     );
 }
 
+/// The names of every committed window reference under `docs/gui-reference/`.
+fn committed_windows() -> Vec<String> {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/gui-reference");
+    let mut names: Vec<String> = std::fs::read_dir(&dir)
+        .unwrap_or_else(|e| panic!("gui-reference dir not readable: {e}"))
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("json"))
+        .filter_map(|p| p.file_stem().and_then(|s| s.to_str()).map(str::to_string))
+        .collect();
+    names.sort();
+    names
+}
+
 #[test]
-fn smoke_mapdlg_reference_renders_without_mismatch() {
-    // A trace built from the real MapDlg reference (containers as Container
+fn smoke_committed_references_render_without_mismatch() {
+    // A trace built from each committed reference (containers as Container
     // entries, checked controls as Text entries, split panels from
     // geometry::split, docked children from geometry::dock_layout) must be
-    // accepted as a faithful rendering.
-    let reference = gui_ref::load("MapDlg");
-    let trace = trace_from_reference(&reference);
-    let mismatches = compare(&reference, &trace, &[], "");
-    assert!(
-        mismatches.is_empty(),
-        "MapDlg reference rendered {} mismatch(es): {mismatches:#?}",
-        mismatches.len()
-    );
+    // accepted as a faithful rendering of that window.
+    let windows = committed_windows();
+    assert!(!windows.is_empty(), "no window references found");
+    for window in &windows {
+        let reference = gui_ref::load(window);
+        let trace = trace_from_reference(&reference);
+        let mismatches = compare(&reference, &trace, &[], "");
+        assert!(
+            mismatches.is_empty(),
+            "{window} reference rendered {} mismatch(es): {mismatches:#?}",
+            mismatches.len()
+        );
+    }
 }
 
 #[test]
