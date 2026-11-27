@@ -6,6 +6,7 @@
 #![allow(dead_code)]
 
 pub mod designer;
+pub mod fidelity;
 pub mod model;
 pub mod resx;
 
