@@ -443,6 +443,14 @@ fn parent_name(reference: &Window, name: &str) -> String {
 /// body rather than the 24 pt tab header.
 fn parent_rect(reference: &Window, trace: &[Entry], parent: &str) -> Option<Rect> {
     if parent == "$this" {
+        // A recorded window rect (offset by a menu bar, say) takes precedence
+        // over the reference client size, which assumes a (0,0) origin.
+        if let Some(entry) = trace
+            .iter()
+            .find(|e| e.name == "$this" && e.kind == Kind::Container)
+        {
+            return Some(entry.rect);
+        }
         if let Some([w, h]) = reference.client_size {
             return Some(Rect::from_min_size(
                 pos2(0.0, 0.0),
@@ -515,7 +523,7 @@ pub fn is_checked(control: &Control) -> bool {
 
 /// Whether `name` is a Rust-only control absent from the reference.
 fn is_extra(reference: &Window, name: &str) -> bool {
-    !is_pseudo_panel(name) && !reference.controls.iter().any(|c| c.name == name)
+    name != "$this" && !is_pseudo_panel(name) && !reference.controls.iter().any(|c| c.name == name)
 }
 
 /// Whether `name` is a split-container pseudo-panel (`sc.Panel1` / `sc.Panel2`).

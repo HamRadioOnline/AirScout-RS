@@ -76,6 +76,13 @@ pub fn record(ui: &egui::Ui, name: &str, kind: Kind, text: &str, rect: Rect) {
     });
 }
 
+/// Record the window rect as a `"$this"` container without pushing it onto the
+/// path stack, so top-level docked controls can be measured against the actual
+/// window rect rather than the reference's assumed `(0,0)+client_size`.
+pub fn record_window(ui: &egui::Ui, rect: Rect) {
+    record(ui, "$this", Kind::Container, "", rect);
+}
+
 /// Record a `Container` and run `f` with `name` pushed onto the trace path.
 ///
 /// Nested calls nest the path, and the path is restored afterwards. A no-op

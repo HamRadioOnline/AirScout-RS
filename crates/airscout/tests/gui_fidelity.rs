@@ -830,6 +830,50 @@ fn statusstrip_default_bottom_dock_shrinks_parent() {
 }
 
 #[test]
+fn top_level_dock_measured_from_recorded_window_rect() {
+    // A window drawn below a 24 pt menu bar (offset from (0,0)) records its
+    // client rect as `"$this"`. A top-docked control must be measured against
+    // that recorded rect, not the reference's assumed (0,0)+client_size.
+    let mut w = Window::new("Offset");
+    w.client_size = Some([300, 200]);
+    w.controls = vec![docked(
+        control("ld", "Label", "$this", 0, Some("D"), [0, 0], [300, 20]),
+        "Top",
+    )];
+
+    let t = vec![
+        entry(
+            &[],
+            "$this",
+            Kind::Container,
+            "",
+            rect(0.0, 24.0, 300.0, 200.0),
+        ),
+        entry(&[], "ld", Kind::Text, "D", rect(0.0, 24.0, 300.0, 20.0)),
+    ];
+    assert_eq!(compare(&w, &t, &[], ""), vec![]);
+
+    // A label 4 pt below the recorded window top still fails the dock check.
+    let t = vec![
+        entry(
+            &[],
+            "$this",
+            Kind::Container,
+            "",
+            rect(0.0, 24.0, 300.0, 200.0),
+        ),
+        entry(&[], "ld", Kind::Text, "D", rect(0.0, 28.0, 300.0, 20.0)),
+    ];
+    assert_eq!(
+        compare(&w, &t, &[], ""),
+        vec![Mismatch::WrongDockSide {
+            name: "ld".to_string(),
+            dock: "Top".to_string(),
+        }]
+    );
+}
+
+#[test]
 fn independent_hand_built_trace_checks() {
     // An independent sanity check that does NOT use `trace_from_reference`: a
     // hand-built trace whose rects are computed by hand must pass, and each of

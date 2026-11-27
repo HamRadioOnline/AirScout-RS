@@ -233,6 +233,29 @@ fn trace_off_records_nothing() {
 }
 
 #[test]
+fn record_window_records_this_without_pushing_path() {
+    let win = rect(0.0, 24.0, 300.0, 200.0);
+    let btn = rect(10.0, 34.0, 80.0, 24.0);
+    let mut h = egui_kittest::Harness::new_ui(move |ui| {
+        trace::enable(ui.ctx());
+        trace::record_window(ui, win);
+        widgets::button(ui, "btn", "B", btn);
+    });
+    trace::take(&h.ctx);
+    h.run();
+    let entries = trace::take(&h.ctx);
+
+    let this = entries.iter().find(|e| e.name == "$this").expect("$this");
+    assert_eq!(this.kind, Kind::Container);
+    assert!(this.path.is_empty());
+    assert_rect(this.rect, win);
+
+    // The button after the window record is still at the top level.
+    let b = entries.iter().find(|e| e.name == "btn").expect("btn");
+    assert!(b.path.is_empty());
+}
+
+#[test]
 fn widgets_stay_findable_by_label() {
     let btn = rect(10.0, 10.0, 120.0, 24.0);
     let clicked = Rc::new(RefCell::new(false));
