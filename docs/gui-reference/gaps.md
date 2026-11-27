@@ -545,7 +545,7 @@ Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
 | groupBox16 | GroupBox | Stations Information |  | ok ui/options/stations.rs:265 |  |
 | label52 | Label | Information from callsign database and other sources are used to prefill fields. You can overwrite and complete entries here. Your local database is updated. If you want to share the information with the AirScout community please use the "Send Update!" buttons. |  | ok ui/options/stations.rs:265 |  |
 | groupBox5 | GroupBox | DX Station |  | ok ui/options/stations.rs:305 |  |
-| btn_Options_DXMap | Button | Map | Click: btn_Options_DXMap_Click | ok ui/options/stations.rs:360 |  |
+| btn_Options_DXMap | Button | Map | Click: btn_Options_DXMap_Click | missing | Only updates the draft lat/lon; the station-DB write (LocationInsertOrUpdateIfNewer) is not ported. |
 | tb_Options_DXLon | DoubleTextBox |  | TextChanged: tb_Options_DXLon_TextChanged | ok ui/options/stations.rs:333 |  |
 | tb_Options_DXLat | DoubleTextBox |  | TextChanged: tb_Options_DXLat_TextChanged | ok ui/options/stations.rs:324 |  |
 | tb_Options_DXCall | CallsignTextBox |  | TextChanged: tb_Options_DXCall_TextChanged | missing | TextChanged looks the call up in the station DB (LocationFind) and auto-fills lat/lon/locator/elevation/QRV. |
@@ -557,7 +557,7 @@ Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
 | label43 | Label | Elevation: |  | missing | Ground elevation above sea level (m asl) is absent; the Rust 'height [m]' field is antenna height above ground. |
 | label44 | Label | Loc: |  | ok ui/options/stations.rs:342 |  |
 | groupBox4 | GroupBox | My Station |  | ok ui/options/stations.rs:305 |  |
-| btn_Options_MyMap | Button | Map | Click: btn_Options_MyMap_Click | ok ui/options/stations.rs:360 |  |
+| btn_Options_MyMap | Button | Map | Click: btn_Options_MyMap_Click | missing | Only updates the draft lat/lon; the station-DB write (LocationInsertOrUpdateIfNewer) is not ported. |
 | tb_Options_MyLon | DoubleTextBox |  | TextChanged: tb_Options_MyLon_TextChanged | ok ui/options/stations.rs:333 |  |
 | tb_Options_MyLat | DoubleTextBox |  | TextChanged: tb_Options_MyLat_TextChanged | ok ui/options/stations.rs:324 |  |
 | tb_Options_MyCall | CallsignTextBox |  | TextChanged: tb_Options_MyCall_TextChanged | missing | TextChanged looks the call up in the station DB (LocationFind) and auto-fills lat/lon/locator/elevation/QRV. |
@@ -1044,7 +1044,7 @@ Paths: `airscout` paths are relative to `crates/airscout/src/` (e.g.
 | MapDlg | 115 | 106 | 9 | 0 |
 | MapProviderDlg | 2 | 0 | 2 | 0 |
 | MapStationDlg | 21 | 14 | 7 | 0 |
-| OptionsDlg | 541 | 396 | 142 | 3 |
+| OptionsDlg | 541 | 394 | 144 | 3 |
 | PercentageControl | 0 | 0 | 0 | 0 |
 | PlaneFeedDisclaimerDlg | 2 | 2 | 0 | 0 |
 | PlaneFeedSettingsDlg | 5 | 1 | 4 | 0 |
