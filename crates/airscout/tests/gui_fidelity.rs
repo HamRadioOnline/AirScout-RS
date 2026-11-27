@@ -10,7 +10,7 @@ mod gui_ref;
 
 use airscout::ui::forms::trace::{Entry, Kind};
 use eframe::egui::{pos2, vec2, Rect};
-use gui_ref::fidelity::{compare, trace_from_reference, Allow, Mismatch};
+use gui_ref::fidelity::{assert_window, compare, trace_from_reference, Allow, Mismatch};
 use gui_ref::model::{Control, Window};
 
 fn rect(min_x: f32, min_y: f32, w: f32, h: f32) -> Rect {
@@ -800,6 +800,29 @@ fn smoke_committed_references_render_without_mismatch() {
             mismatches.len()
         );
     }
+}
+
+#[test]
+fn assert_window_passes_on_faithful_trace() {
+    // `assert_window` loads the reference, allowlist and deviations log and
+    // must accept a faithful trace without panicking.
+    let reference = gui_ref::load("MapDlg");
+    let trace = trace_from_reference(&reference);
+    assert_window("MapDlg", &trace);
+}
+
+#[test]
+#[should_panic(expected = "wrong text on")]
+fn assert_window_panics_on_mismatch() {
+    // A drawn trace with a wrong label text must panic and name the mismatch.
+    let reference = gui_ref::load("MapDlg");
+    let mut trace = trace_from_reference(&reference);
+    let label = trace
+        .iter_mut()
+        .find(|e| e.kind == Kind::Text)
+        .expect("MapDlg has text controls");
+    label.text.push('!');
+    assert_window("MapDlg", &trace);
 }
 
 #[test]

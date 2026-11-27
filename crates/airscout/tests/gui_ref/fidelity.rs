@@ -699,17 +699,22 @@ fn allowlist_path(window: &str) -> PathBuf {
 /// Load the optional allowlist for `window` (empty when absent).
 fn load_allow(window: &str) -> Vec<Allow> {
     let path = allowlist_path(window);
-    let Ok(text) = std::fs::read_to_string(&path) else {
-        return Vec::new();
+    let text = match std::fs::read_to_string(&path) {
+        Ok(text) => text,
+        // Only a missing allowlist means "no entries"; any other read error is
+        // a real problem that must not silently change comparison behaviour.
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Vec::new(),
+        Err(e) => panic!("allowlist {} is not readable: {e}", path.display()),
     };
     serde_json::from_str(&text)
         .unwrap_or_else(|e| panic!("allowlist {} is not valid JSON: {e}", path.display()))
 }
 
-/// Load the deviations log `docs/gui-deviations.md` (empty when absent).
+/// Load the deviations log `docs/gui-deviations.md`.
 fn load_deviations() -> String {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/gui-deviations.md");
-    std::fs::read_to_string(&path).unwrap_or_default()
+    std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("deviations log {} is not readable: {e}", path.display()))
 }
 
 /// Build a faithful trace for `reference` — the entries a correct renderer of
