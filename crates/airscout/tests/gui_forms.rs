@@ -118,3 +118,69 @@ fn designer_rect_offsets_parent() {
     let r = designer_rect(parent, [8, 76], [64, 52]);
     assert_rect(r, rect(13.0, 83.0, 64.0, 52.0));
 }
+
+#[test]
+fn dock_clamps_overflow_and_child_after_fill() {
+    // Overflow: Top(25) + Bottom(20) + Fill in a 30-tall area. The docked
+    // panels exceed the area, so Bottom is clamped to the 5px that remain and
+    // Fill collapses to zero height (never a negative size).
+    let area = rect(0.0, 0.0, 100.0, 30.0);
+    let children = [
+        (Dock::Fill, vec2(0.0, 0.0)),
+        (Dock::Bottom, vec2(0.0, 20.0)),
+        (Dock::Top, vec2(0.0, 25.0)),
+    ];
+    let out = dock_layout(area, &children);
+    assert_rect(out[0], rect(0.0, 25.0, 100.0, 0.0)); // Fill collapsed
+    assert_rect(out[1], rect(0.0, 25.0, 100.0, 5.0)); // Bottom clamped to 5
+    assert_rect(out[2], rect(0.0, 0.0, 100.0, 25.0)); // Top full 25
+
+    // Child after Fill: a docked panel added before Fill gets a zero-size
+    // rect (remaining is collapsed to zero), never a ±∞/NaN rect.
+    let area2 = rect(0.0, 0.0, 100.0, 100.0);
+    let children2 = [(Dock::Left, vec2(10.0, 0.0)), (Dock::Fill, vec2(0.0, 0.0))];
+    let out2 = dock_layout(area2, &children2);
+    assert_rect(out2[0], rect(0.0, 0.0, 0.0, 0.0)); // Left collapsed to zero
+    assert_rect(out2[1], rect(0.0, 0.0, 100.0, 100.0)); // Fill full area
+}
+
+#[test]
+fn split_clamps_area_narrower_than_splitter() {
+    // Vertical: area width 2 < SPLITTER_WIDTH (4); both panels collapse to
+    // zero width rather than the second starting past area.max.
+    let (left, right) = split(rect(0.0, 0.0, 2.0, 100.0), Orientation::Vertical, 0.0);
+    assert_rect(left, rect(0.0, 0.0, 0.0, 100.0));
+    assert_rect(right, rect(2.0, 0.0, 0.0, 100.0));
+
+    // Horizontal: area height 2 < SPLITTER_WIDTH; both panels collapse to
+    // zero height.
+    let (top, bottom) = split(rect(0.0, 0.0, 100.0, 2.0), Orientation::Horizontal, 0.0);
+    assert_rect(top, rect(0.0, 0.0, 100.0, 0.0));
+    assert_rect(bottom, rect(0.0, 2.0, 100.0, 0.0));
+}
+
+#[test]
+fn anchor_stretch_clamps_shrunk_parent() {
+    let designer_parent = vec2(200.0, 100.0);
+    let parent = rect(0.0, 0.0, 100.0, 100.0);
+    let loc = [10, 10];
+    let size = [50, 20];
+
+    // left + right anchored: far margin (-40) would put far < near; clamp far
+    // to near so the width stays >= 0.
+    let a = anchored(
+        designer_parent,
+        parent,
+        loc,
+        size,
+        Anchor {
+            top: true,
+            bottom: false,
+            left: true,
+            right: true,
+        },
+    );
+    assert_close(a.min.x, 10.0);
+    assert_close(a.width(), 0.0);
+    assert_close(a.height(), 20.0);
+}

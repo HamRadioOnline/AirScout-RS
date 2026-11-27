@@ -66,34 +66,34 @@ pub fn dock_layout(area: Rect, children: &[(Dock, Vec2)]) -> Vec<Rect> {
         out[i] = match dock {
             Dock::None => Rect::NOTHING,
             Dock::Top => {
-                let r = Rect::from_min_size(remaining.min, vec2(remaining.width(), size.y));
-                remaining.min.y += size.y;
+                let h = size.y.clamp(0.0, remaining.height().max(0.0));
+                let r = Rect::from_min_size(remaining.min, vec2(remaining.width(), h));
+                remaining.min.y += h;
                 r
             }
             Dock::Bottom => {
-                let r = Rect::from_min_max(
-                    pos2(remaining.min.x, remaining.max.y - size.y),
-                    remaining.max,
-                );
-                remaining.max.y -= size.y;
+                let h = size.y.clamp(0.0, remaining.height().max(0.0));
+                let r =
+                    Rect::from_min_max(pos2(remaining.min.x, remaining.max.y - h), remaining.max);
+                remaining.max.y -= h;
                 r
             }
             Dock::Left => {
-                let r = Rect::from_min_size(remaining.min, vec2(size.x, remaining.height()));
-                remaining.min.x += size.x;
+                let w = size.x.clamp(0.0, remaining.width().max(0.0));
+                let r = Rect::from_min_size(remaining.min, vec2(w, remaining.height()));
+                remaining.min.x += w;
                 r
             }
             Dock::Right => {
-                let r = Rect::from_min_max(
-                    pos2(remaining.max.x - size.x, remaining.min.y),
-                    remaining.max,
-                );
-                remaining.max.x -= size.x;
+                let w = size.x.clamp(0.0, remaining.width().max(0.0));
+                let r =
+                    Rect::from_min_max(pos2(remaining.max.x - w, remaining.min.y), remaining.max);
+                remaining.max.x -= w;
                 r
             }
             Dock::Fill => {
                 let r = remaining;
-                remaining = Rect::NOTHING;
+                remaining = Rect::from_min_size(remaining.min, Vec2::ZERO);
                 r
             }
         };
@@ -104,19 +104,21 @@ pub fn dock_layout(area: Rect, children: &[(Dock, Vec2)]) -> Vec<Rect> {
 /// Splits `area` along `orientation` at `distance` (clamped to
 /// `[0, extent − SPLITTER_WIDTH]`), leaving the splitter gap between the panels.
 pub fn split(area: Rect, orientation: Orientation, distance: f32) -> (Rect, Rect) {
+    let w = area.width().max(0.0);
+    let h = area.height().max(0.0);
     match orientation {
         Orientation::Vertical => {
-            let d = distance.clamp(0.0, (area.width() - SPLITTER_WIDTH).max(0.0));
-            let left = Rect::from_min_size(area.min, vec2(d, area.height()));
-            let right =
-                Rect::from_min_max(pos2(area.min.x + d + SPLITTER_WIDTH, area.min.y), area.max);
+            let d = distance.clamp(0.0, (w - SPLITTER_WIDTH).max(0.0));
+            let left = Rect::from_min_size(area.min, vec2(d, h));
+            let right_x = (area.min.x + d + SPLITTER_WIDTH).min(area.max.x);
+            let right = Rect::from_min_max(pos2(right_x, area.min.y), area.max);
             (left, right)
         }
         Orientation::Horizontal => {
-            let d = distance.clamp(0.0, (area.height() - SPLITTER_WIDTH).max(0.0));
-            let top = Rect::from_min_size(area.min, vec2(area.width(), d));
-            let bottom =
-                Rect::from_min_max(pos2(area.min.x, area.min.y + d + SPLITTER_WIDTH), area.max);
+            let d = distance.clamp(0.0, (h - SPLITTER_WIDTH).max(0.0));
+            let top = Rect::from_min_size(area.min, vec2(w, d));
+            let bottom_y = (area.min.y + d + SPLITTER_WIDTH).min(area.max.y);
+            let bottom = Rect::from_min_max(pos2(area.min.x, bottom_y), area.max);
             (top, bottom)
         }
     }
@@ -167,8 +169,9 @@ fn axis(
     let near = parent_near + near_margin;
     let far = parent_far - far_margin;
     match (near_anchor, far_anchor) {
-        // Both edges anchored: keep both margins, stretch.
-        (true, true) => (near, far),
+        // Both edges anchored: keep both margins, stretch. Clamp far to near
+        // so a shrunk parent cannot invert the axis into a negative size.
+        (true, true) => (near, far.max(near)),
         // Only the far edge anchored: keep the far margin, size unchanged.
         (false, true) => (far - size, far),
         // Near edge only (or neither, treated as near): keep the near position.
