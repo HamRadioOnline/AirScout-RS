@@ -297,8 +297,16 @@ fn raw_mismatches(reference: &Window, trace: &[Entry]) -> Vec<Mismatch> {
             continue;
         };
         let extent = sc.rect.extent(orientation);
-        let got = panel1.rect.extent(orientation) / extent;
-        if extent <= 0.0 || (expected - got).abs() > SPLIT_TOLERANCE {
+        let got = if extent > 0.0 {
+            panel1.rect.extent(orientation) / extent
+        } else {
+            0.0
+        };
+        if !extent.is_finite()
+            || extent <= 0.0
+            || !got.is_finite()
+            || (expected - got).abs() > SPLIT_TOLERANCE
+        {
             out.push(Mismatch::WrongSplit {
                 name: control.name.clone(),
                 expected,

@@ -487,10 +487,65 @@ fn split_orientation_defaults_to_vertical_and_zero_extent_fails() {
         ),
     ];
     let got = compare(&r, &t, &[], "");
-    assert_eq!(got.len(), 1);
-    assert!(
-        matches!(&got[0], Mismatch::WrongSplit { name, expected, .. }
-        if name == "sc" && (*expected - 0.6).abs() < 1e-6)
+    assert_eq!(
+        got,
+        vec![Mismatch::WrongSplit {
+            name: "sc".to_string(),
+            expected: 0.6,
+            got: 0.0,
+        }]
+    );
+}
+
+#[test]
+fn nan_split_extent_reports_wrong_split_with_zero_got() {
+    // A NaN container extent must not silently pass the split check: it is
+    // reported as WrongSplit with `got = 0.0` (never NaN).
+    let mut r = Window::new("NaN");
+    r.controls = vec![{
+        let mut c = control(
+            "sc",
+            "SplitContainer",
+            "$this",
+            0,
+            None,
+            [0, 0],
+            [1000, 600],
+        );
+        c.splitter_distance = Some(600);
+        c
+    }];
+
+    let t = vec![
+        entry(
+            &[],
+            "sc",
+            Kind::Container,
+            "",
+            rect(f32::NAN, 0.0, 0.0, 600.0),
+        ),
+        entry(
+            &["sc"],
+            "sc.Panel1",
+            Kind::Container,
+            "",
+            rect(f32::NAN, 0.0, 0.0, 600.0),
+        ),
+        entry(
+            &["sc"],
+            "sc.Panel2",
+            Kind::Container,
+            "",
+            rect(f32::NAN, 0.0, 0.0, 600.0),
+        ),
+    ];
+    assert_eq!(
+        compare(&r, &t, &[], ""),
+        vec![Mismatch::WrongSplit {
+            name: "sc".to_string(),
+            expected: 0.6,
+            got: 0.0,
+        }]
     );
 }
 
