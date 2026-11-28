@@ -1,0 +1,60 @@
+{
+  "window": "LicenseDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "LicenseDlg",
+  "client_size": [
+    623,
+    722
+  ],
+  "controls": [
+    {
+      "name": "rtb_License",
+      "kind": "RichTextBox",
+      "parent": "$this",
+      "index": 1,
+      "text": "",
+      "location": [
+        12,
+        12
+      ],
+      "size": [
+        599,
+        659
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Options_License_OK",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 0,
+      "text": "Close",
+      "location": [
+        266,
+        687
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

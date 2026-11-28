@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Golden-fixture harness: compiles original AirScout C# sources (linked, not copied)
+       and dumps their results as JSON for the Rust golden tests.
+       Set AIRSCOUT_UPSTREAM to a checkout of dl2alf/AirScout at the pinned commit
+       (see tools/fetch-upstream.sh). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>CS0168;CS0219;CS0162;CS8981;CS0618</NoWarn>
+    <Upstream>$(AIRSCOUT_UPSTREAM)</Upstream>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(Upstream)/ScoutBase/ScoutBase.Core/LatLon.cs" Link="Upstream/LatLon.cs" />
+    <Compile Include="$(Upstream)/ScoutBase/ScoutBase.Core/MaidenheadLocator.cs" Link="Upstream/MaidenheadLocator.cs" />
+    <Compile Include="$(Upstream)/ScoutBase/ScoutBase.Core/GeographicalPoint.cs" Link="Upstream/GeographicalPoint.cs" />
+    <Compile Include="$(Upstream)/ScoutBase/ScoutBase.Core/Propagation.cs" Link="Upstream/Propagation.cs" />
+    <Compile Include="$(Upstream)/ScoutBase/ScoutBase.Core/Utilities.cs" Link="Upstream/Utilities.cs" />
+    <Compile Include="$(Upstream)/ScoutBase/ScoutBase.Core/Callsign.cs" Link="Upstream/Callsign.cs" />
+    <Compile Include="$(Upstream)/ScoutBase/ScoutBase.Core/StringCustomAttribute.cs" Link="Upstream/StringCustomAttribute.cs" />
+    <Compile Include="$(Upstream)/ScoutBase/ScoutBase.Core/Band.cs" Link="Upstream/Band.cs" />
+    <Compile Include="$(Upstream)/AirScout.Core/PlaneInfo.cs" Link="Upstream/PlaneInfo.cs" />
+    <Compile Include="$(Upstream)/AirScout.Core/PlaneCategory.cs" Link="Upstream/PlaneCategory.cs" />
+    <Compile Include="$(Upstream)/AirScout.Aircrafts/PlaneInfoChecker.cs" Link="Upstream/PlaneInfoChecker.cs" />
+    <Compile Include="$(Upstream)/AirScout.Aircrafts/PlaneInfoConverter.cs" Link="Upstream/PlaneInfoConverter.cs" />
+    <Compile Include="$(Upstream)/AirScout.Aircrafts/PlaneInfoCache.cs" Link="Upstream/PlaneInfoCache.cs" />
+    <Compile Include="$(Upstream)/LibADSB/Exceptions.cs" Link="Upstream/LibADSB/Exceptions.cs" />
+    <Compile Include="$(Upstream)/LibADSB/ModeSReply.cs" Link="Upstream/LibADSB/ModeSReply.cs" />
+    <Compile Include="$(Upstream)/LibADSB/ExtendedSquitter.cs" Link="Upstream/LibADSB/ExtendedSquitter.cs" />
+    <Compile Include="$(Upstream)/LibADSB/Decoder.cs" Link="Upstream/LibADSB/Decoder.cs" />
+    <Compile Include="$(Upstream)/LibADSB/IdentificationMsg.cs" Link="Upstream/LibADSB/IdentificationMsg.cs" />
+    <Compile Include="$(Upstream)/LibADSB/AirbornePositionMsg.cs" Link="Upstream/LibADSB/AirbornePositionMsg.cs" />
+    <Compile Include="$(Upstream)/LibADSB/SurfacePositionMsg.cs" Link="Upstream/LibADSB/SurfacePositionMsg.cs" />
+    <Compile Include="$(Upstream)/LibADSB/VelocityOverGroundMsg.cs" Link="Upstream/LibADSB/VelocityOverGroundMsg.cs" />
+    <Compile Include="$(Upstream)/LibADSB/AirspeedHeadingMsg.cs" Link="Upstream/LibADSB/AirspeedHeadingMsg.cs" />
+    <Compile Include="$(Upstream)/AirScout.PlaneFeeds.Plugin.BinCraft/BinCraftParser.cs" Link="Upstream/BinCraft/BinCraftParser.cs" />
+    <Compile Include="$(Upstream)/AirScout.PlaneFeeds.Plugin.BinCraft/BinaryUtils.cs" Link="Upstream/BinCraft/BinaryUtils.cs" />
+    <Compile Include="$(Upstream)/AirScout.PlaneFeeds.Plugin.PublicBinCraft/PublicBinCraftParser.cs" Link="Upstream/PublicBinCraft/PublicBinCraftParser.cs" />
+    <Compile Include="$(Upstream)/AirScout.PlaneFeeds.Plugin.PublicBinCraft/BinaryUtils.cs" Link="Upstream/PublicBinCraft/BinaryUtils.cs" />
+  </ItemGroup>
+</Project>

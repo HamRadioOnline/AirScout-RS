@@ -1,0 +1,617 @@
+{
+  "window": "MapStationDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "MapStationDlg",
+  "client_size": [
+    1008,
+    729
+  ],
+  "controls": [
+    {
+      "name": "label19",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 8,
+      "text": "Update station details here. Exact lat/long values are essential for calculation of the radio horizon.\nUse the lat/lon textboxes for numeric input or enter a valid Maidenhead Locator.\nDrag the needle on the map for exact location. Use mouse wheel or +/- buttons to zoom in and out.",
+      "location": [
+        12,
+        9
+      ],
+      "size": [
+        702,
+        60
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 43,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label18",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 9,
+      "text": "Map Zoom:",
+      "location": [
+        801,
+        352
+      ],
+      "size": [
+        61,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 42,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Zoom",
+      "kind": "TextBox",
+      "parent": "$this",
+      "index": 10,
+      "text": null,
+      "location": [
+        914,
+        346
+      ],
+      "size": [
+        30,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 41,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Zoom_Out",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 11,
+      "text": "-",
+      "location": [
+        952,
+        345
+      ],
+      "size": [
+        30,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 40,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Zoom_Out_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_Zoom_In",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 12,
+      "text": "+",
+      "location": [
+        875,
+        345
+      ],
+      "size": [
+        30,
+        25
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 39,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Zoom_In_Click"
+        }
+      ]
+    },
+    {
+      "name": "label11",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 13,
+      "text": "Locator:",
+      "location": [
+        801,
+        144
+      ],
+      "size": [
+        46,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 37,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label10",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 14,
+      "text": "Longitude:",
+      "location": [
+        801,
+        201
+      ],
+      "size": [
+        57,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 36,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label9",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 15,
+      "text": "Latitude:",
+      "location": [
+        801,
+        172
+      ],
+      "size": [
+        48,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 34,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label8",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 16,
+      "text": "Callsign:",
+      "location": [
+        801,
+        117
+      ],
+      "size": [
+        46,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 31,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "gm_Callsign",
+      "kind": "GMapControl",
+      "parent": "$this",
+      "index": 17,
+      "text": null,
+      "location": [
+        15,
+        87
+      ],
+      "size": [
+        760,
+        617
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 29,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "OnMarkerEnter",
+          "handler": "gm_Callsign_OnMarkerEnter"
+        },
+        {
+          "event": "OnMapZoomChanged",
+          "handler": "gm_Callsign_OnMapZoomChanged"
+        },
+        {
+          "event": "MouseDown",
+          "handler": "gm_Callsign_MouseDown"
+        },
+        {
+          "event": "MouseMove",
+          "handler": "gm_Callsign_MouseMove"
+        },
+        {
+          "event": "MouseUp",
+          "handler": "gm_Callsign_MouseUp"
+        }
+      ]
+    },
+    {
+      "name": "tb_Callsign",
+      "kind": "CallsignTextBox",
+      "parent": "$this",
+      "index": 18,
+      "text": null,
+      "location": [
+        875,
+        113
+      ],
+      "size": [
+        107,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 30,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Longitude",
+      "kind": "DoubleTextBox",
+      "parent": "$this",
+      "index": 20,
+      "text": null,
+      "location": [
+        875,
+        197
+      ],
+      "size": [
+        107,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 33,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "TextChanged",
+          "handler": "tb_Longitude_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "tb_Latitude",
+      "kind": "DoubleTextBox",
+      "parent": "$this",
+      "index": 21,
+      "text": null,
+      "location": [
+        875,
+        167
+      ],
+      "size": [
+        107,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 32,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "TextChanged",
+          "handler": "tb_Latitude_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "btn_Cancel",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 7,
+      "text": "Cancel",
+      "location": [
+        804,
+        665
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 44,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_Cancel_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_OK",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 6,
+      "text": "OK",
+      "location": [
+        907,
+        665
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 45,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 5,
+      "text": "Elevation:",
+      "location": [
+        801,
+        228
+      ],
+      "size": [
+        54,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 47,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Elevation",
+      "kind": "DoubleTextBox",
+      "parent": "$this",
+      "index": 4,
+      "text": null,
+      "location": [
+        875,
+        223
+      ],
+      "size": [
+        53,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 48,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label2",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 3,
+      "text": "m asl",
+      "location": [
+        938,
+        227
+      ],
+      "size": [
+        31,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 49,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ss_Main",
+      "kind": "StatusStrip",
+      "parent": "$this",
+      "index": 2,
+      "text": "statusStrip1",
+      "location": [
+        0,
+        707
+      ],
+      "size": [
+        1008,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 50,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Status",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 0,
+      "text": "Status",
+      "location": null,
+      "size": [
+        39,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_Locator",
+      "kind": "LocatorTextBox",
+      "parent": "$this",
+      "index": 19,
+      "text": null,
+      "location": [
+        875,
+        140
+      ],
+      "size": [
+        107,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 35,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "TextChanged",
+          "handler": "tb_Locator_TextChanged"
+        }
+      ]
+    },
+    {
+      "name": "cb_Options_StationsMap_OverlayElevation",
+      "kind": "CheckBox",
+      "parent": "$this",
+      "index": 1,
+      "text": "Overlay Elevation Grid \r\n(on zom levels >= 17)",
+      "location": [
+        804,
+        267
+      ],
+      "size": [
+        178,
+        46
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 51,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CheckedChanged",
+          "handler": "cb_Options_StationsMap_OverlayElevation_CheckedChanged"
+        }
+      ]
+    },
+    {
+      "name": "label3",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 0,
+      "text": null,
+      "location": [
+        813,
+        434
+      ],
+      "size": [
+        0,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 52,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

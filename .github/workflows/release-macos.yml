@@ -1,0 +1,154 @@
+name: macOS packages
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+    secrets:
+      MACOS_CERT_P12:
+        required: false
+      MACOS_CERT_PASSWORD:
+        required: false
+      MACOS_NOTARY_KEY:
+        required: false
+      MACOS_NOTARY_KEY_ID:
+        required: false
+      MACOS_NOTARY_ISSUER:
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ inputs.tag }}
+
+jobs:
+  # Assembles the .app bundle and an unsigned DMG from the staged release. This
+  # job receives none of the Apple secrets, so it also serves as the unsigned
+  # fallback for a repository without signing credentials.
+  assemble:
+    name: Assemble (${{ matrix.slug }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - slug: macos-arm64
+            os: macos-latest
+          - slug: macos-x86_64
+            os: macos-15-intel
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: stage-${{ matrix.slug }}
+          path: transport
+      - name: Extract stage
+        env:
+          SLUG: ${{ matrix.slug }}
+        run: |
+          mkdir stage
+          tar -xzf transport/stage.tar.gz -C stage
+          python3 -c 'import json, os; assert json.load(open("stage/stage.json"))["slug"] == os.environ["SLUG"]'
+      - name: Assemble app bundle and unsigned DMG
+        run: packaging/macos/build-signed-dmg.sh stage "$TAG" package
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos-unsigned-${{ matrix.slug }}
+          path: package/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+
+  # Signs and notarizes when every Apple secret is configured. An absent
+  # set leaves the unsigned DMG from assemble in place.
+  sign:
+    name: Sign and notarize (${{ matrix.slug }})
+    needs: assemble
+    runs-on: ${{ matrix.os }}
+    environment: release
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - slug: macos-arm64
+            os: macos-latest
+          - slug: macos-x86_64
+            os: macos-15-intel
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: stage-${{ matrix.slug }}
+          path: transport
+      - name: Extract stage
+        env:
+          SLUG: ${{ matrix.slug }}
+        run: |
+          mkdir stage
+          tar -xzf transport/stage.tar.gz -C stage
+          python3 -c 'import json, os; assert json.load(open("stage/stage.json"))["slug"] == os.environ["SLUG"]'
+      - name: Check Apple signing configuration
+        id: apple
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+          MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          MACOS_NOTARY_ISSUER: ${{ secrets.MACOS_NOTARY_ISSUER }}
+        run: |
+          count=0
+          for name in MACOS_CERT_P12 MACOS_CERT_PASSWORD MACOS_NOTARY_KEY MACOS_NOTARY_KEY_ID MACOS_NOTARY_ISSUER; do
+            [[ -z "${!name}" ]] || count=$((count + 1))
+          done
+          if [[ "$count" != 0 && "$count" != 5 ]]; then
+            echo "::error::Incomplete Apple signing configuration"
+            exit 1
+          fi
+          state=$(packaging/macos/build-signed-dmg.sh check)
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+      - name: Import Developer ID certificate
+        if: steps.apple.outputs.state == 'signed'
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: packaging/macos/ci-import-cert.sh
+      - name: Sign, notarize, staple and verify
+        if: steps.apple.outputs.state == 'signed'
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+          MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          MACOS_NOTARY_ISSUER: ${{ secrets.MACOS_NOTARY_ISSUER }}
+        run: packaging/macos/build-signed-dmg.sh stage "$TAG" package
+      - name: Remove signing keychain
+        if: always()
+        run: rm -rf -- "${SIGNING_KEYCHAIN:-}" "$RUNNER_TEMP"/airscout-signing.keychain-db 2>/dev/null || true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: steps.apple.outputs.state == 'unsigned'
+        with:
+          name: macos-unsigned-${{ matrix.slug }}
+          path: package
+      - name: Smoke the final mounted DMG
+        env:
+          SLUG: ${{ matrix.slug }}
+          APPLE_SIGNING: ${{ steps.apple.outputs.state }}
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("stage/stage.json"))["version"])')
+          packaging/tests/hosted/verify-macos.sh "package/assets/AirScout-RS-$TAG-$SLUG.dmg" "$version"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-dmg-${{ matrix.slug }}
+          path: package/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14

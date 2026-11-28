@@ -1,0 +1,188 @@
+name: Release assets
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+    secrets:
+      RELEASE_GPG_PRIVATE_KEY:
+        required: false
+      RELEASE_GPG_PASSPHRASE:
+        required: false
+      AUR_SSH_PRIVATE_KEY:
+        required: false
+    outputs:
+      windows_signed:
+        description: Certum signatures on the final Windows packages were verified
+        value: ${{ jobs.publish.outputs.windows_signed || 'false' }}
+      macos_signed:
+        description: Developer ID signing, notarization and stapling were verified
+        value: ${{ jobs.publish.outputs.macos_signed || 'false' }}
+      flatpak_signed:
+        description: Flatpak repository candidate was signed
+        value: ${{ jobs.publish.outputs.flatpak_signed || 'false' }}
+      checksums_signed:
+        description: Release checksum signature was verified
+        value: ${{ jobs.publish.outputs.checksums_signed || 'false' }}
+      homebrew_eligible:
+        description: Stable or beta with verified DMGs
+        value: ${{ jobs.publish.outputs.homebrew_eligible || 'false' }}
+      winget_eligible:
+        description: Stable with verified MSIs
+        value: ${{ jobs.publish.outputs.winget_eligible || 'false' }}
+      flatpak_eligible:
+        description: Stable or beta with a signed repository
+        value: ${{ jobs.publish.outputs.flatpak_eligible || 'false' }}
+      aur_eligible:
+        description: Stable with signed checksums and AUR SSH credentials
+        value: ${{ jobs.publish.outputs.aur_eligible || 'false' }}
+      container_eligible:
+        description: Stable or beta with verified container candidates
+        value: ${{ jobs.publish.outputs.container_eligible || 'false' }}
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ inputs.tag }}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+    outputs:
+      aur_access: ${{ steps.aur.outputs.available || 'false' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: package-*
+          path: candidates
+      - name: Validate candidate inventory and collect final bytes
+        run: |
+          set -euo pipefail
+          git fetch --force --depth=1 origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          VERSION="$(python3 -c 'import sys; sys.path.insert(0, "packaging/release"); from collect import tag_info; print(tag_info(sys.argv[1])[0])' "$TAG")"
+          git archive --format=tar --prefix="airscout-rs-${VERSION}/" "$TAG" | gzip -n > "airscout-rs-${VERSION}-source.tar.gz"
+          python3 packaging/release/collect.py candidates "$TAG" release-assets "airscout-rs-${VERSION}-source.tar.gz"
+      - name: Sign and verify checksums
+        id: checksums
+        env:
+          RELEASE_GPG_PRIVATE_KEY: ${{ secrets.RELEASE_GPG_PRIVATE_KEY }}
+          RELEASE_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+        run: packaging/release/sign-checksums.sh release-assets
+      - name: Record checksum status in the inventory
+        env:
+          CHECKSUMS_SIGNED: ${{ steps.checksums.outputs.checksums_signed }}
+          FINGERPRINT: ${{ steps.checksums.outputs.fingerprint }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+
+          path = Path("release-assets/inventory.json")
+          inventory = json.loads(path.read_text(encoding="utf-8"))
+          state = os.environ["CHECKSUMS_SIGNED"]
+          fingerprint = os.environ["FINGERPRINT"]
+          if state == "true" and re.fullmatch(r"[0-9A-F]{40}|[0-9A-F]{64}", fingerprint):
+              inventory["checksums_signed"] = True
+              inventory["checksum_fingerprint"] = fingerprint
+          elif state != "false" or fingerprint:
+              raise SystemExit("Invalid release checksum signing result")
+          path.write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
+          PY
+      - name: Check AUR credential availability
+        id: aur
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          available=false
+          [[ -z "$AUR_SSH_PRIVATE_KEY" ]] || available=true
+          printf 'available=%s\n' "$available" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-assets-verified
+          path: release-assets/
+          if-no-files-found: error
+          retention-days: 14
+          overwrite: true
+
+  publish:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    outputs:
+      windows_signed: ${{ steps.publish.outputs.windows_signed || 'false' }}
+      macos_signed: ${{ steps.publish.outputs.macos_signed || 'false' }}
+      flatpak_signed: ${{ steps.publish.outputs.flatpak_signed || 'false' }}
+      checksums_signed: ${{ steps.publish.outputs.checksums_signed || 'false' }}
+      homebrew_eligible: ${{ steps.publish.outputs.homebrew_eligible || 'false' }}
+      winget_eligible: ${{ steps.publish.outputs.winget_eligible || 'false' }}
+      flatpak_eligible: ${{ steps.publish.outputs.flatpak_eligible || 'false' }}
+      aur_eligible: ${{ steps.publish.outputs.aur_eligible || 'false' }}
+      container_eligible: ${{ steps.publish.outputs.container_eligible || 'false' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Fetch history and tags for the notes and previous-tag lookup.
+          fetch-depth: 0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-assets-verified
+          path: release-assets
+      - name: Build release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # Checkout may leave an annotated tag as a lightweight ref.
+          git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          if [[ "$(git rev-parse "refs/tags/${TAG}^{commit}")" != "$(git rev-parse HEAD)" ]]; then
+            echo "::error::The remote tag no longer points to this workflow's commit"
+            exit 1
+          fi
+
+          # Stable releases compare against the previous stable release.
+          case "$TAG" in
+            alpha-*|beta-*)
+              PREVIOUS_TAG="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)"
+              ;;
+            *)
+              PREVIOUS_TAG="$(git describe --tags --abbrev=0 --exclude 'alpha-*' --exclude 'beta-*' "${TAG}^" 2>/dev/null || true)"
+              ;;
+          esac
+          RANGE="$TAG"
+          [ -z "$PREVIOUS_TAG" ] || RANGE="${PREVIOUS_TAG}..${TAG}"
+
+          : > tag-message.md
+          if [[ "$(git cat-file -t "refs/tags/${TAG}")" == "tag" ]]; then
+            git for-each-ref "refs/tags/${TAG}" \
+              --format='%(contents:subject)%0a%0a%(contents:body)' > tag-message.md
+          fi
+          git log --first-parent --no-merges --format='%an%x09%s' "$RANGE" \
+            | awk -F '\t' '$1 != "github-actions[bot]" && $2 !~ /\(#[0-9]+\)$/ {print "* " $2}' \
+              > direct-commits.md
+
+          NOTE_ARGS=(-f "tag_name=$TAG")
+          [ -z "$PREVIOUS_TAG" ] || NOTE_ARGS+=(-f "previous_tag_name=$PREVIOUS_TAG")
+          gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+            "${NOTE_ARGS[@]}" --jq .body > generated-notes.md
+
+          python3 packaging/release/notes.py release-assets/inventory.json \
+            tag-message.md direct-commits.md generated-notes.md release-notes.md
+      - name: Resume or publish the verified release
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUR_ACCESS: ${{ needs.prepare.outputs.aur_access }}
+        run: python3 packaging/release/publish.py "$TAG" release-assets release-notes.md

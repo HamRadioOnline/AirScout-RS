@@ -1,0 +1,3040 @@
+{
+  "upstream_commit": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "cases": [
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 60.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 60.0,
+          "lat": 50.0,
+          "lon": 8.179999999999998,
+          "alt": 35000.0,
+          "track": 90.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 90.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 60.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 60.0,
+            "lat": 50.0,
+            "lon": 8.179999999999998,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 90.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 90.0,
+          "lat": 49.99995942970456,
+          "lon": 8.277167166032132,
+          "alt": 35000.0,
+          "track": 90.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 90.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 90.0,
+            "lat": 49.99995942970456,
+            "lon": 8.277167166032132,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 90.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 120.0,
+          "lat": 49.999837719071884,
+          "lon": 8.37433400408281,
+          "alt": 35000.0,
+          "track": 90.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 90.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 120.0,
+            "lat": 49.999837719071884,
+            "lon": 8.37433400408281,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 90.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 300.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 300.0,
+          "lat": 49.99740358630448,
+          "lon": 8.957309779881259,
+          "alt": 35000.0,
+          "track": 90.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 90.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 300.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 300.0,
+            "lat": 49.99740358630448,
+            "lon": 8.957309779881259,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 90.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 360.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 360.0,
+          "lat": 49.9959431796756,
+          "lon": 9.151617549875551,
+          "alt": 35000.0,
+          "track": 90.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 90.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 360.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 360.0,
+            "lat": 49.9959431796756,
+            "lon": 9.151617549875551,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 90.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 361.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": null
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "straight",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 361.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": []
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "turning",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 80.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.02,
+            "lon": 8.18,
+            "alt": 35500.0,
+            "track": 90.0,
+            "speed": 460.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 90.0,
+          "lat": 50.0143319692163,
+          "lon": 8.280053911837555,
+          "alt": 35750.0,
+          "track": 95.0,
+          "speed": 465.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 80.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "turning",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 80.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.02,
+            "lon": 8.18,
+            "alt": 35500.0,
+            "track": 90.0,
+            "speed": 460.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 90.0,
+            "lat": 50.0143319692163,
+            "lon": 8.280053911837555,
+            "alt": 35750.0,
+            "track": 95.0,
+            "speed": 465.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 80.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "turning",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 80.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.02,
+            "lon": 8.18,
+            "alt": 35500.0,
+            "track": 90.0,
+            "speed": 460.0
+          }
+        ],
+        "at": 180.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 180.0,
+          "lat": 49.92820498831815,
+          "lon": 8.568998886890425,
+          "alt": 36500.0,
+          "track": 110.0,
+          "speed": 480.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 80.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "turning",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 80.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.02,
+            "lon": 8.18,
+            "alt": 35500.0,
+            "track": 90.0,
+            "speed": 460.0
+          }
+        ],
+        "at": 180.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 180.0,
+            "lat": 49.92820498831815,
+            "lon": 8.568998886890425,
+            "alt": 36500.0,
+            "track": 110.0,
+            "speed": 480.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 80.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "fast_turn_45",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 80.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.02,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 120.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 90.0,
+          "lat": 49.972137729894506,
+          "lon": 8.242421717273396,
+          "alt": 35000.0,
+          "track": 140.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 80.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "fast_turn_45",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 80.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.02,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 120.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 90.0,
+            "lat": 49.972137729894506,
+            "lon": 8.242421717273396,
+            "alt": 35000.0,
+            "track": 140.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 80.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "fast_turn_45",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 80.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.02,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 120.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 120.0,
+          "lat": 49.90259863207924,
+          "lon": 8.246331966301982,
+          "alt": 35000.0,
+          "track": 160.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 80.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "fast_turn_45",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 80.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.02,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 120.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 120.0,
+            "lat": 49.90259863207924,
+            "lon": 8.246331966301982,
+            "alt": 35000.0,
+            "track": 160.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 80.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "fast_turn_45",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 80.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.02,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 120.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 150.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 150.0,
+          "lat": 49.92603978693411,
+          "lon": 8.432060655435683,
+          "alt": 35000.0,
+          "track": 120.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 80.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "fast_turn_45",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 80.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.02,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 120.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 150.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 150.0,
+            "lat": 49.832626343406844,
+            "lon": 8.179999999999998,
+            "alt": 35000.0,
+            "track": 180.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 80.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "wrap_350_10",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.1,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 10.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 90.0,
+          "lat": 50.16150778027125,
+          "lon": 8.016929848444937,
+          "alt": 35000.0,
+          "track": 10.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 350.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "wrap_350_10",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.1,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 10.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 90.0,
+            "lat": 50.16150778027125,
+            "lon": 8.016929848444937,
+            "alt": 35000.0,
+            "track": 10.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 350.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "wrap_350_10",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.1,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 10.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 120.0,
+          "lat": 50.22301309345962,
+          "lon": 8.033903319837219,
+          "alt": 35000.0,
+          "track": 10.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 350.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "wrap_350_10",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.1,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 10.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 120.0,
+            "lat": 50.22301309345962,
+            "lon": 8.033903319837219,
+            "alt": 35000.0,
+            "track": 10.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 350.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "wrap_10_350",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 10.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.1,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 90.0,
+          "lat": 50.16150778027125,
+          "lon": 7.983070151555064,
+          "alt": 35000.0,
+          "track": 350.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 10.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "wrap_10_350",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 10.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.1,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 90.0,
+            "lat": 50.16150778027125,
+            "lon": 7.983070151555064,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 10.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "wrap_10_350",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 10.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.1,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 120.0,
+          "lat": 50.22301309345962,
+          "lon": 7.9660966801627815,
+          "alt": 35000.0,
+          "track": 350.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 10.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "wrap_10_350",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 10.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.1,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 120.0,
+            "lat": 50.22301309345962,
+            "lon": 7.9660966801627815,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 10.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "track_to_360",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.1,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 355.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 120.0,
+          "lat": 50.224439187778614,
+          "lon": 7.982983079453868,
+          "alt": 35000.0,
+          "track": 355.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 350.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "track_to_360",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 350.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.1,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 355.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 120.0,
+            "lat": 50.224439187778614,
+            "lon": 7.982983079453868,
+            "alt": 35000.0,
+            "track": 355.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 350.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "climb",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 30000.0,
+            "track": 90.0,
+            "speed": 400.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.15,
+            "alt": 32000.0,
+            "track": 90.0,
+            "speed": 420.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 90.0,
+          "lat": 49.99996295581253,
+          "lon": 8.242848629859465,
+          "alt": 33000.0,
+          "track": 90.0,
+          "speed": 430.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 30000.0,
+          "old_track": 90.0,
+          "old_speed": 400.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "climb",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 30000.0,
+            "track": 90.0,
+            "speed": 400.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.15,
+            "alt": 32000.0,
+            "track": 90.0,
+            "speed": 420.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 90.0,
+            "lat": 49.99996295581253,
+            "lon": 8.242848629859465,
+            "alt": 33000.0,
+            "track": 90.0,
+            "speed": 430.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 30000.0,
+            "old_track": 90.0,
+            "old_speed": 400.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "climb",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 30000.0,
+            "track": 90.0,
+            "speed": 400.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.15,
+            "alt": 32000.0,
+            "track": 90.0,
+            "speed": 420.0
+          }
+        ],
+        "at": 240.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 240.0,
+          "lat": 49.998338275291104,
+          "lon": 8.771855883370018,
+          "alt": 38000.0,
+          "track": 90.0,
+          "speed": 480.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 30000.0,
+          "old_track": 90.0,
+          "old_speed": 400.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "climb",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 30000.0,
+            "track": 90.0,
+            "speed": 400.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.15,
+            "alt": 32000.0,
+            "track": 90.0,
+            "speed": 420.0
+          }
+        ],
+        "at": 240.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 240.0,
+            "lat": 49.998338275291104,
+            "lon": 8.771855883370018,
+            "alt": 38000.0,
+            "track": 90.0,
+            "speed": 480.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 30000.0,
+            "old_track": 90.0,
+            "old_speed": 400.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "single_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 0.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 0.0,
+          "lat": 50.0,
+          "lon": 8.0,
+          "alt": 35000.0,
+          "track": 45.0,
+          "speed": 450.0,
+          "old_time": null,
+          "old_lat": 0.0,
+          "old_lon": 0.0,
+          "old_alt": 0.0,
+          "old_track": 0.0,
+          "old_speed": 0.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "single_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 0.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0,
+            "old_time": null,
+            "old_lat": 0.0,
+            "old_lon": 0.0,
+            "old_alt": 0.0,
+            "old_track": 0.0,
+            "old_speed": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "single_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 30.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 30.0,
+          "lat": 50.044144086211645,
+          "lon": 8.068770769144654,
+          "alt": 35000.0,
+          "track": 45.0,
+          "speed": 450.0,
+          "old_time": null,
+          "old_lat": 0.0,
+          "old_lon": 0.0,
+          "old_alt": 0.0,
+          "old_track": 0.0,
+          "old_speed": 0.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "single_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 30.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 30.0,
+            "lat": 50.044144086211645,
+            "lon": 8.068770769144654,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0,
+            "old_time": null,
+            "old_lat": 0.0,
+            "old_lon": 0.0,
+            "old_alt": 0.0,
+            "old_track": 0.0,
+            "old_speed": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "single_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 300.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 300.0,
+          "lat": 50.439592220651626,
+          "lon": 8.69344000853914,
+          "alt": 35000.0,
+          "track": 45.0,
+          "speed": 450.0,
+          "old_time": null,
+          "old_lat": 0.0,
+          "old_lon": 0.0,
+          "old_alt": 0.0,
+          "old_track": 0.0,
+          "old_speed": 0.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "single_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 300.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 300.0,
+            "lat": 50.439592220651626,
+            "lon": 8.69344000853914,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0,
+            "old_time": null,
+            "old_lat": 0.0,
+            "old_lon": 0.0,
+            "old_alt": 0.0,
+            "old_track": 0.0,
+            "old_speed": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "single_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 301.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "plane": null
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "single_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 301.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "planes": []
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "query_before_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 30.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "plane": null
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "query_before_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 30.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "planes": []
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "query_before_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 59.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "plane": null
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "query_before_report",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 45.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 59.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1
+        ],
+        "planes": []
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "speed_zero",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 0.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 0.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 90.0,
+          "lat": 50.0,
+          "lon": 8.0,
+          "alt": 35000.0,
+          "track": 90.0,
+          "speed": 0.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 90.0,
+          "old_speed": 0.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "speed_zero",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 0.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 0.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 90.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 0.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 90.0,
+            "old_speed": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "alt_over_50000",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 49000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 51000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 90.0,
+          "lat": 49.99995942970456,
+          "lon": 8.277167166032132,
+          "alt": 51000.0,
+          "track": 90.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 49000.0,
+          "old_track": 90.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "alt_over_50000",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 49000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 51000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 90.0,
+            "lat": 49.99995942970456,
+            "lon": 8.277167166032132,
+            "alt": 51000.0,
+            "track": 90.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 49000.0,
+            "old_track": 90.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "decelerate_negative",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 100.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 90.0,
+          "lat": 49.999997996527625,
+          "lon": 8.201592715110339,
+          "alt": 35000.0,
+          "track": 90.0,
+          "speed": 100.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 90.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "decelerate_negative",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 100.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 90.0,
+            "lat": 49.999997996527625,
+            "lon": 8.201592715110339,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 100.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 90.0,
+            "old_speed": 450.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "same_time_not_newer",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 51.0,
+            "lon": 9.0,
+            "alt": 20000.0,
+            "track": 180.0,
+            "speed": 300.0
+          }
+        ],
+        "at": 30.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          0
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 30.0,
+          "lat": 49.99995942970456,
+          "lon": 8.097167166032136,
+          "alt": 35000.0,
+          "track": 90.0,
+          "speed": 450.0,
+          "old_time": null,
+          "old_lat": 0.0,
+          "old_lon": 0.0,
+          "old_alt": 0.0,
+          "old_track": 0.0,
+          "old_speed": 0.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "same_time_not_newer",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 51.0,
+            "lon": 9.0,
+            "alt": 20000.0,
+            "track": 180.0,
+            "speed": 300.0
+          }
+        ],
+        "at": 30.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          0
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 30.0,
+            "lat": 49.99995942970456,
+            "lon": 8.097167166032136,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0,
+            "old_time": null,
+            "old_lat": 0.0,
+            "old_lon": 0.0,
+            "old_alt": 0.0,
+            "old_track": 0.0,
+            "old_speed": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "older_report_ignored",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 34000.0,
+            "track": 80.0,
+            "speed": 440.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          0
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 90.0,
+          "lat": 49.99995942970456,
+          "lon": 8.277167166032132,
+          "alt": 35000.0,
+          "track": 90.0,
+          "speed": 450.0,
+          "old_time": null,
+          "old_lat": 0.0,
+          "old_lon": 0.0,
+          "old_alt": 0.0,
+          "old_track": 0.0,
+          "old_speed": 0.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "older_report_ignored",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 34000.0,
+            "track": 80.0,
+            "speed": 440.0
+          }
+        ],
+        "at": 90.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          0
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 90.0,
+            "lat": 49.99995942970456,
+            "lon": 8.277167166032132,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0,
+            "old_time": null,
+            "old_lat": 0.0,
+            "old_lon": 0.0,
+            "old_alt": 0.0,
+            "old_track": 0.0,
+            "old_speed": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "three_reports",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35100.0,
+            "track": 92.0,
+            "speed": 452.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 120.0,
+            "lat": 49.99,
+            "lon": 8.36,
+            "alt": 35300.0,
+            "track": 95.0,
+            "speed": 455.0
+          }
+        ],
+        "at": 150.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 150.0,
+          "lat": 49.98278624458757,
+          "lon": 8.457902098837389,
+          "alt": 35400.0,
+          "track": 96.5,
+          "speed": 456.5,
+          "old_time": 60.0,
+          "old_lat": 50.0,
+          "old_lon": 8.18,
+          "old_alt": 35100.0,
+          "old_track": 92.0,
+          "old_speed": 452.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "three_reports",
+        "reports": [
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 60.0,
+            "lat": 50.0,
+            "lon": 8.18,
+            "alt": 35100.0,
+            "track": 92.0,
+            "speed": 452.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 120.0,
+            "lat": 49.99,
+            "lon": 8.36,
+            "alt": 35300.0,
+            "track": 95.0,
+            "speed": 455.0
+          }
+        ],
+        "at": 150.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 150.0,
+            "lat": 49.98278624458757,
+            "lon": 8.457902098837389,
+            "alt": 35400.0,
+            "track": 96.5,
+            "speed": 456.5,
+            "old_time": 60.0,
+            "old_lat": 50.0,
+            "old_lon": 8.18,
+            "old_alt": 35100.0,
+            "old_track": 92.0,
+            "old_speed": 452.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "two_planes",
+        "reports": [
+          {
+            "hex": "4CA123",
+            "t": 0.0,
+            "lat": 51.0,
+            "lon": 9.0,
+            "alt": 36000.0,
+            "track": 270.0,
+            "speed": 480.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "4CA123",
+            "t": 30.0,
+            "lat": 51.0,
+            "lon": 8.9,
+            "alt": 36000.0,
+            "track": 270.0,
+            "speed": 480.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 40.0,
+            "lat": 50.0,
+            "lon": 8.12,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 60.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "3C6444",
+          "time": 60.0,
+          "lat": 49.999981968752365,
+          "lon": 8.184778130933946,
+          "alt": 35000.0,
+          "track": 90.0,
+          "speed": 450.0,
+          "old_time": 0.0,
+          "old_lat": 50.0,
+          "old_lon": 8.0,
+          "old_alt": 35000.0,
+          "old_track": 90.0,
+          "old_speed": 450.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "two_planes",
+        "reports": [
+          {
+            "hex": "4CA123",
+            "t": 0.0,
+            "lat": 51.0,
+            "lon": 9.0,
+            "alt": 36000.0,
+            "track": 270.0,
+            "speed": 480.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 0.0,
+            "lat": 50.0,
+            "lon": 8.0,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          },
+          {
+            "hex": "4CA123",
+            "t": 30.0,
+            "lat": 51.0,
+            "lon": 8.9,
+            "alt": 36000.0,
+            "track": 270.0,
+            "speed": 480.0
+          },
+          {
+            "hex": "3C6444",
+            "t": 40.0,
+            "lat": 50.0,
+            "lon": 8.12,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0
+          }
+        ],
+        "at": 60.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "3C6444",
+            "time": 60.0,
+            "lat": 49.999981968752365,
+            "lon": 8.184778130933946,
+            "alt": 35000.0,
+            "track": 90.0,
+            "speed": 450.0,
+            "old_time": 0.0,
+            "old_lat": 50.0,
+            "old_lon": 8.0,
+            "old_alt": 35000.0,
+            "old_track": 90.0,
+            "old_speed": 450.0
+          },
+          {
+            "hex": "4CA123",
+            "time": 60.0,
+            "lat": 50.999952168952525,
+            "lon": 8.794137072742394,
+            "alt": 36000.0,
+            "track": 270.0,
+            "speed": 480.0,
+            "old_time": 0.0,
+            "old_lat": 51.0,
+            "old_lon": 9.0,
+            "old_alt": 36000.0,
+            "old_track": 270.0,
+            "old_speed": 480.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "get",
+      "args": {
+        "scenario": "south_west",
+        "reports": [
+          {
+            "hex": "E80123",
+            "t": 0.0,
+            "lat": -33.9,
+            "lon": 18.4,
+            "alt": 37000.0,
+            "track": 225.0,
+            "speed": 470.0
+          },
+          {
+            "hex": "E80123",
+            "t": 60.0,
+            "lat": -34.0,
+            "lon": 18.3,
+            "alt": 37000.0,
+            "track": 226.0,
+            "speed": 471.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "plane": {
+          "hex": "E80123",
+          "time": 120.0,
+          "lat": -34.08930316331142,
+          "lon": 18.184293629167595,
+          "alt": 37000.0,
+          "track": 227.0,
+          "speed": 472.0,
+          "old_time": 0.0,
+          "old_lat": -33.9,
+          "old_lon": 18.4,
+          "old_alt": 37000.0,
+          "old_track": 225.0,
+          "old_speed": 470.0
+        }
+      }
+    },
+    {
+      "fn": "get_all",
+      "args": {
+        "scenario": "south_west",
+        "reports": [
+          {
+            "hex": "E80123",
+            "t": 0.0,
+            "lat": -33.9,
+            "lon": 18.4,
+            "alt": 37000.0,
+            "track": 225.0,
+            "speed": 470.0
+          },
+          {
+            "hex": "E80123",
+            "t": 60.0,
+            "lat": -34.0,
+            "lon": 18.3,
+            "alt": 37000.0,
+            "track": 226.0,
+            "speed": 471.0
+          }
+        ],
+        "at": 120.0,
+        "ttl": 5
+      },
+      "result": {
+        "inserted": [
+          1,
+          1
+        ],
+        "planes": [
+          {
+            "hex": "E80123",
+            "time": 120.0,
+            "lat": -34.08930316331142,
+            "lon": 18.184293629167595,
+            "alt": 37000.0,
+            "track": 227.0,
+            "speed": 472.0,
+            "old_time": 0.0,
+            "old_lat": -33.9,
+            "old_lon": 18.4,
+            "old_alt": 37000.0,
+            "old_track": 225.0,
+            "old_speed": 470.0
+          }
+        ]
+      }
+    }
+  ]
+}

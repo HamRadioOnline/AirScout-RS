@@ -1,0 +1,15 @@
+[package]
+name = "as-adsb"
+description = "AirScout-RS Mode-S / ADS-B decoding (port of LibADSB)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+as-golden.workspace = true
+serde_json.workspace = true
+chrono.workspace = true

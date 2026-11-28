@@ -1,0 +1,4 @@
+# Embedded web assets and the web JSON golden file are compared byte for byte;
+# no line-end conversion on checkout.
+crates/as-web/assets/** -text
+tests/golden/web_json.json -text

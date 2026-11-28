@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.hamradioonline.AirScoutRS</id>
+  <name>AirScout-RS</name>
+  <summary>Aircraft scatter prediction for amateur radio</summary>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <developer id="io.github.hamradioonline">
+    <name>HamRadioOnline</name>
+  </developer>
+  <description>
+    <p>AirScout-RS tracks aircraft and predicts when they can reflect a radio signal
+      between two amateur radio stations.</p>
+  </description>
+  <launchable type="desktop-id">io.github.hamradioonline.AirScoutRS.desktop</launchable>
+  <url type="homepage">https://github.com/HamRadioOnline/AirScout-RS</url>
+  <url type="bugtracker">https://github.com/HamRadioOnline/AirScout-RS/issues</url>
+  <content_rating type="oars-1.1" />
+</component>

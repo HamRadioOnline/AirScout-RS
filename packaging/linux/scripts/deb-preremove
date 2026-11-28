@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+[ "${1:-}" = remove ] || exit 0
+if [ -d /run/systemd/system ]; then
+    systemctl stop airscout-planeserver.service || true
+fi
+systemctl disable airscout-planeserver.service || true

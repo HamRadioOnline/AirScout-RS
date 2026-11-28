@@ -1,0 +1,137 @@
+{
+  "window": "SetTimeDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "SetTimeDlg",
+  "client_size": [
+    392,
+    174
+  ],
+  "controls": [
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 4,
+      "text": "You can set online/offline mode here and set a start time for offline mode.",
+      "location": [
+        52,
+        9
+      ],
+      "size": [
+        292,
+        45
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "dtp_SetTimeDlg_Start",
+      "kind": "DateTimePicker",
+      "parent": "$this",
+      "index": 3,
+      "text": null,
+      "location": [
+        129,
+        98
+      ],
+      "size": [
+        125,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_SetTimeDlg_OK",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 2,
+      "text": "OK",
+      "location": [
+        108,
+        133
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_SetTimeDlg_Cancel",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 1,
+      "text": "Cancel",
+      "location": [
+        189,
+        133
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_Time_Online",
+      "kind": "CheckBox",
+      "parent": "$this",
+      "index": 0,
+      "text": "Online mode: use current PC time (Default).",
+      "location": [
+        70,
+        66
+      ],
+      "size": [
+        229,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "CheckedChanged",
+          "handler": "cb_Time_Online_CheckedChanged"
+        }
+      ]
+    }
+  ],
+  "unparsed": []
+}

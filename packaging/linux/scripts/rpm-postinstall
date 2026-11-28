@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+systemd-sysusers airscout-planeserver.conf
+
+if [ "${1:-}" = 1 ]; then
+    systemctl preset airscout-planeserver.service || true
+fi
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload || true
+    if [ "${1:-0}" -gt 1 ]; then
+        systemctl try-restart airscout-planeserver.service || true
+    fi
+fi

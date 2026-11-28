@@ -1,0 +1,24 @@
+[package]
+name = "as-feeds"
+description = "AirScout-RS plane feeds (ports of the AirScout.PlaneFeeds.Plugin.* plugins)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+as-adsb.workspace = true
+as-aircraft.workspace = true
+as-geo.workspace = true
+as-net.workspace = true
+chrono.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json = { workspace = true, features = ["raw_value"] }
+thiserror.workspace = true
+toml.workspace = true
+zstd.workspace = true
+
+[dev-dependencies]
+as-golden.workspace = true
+mockito.workspace = true
+serde_json.workspace = true

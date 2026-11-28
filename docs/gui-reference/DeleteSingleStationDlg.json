@@ -1,0 +1,197 @@
+{
+  "window": "DeleteSingleStationDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "Delete Single Station",
+  "client_size": [
+    485,
+    220
+  ],
+  "controls": [
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 6,
+      "text": "Use this dialog to find and remove a single station/locator combination from the local station database. \nCAUTION: You can only remove own entries permanently. If a station/locator combination is part of the global database it would be re-inserted on next update.",
+      "location": [
+        12,
+        19
+      ],
+      "size": [
+        464,
+        92
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_Call",
+      "kind": "ComboBox",
+      "parent": "$this",
+      "index": 5,
+      "text": null,
+      "location": [
+        55,
+        132
+      ],
+      "size": [
+        121,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "DropDown",
+          "handler": "cb_Call_DropDown"
+        },
+        {
+          "event": "SelectedIndexChanged",
+          "handler": "cb_Call_SelectedIndexChanged"
+        },
+        {
+          "event": "TextChanged",
+          "handler": "cb_Call_TextChanged"
+        },
+        {
+          "event": "KeyPress",
+          "handler": "cb_Call_KeyPress"
+        }
+      ]
+    },
+    {
+      "name": "cb_Locator",
+      "kind": "ComboBox",
+      "parent": "$this",
+      "index": 4,
+      "text": null,
+      "location": [
+        279,
+        132
+      ],
+      "size": [
+        121,
+        21
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label2",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 3,
+      "text": "Call:",
+      "location": [
+        22,
+        135
+      ],
+      "size": [
+        27,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label3",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 2,
+      "text": "Locator:",
+      "location": [
+        223,
+        135
+      ],
+      "size": [
+        46,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Delete",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 1,
+      "text": "Delete",
+      "location": [
+        55,
+        173
+      ],
+      "size": [
+        121,
+        35
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Cancel",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 0,
+      "text": "Cancel",
+      "location": [
+        279,
+        173
+      ],
+      "size": [
+        121,
+        35
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

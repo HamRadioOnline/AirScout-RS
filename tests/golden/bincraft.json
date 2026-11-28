@@ -1,0 +1,265 @@
+{
+  "upstream_commit": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "cases": [
+    {
+      "fn": "bincraft",
+      "args": {
+        "name": "three_records",
+        "data": "vABHCKIBAABwAAAAAwAAAAcAAAAyAAoAMwAMAEDiAQADAAAAAAAAAFrXNAHSBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIllPAUKABQAhqinAHlIBAMIAAkAyAXhBWAJKAoAAAAAABDXEgAAAABiVgAA8FUiVgAAAAAAAHgAAAAAAAAAAACjAAAAQgAAAAD4yAEEAERMSDRBQiAgAABBMzg4RC1BSU1BAAAAAAAAAAAAAAwAAACKZTwFCwAVAG6spwBhTAQDCQAKAMkF4gVhCSkKAAAAAAEQ2BIAAAAAY1YAAPFVI1YAAAAAAAB5AAAAAAAAAAAApAAAAEEAAAAA8MgBBABSWVIxMktBAAAAQjczOEVJLURXRQAAAAAAAAAAAAANAAAAi2U8BQwAFgBWsKcASVAEAwoACwDKBeMFYgkqCgAAAAACENkSAAAAAGRWAADyVSRWAAAAAAAAegAAAAAAAAAAAKUAAABCAAAAAKjIAQQARVdHN01CAAAAAEFUNzZELUFFV00AAAAAAAAAAAAADgAAAA=="
+      },
+      "result": {
+        "now": 1795435200.6999998,
+        "aircraft": [
+          {
+            "hex": "3C6589",
+            "versionType": 10,
+            "flags": 20,
+            "lon": 10.987654,
+            "lat": 50.612345,
+            "alt_baro": 37000,
+            "alt_geom": 37625,
+            "track": 26.666666666666668,
+            "gs": 260.0,
+            "seen_pos": 12.0
+          },
+          {
+            "hex": "3C658A",
+            "versionType": 11,
+            "flags": 21,
+            "lon": 10.988654,
+            "lat": 50.613345,
+            "alt_baro": 37025,
+            "alt_geom": 37650,
+            "track": 26.677777777777777,
+            "gs": 260.1,
+            "seen_pos": 12.1
+          },
+          {
+            "hex": "3C658B",
+            "versionType": 12,
+            "flags": 22,
+            "lon": 10.989654,
+            "lat": 50.614345,
+            "alt_baro": 37050,
+            "alt_geom": 37675,
+            "track": 26.68888888888889,
+            "gs": 260.2,
+            "seen_pos": 12.2
+          }
+        ]
+      }
+    },
+    {
+      "fn": "public_bincraft",
+      "args": {
+        "name": "three_records",
+        "data": "vABHCKIBAABwAAAAAwAAAAcAAAAyAAoAMwAMAEDiAQADAAAAAAAAAFrXNAHSBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIllPAUKABQAhqinAHlIBAMIAAkAyAXhBWAJKAoAAAAAABDXEgAAAABiVgAA8FUiVgAAAAAAAHgAAAAAAAAAAACjAAAAQgAAAAD4yAEEAERMSDRBQiAgAABBMzg4RC1BSU1BAAAAAAAAAAAAAAwAAACKZTwFCwAVAG6spwBhTAQDCQAKAMkF4gVhCSkKAAAAAAEQ2BIAAAAAY1YAAPFVI1YAAAAAAAB5AAAAAAAAAAAApAAAAEEAAAAA8MgBBABSWVIxMktBAAAAQjczOEVJLURXRQAAAAAAAAAAAAANAAAAi2U8BQwAFgBWsKcASVAEAwoACwDKBeMFYgkqCgAAAAACENkSAAAAAGRWAADyVSRWAAAAAAAAegAAAAAAAAAAAKUAAABCAAAAAKjIAQQARVdHN01CAAAAAEFUNzZELUFFV00AAAAAAAAAAAAADgAAAA=="
+      },
+      "result": {
+        "now_ms": 1795435200700,
+        "element_size": 112,
+        "aircraft": [
+          {
+            "hex": "3C6589",
+            "seen": 131073.0,
+            "lat": 50.612345,
+            "lon": 10.987654,
+            "baro_rate": 64.0,
+            "baro_alt": 37000.0,
+            "geom_alt": 37625.0,
+            "squawk": "1000",
+            "gs": 482.3,
+            "track": 245.7111111111111,
+            "category": 163,
+            "air_ground": 2,
+            "callsign": "DLH4AB",
+            "type": "A388",
+            "reg": "D-AIMA",
+            "seen_pos": 1.2
+          },
+          {
+            "hex": "3C658A",
+            "seen": 137626.7,
+            "lat": 50.613345,
+            "lon": 10.988654,
+            "baro_rate": 72.0,
+            "baro_alt": 37025.0,
+            "geom_alt": 37650.0,
+            "squawk": "1001",
+            "gs": 482.4,
+            "track": 245.72222222222223,
+            "category": 164,
+            "air_ground": 1,
+            "callsign": null,
+            "type": "B738",
+            "reg": "EI-DWE",
+            "seen_pos": 1.3
+          },
+          {
+            "hex": "3C658B",
+            "seen": 144180.4,
+            "lat": null,
+            "lon": null,
+            "baro_rate": 80.0,
+            "baro_alt": null,
+            "geom_alt": 37675.0,
+            "squawk": "1002",
+            "gs": 482.5,
+            "track": 245.73333333333332,
+            "category": 165,
+            "air_ground": 2,
+            "callsign": "EWG7MB",
+            "type": "AT76",
+            "reg": "D-AEWM",
+            "seen_pos": null
+          }
+        ]
+      }
+    },
+    {
+      "fn": "bincraft",
+      "args": {
+        "name": "partial_tail",
+        "data": "vABHCKIBAABwAAAAAwAAAAcAAAAyAAoAMwAMAEDiAQADAAAAAAAAAFrXNAHSBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIllPAUKABQAhqinAHlIBAMIAAkAyAXhBWAJKAoAAAAAABDXEgAAAABiVgAA8FUiVgAAAAAAAHgAAAAAAAAAAACjAAAAQgAAAAD4yAEEAERMSDRBQiAgAABBMzg4RC1BSU1BAAAAAAAAAAAAAAwAAACKZTwFCwAVAG6spwBhTAQDCQAKAMkF4gVhCSkKAAAAAAEQ2BIAAAAAY1YAAPFVI1YAAAAAAAB5AAAAAAAAAAAApAAAAEEAAAAA8MgBBABSWVIxMktBAAAAQjczOEVJLURXRQAAAAAAAAAAAAANAAAAi2U8BQwAFgBWsKcASVAEAwoACwDKBeMFYgkqCgAAAAACENkSAAAAAGRWAADyVSRWAAAAAAAAegAAAAAAAAAAAKUAAABCAAAAAKjIAQQARVdHN01CAAAAAEFUNzZELUFFV00AAAAA"
+      },
+      "result": {
+        "now": 1795435200.6999998,
+        "aircraft": [
+          {
+            "hex": "3C6589",
+            "versionType": 10,
+            "flags": 20,
+            "lon": 10.987654,
+            "lat": 50.612345,
+            "alt_baro": 37000,
+            "alt_geom": 37625,
+            "track": 26.666666666666668,
+            "gs": 260.0,
+            "seen_pos": 12.0
+          },
+          {
+            "hex": "3C658A",
+            "versionType": 11,
+            "flags": 21,
+            "lon": 10.988654,
+            "lat": 50.613345,
+            "alt_baro": 37025,
+            "alt_geom": 37650,
+            "track": 26.677777777777777,
+            "gs": 260.1,
+            "seen_pos": 12.1
+          }
+        ]
+      }
+    },
+    {
+      "fn": "public_bincraft",
+      "args": {
+        "name": "partial_tail",
+        "data": "vABHCKIBAABwAAAAAwAAAAcAAAAyAAoAMwAMAEDiAQADAAAAAAAAAFrXNAHSBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIllPAUKABQAhqinAHlIBAMIAAkAyAXhBWAJKAoAAAAAABDXEgAAAABiVgAA8FUiVgAAAAAAAHgAAAAAAAAAAACjAAAAQgAAAAD4yAEEAERMSDRBQiAgAABBMzg4RC1BSU1BAAAAAAAAAAAAAAwAAACKZTwFCwAVAG6spwBhTAQDCQAKAMkF4gVhCSkKAAAAAAEQ2BIAAAAAY1YAAPFVI1YAAAAAAAB5AAAAAAAAAAAApAAAAEEAAAAA8MgBBABSWVIxMktBAAAAQjczOEVJLURXRQAAAAAAAAAAAAANAAAAi2U8BQwAFgBWsKcASVAEAwoACwDKBeMFYgkqCgAAAAACENkSAAAAAGRWAADyVSRWAAAAAAAAegAAAAAAAAAAAKUAAABCAAAAAKjIAQQARVdHN01CAAAAAEFUNzZELUFFV00AAAAA"
+      },
+      "result": {
+        "now_ms": 1795435200700,
+        "element_size": 112,
+        "aircraft": [
+          {
+            "hex": "3C6589",
+            "seen": 131073.0,
+            "lat": 50.612345,
+            "lon": 10.987654,
+            "baro_rate": 64.0,
+            "baro_alt": 37000.0,
+            "geom_alt": 37625.0,
+            "squawk": "1000",
+            "gs": 482.3,
+            "track": 245.7111111111111,
+            "category": 163,
+            "air_ground": 2,
+            "callsign": "DLH4AB",
+            "type": "A388",
+            "reg": "D-AIMA",
+            "seen_pos": 1.2
+          },
+          {
+            "hex": "3C658A",
+            "seen": 137626.7,
+            "lat": 50.613345,
+            "lon": 10.988654,
+            "baro_rate": 72.0,
+            "baro_alt": 37025.0,
+            "geom_alt": 37650.0,
+            "squawk": "1001",
+            "gs": 482.4,
+            "track": 245.72222222222223,
+            "category": 164,
+            "air_ground": 1,
+            "callsign": null,
+            "type": "B738",
+            "reg": "EI-DWE",
+            "seen_pos": 1.3
+          }
+        ]
+      }
+    },
+    {
+      "fn": "bincraft",
+      "args": {
+        "name": "empty",
+        "data": ""
+      },
+      "result": {
+        "error": "ArgumentException"
+      }
+    },
+    {
+      "fn": "public_bincraft",
+      "args": {
+        "name": "empty",
+        "data": ""
+      },
+      "result": {
+        "error": "ArgumentException"
+      }
+    },
+    {
+      "fn": "bincraft",
+      "args": {
+        "name": "header_only_short",
+        "data": "vABHCKIBAABwAAAAAAAAAAcAAAA="
+      },
+      "result": {
+        "error": "ArgumentException"
+      }
+    },
+    {
+      "fn": "public_bincraft",
+      "args": {
+        "name": "header_only_short",
+        "data": "vABHCKIBAABwAAAAAAAAAAcAAAA="
+      },
+      "result": {
+        "error": "ArgumentException"
+      }
+    },
+    {
+      "fn": "bincraft",
+      "args": {
+        "name": "stride_too_small",
+        "data": "vABHCKIBAAAgAAAAAgAAAAcAAAAyAAoAMwAMAEDiAQACAAAAAAAAAFrXNAHSBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "result": {
+        "error": "ArgumentException"
+      }
+    },
+    {
+      "fn": "public_bincraft",
+      "args": {
+        "name": "stride_too_small",
+        "data": "vABHCKIBAAAgAAAAAgAAAAcAAAAyAAoAMwAMAEDiAQACAAAAAAAAAFrXNAHSBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "result": {
+        "error": "IndexOutOfRangeException"
+      }
+    }
+  ]
+}

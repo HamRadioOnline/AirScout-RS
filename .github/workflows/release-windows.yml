@@ -1,0 +1,332 @@
+name: Windows packages
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+    secrets:
+      CERTUM_ACCOUNT_EMAIL:
+        required: false
+      CERTUM_TOTP_SEED:
+        required: false
+      CERTUM_CERT_FINGERPRINT:
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ inputs.tag }}
+
+jobs:
+  sign-exes:
+    runs-on: ubuntu-24.04
+    environment: release
+    timeout-minutes: 30
+    outputs:
+      signing: ${{ steps.sign-exes.outputs.signing }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate release tag
+        run: packaging/release/check-tag.sh "$TAG"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: stage-windows-*
+          path: transport
+      - name: Extract stages
+        run: |
+          for slug in windows-x86_64 windows-arm64 windows-i686; do
+            mkdir -p "stage/$slug"
+            unzip -q "transport/stage-$slug/stage.zip" -d "stage/$slug"
+          done
+      - name: Check Certum configuration
+        id: certum
+        env:
+          CERTUM_ACCOUNT_EMAIL: ${{ secrets.CERTUM_ACCOUNT_EMAIL }}
+          CERTUM_TOTP_SEED: ${{ secrets.CERTUM_TOTP_SEED }}
+          CERTUM_CERT_FINGERPRINT: ${{ secrets.CERTUM_CERT_FINGERPRINT }}
+        run: |
+          state=$(packaging/windows/sign.sh check)
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+      - name: Install pinned signing build dependencies
+        if: steps.certum.outputs.state == 'configured'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends pkg-config libssl-dev libcurl4-openssl-dev zlib1g-dev
+      - name: Install stable Rust
+        if: steps.certum.outputs.state == 'configured'
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Prepare pinned EXE signing tools
+        if: steps.certum.outputs.state == 'configured'
+        run: packaging/windows/sign.sh prepare exes "$RUNNER_TEMP/windows-sign-tools"
+      - name: Sign and verify staged EXEs
+        id: sign-exes
+        env:
+          CERTUM_ACCOUNT_EMAIL: ${{ secrets.CERTUM_ACCOUNT_EMAIL }}
+          CERTUM_TOTP_SEED: ${{ secrets.CERTUM_TOTP_SEED }}
+          CERTUM_CERT_FINGERPRINT: ${{ secrets.CERTUM_CERT_FINGERPRINT }}
+        run: |
+          state=$(packaging/windows/sign.sh check)
+          signing=missing
+          if [[ "$state" == configured ]]; then
+            packaging/windows/sign.sh exes "$RUNNER_TEMP/windows-sign-tools" stage/windows-{x86_64,arm64,i686}
+            signing=verified
+          fi
+          echo "signing=$signing" >> "$GITHUB_OUTPUT"
+      - name: Remove signing tools
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/windows-sign-tools"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-stage-checked
+          path: stage/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
+
+  assemble:
+    needs: sign-exes
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: windows-stage-checked
+          path: stage
+      - name: Extract pinned x64 WiX command line tools
+        shell: pwsh
+        run: |
+          $package = Join-Path $env:RUNNER_TEMP 'wix-cli-x64.msi'
+          $destination = Join-Path $env:RUNNER_TEMP 'wix-cli'
+          python packaging/release/fetch-tool.py wix windows-x86_64 $package
+          if ($LASTEXITCODE -ne 0) { throw 'Could not fetch verified WiX.' }
+          $arguments = '/a "{0}" /qn TARGETDIR="{1}" /norestart' -f $package, $destination
+          $extract = Start-Process msiexec.exe -ArgumentList $arguments -Wait -PassThru
+          if ($extract.ExitCode -ne 0) { throw "WiX extraction failed ($($extract.ExitCode))." }
+          $wix = @(Get-ChildItem -LiteralPath $destination -Recurse -Filter wix.exe -File)
+          if ($wix.Count -ne 1) { throw 'Expected one extracted wix.exe.' }
+          "WIX_EXE=$($wix[0].FullName)" >> $env:GITHUB_ENV
+      - name: Build MSI packages
+        id: build-msi
+        shell: pwsh
+        run: |
+          & packaging/windows/build-msi.ps1 -StageDir stage/windows-x86_64 -Tag $env:TAG -Architecture x64 -OutputDir candidate/windows-x86_64/msi/assets
+          & packaging/windows/build-msi.ps1 -StageDir stage/windows-arm64 -Tag $env:TAG -Architecture arm64 -OutputDir candidate/windows-arm64/msi/assets
+          & packaging/windows/build-msi.ps1 -StageDir stage/windows-i686 -Tag $env:TAG -Architecture x86 -OutputDir candidate/windows-i686/msi/assets
+      - name: Build same-version MSI upgrade fixtures
+        if: ${{ !startsWith(inputs.tag, 'alpha-') }}
+        shell: pwsh
+        run: |
+          $stage = Get-Content stage/windows-x86_64/stage.json -Raw | ConvertFrom-Json
+          $fixtureTag = if ($env:TAG.StartsWith('beta-')) { "v$($stage.version)" } else { "beta-v$($stage.version)-smoke" }
+          foreach ($entry in @(@{arch='x64'; slug='windows-x86_64'}, @{arch='arm64'; slug='windows-arm64'}, @{arch='x86'; slug='windows-i686'})) {
+              & packaging/windows/build-msi.ps1 -StageDir "stage/$($entry.slug)" -Tag $fixtureTag -Architecture $entry.arch -OutputDir "upgrade-fixtures/$($entry.slug)"
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ !startsWith(inputs.tag, 'alpha-') }}
+        with:
+          name: windows-upgrade-fixtures
+          path: upgrade-fixtures/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
+      - name: Build ZIP packages
+        id: build-zip
+        shell: pwsh
+        run: |
+          foreach ($slug in 'windows-x86_64', 'windows-arm64', 'windows-i686') {
+              & packaging/windows/build-zip.ps1 -StageDir "stage/$slug" -Tag $env:TAG -OutputDir "candidate/$slug/zip/assets"
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-package-candidates
+          path: candidate/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
+
+  finalize:
+    needs: [assemble, sign-exes]
+    runs-on: ubuntu-24.04
+    environment: release
+    timeout-minutes: 25
+    env:
+      EXE_SIGNING: ${{ needs.sign-exes.outputs.signing }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: windows-package-candidates
+          path: candidate
+      - name: Check Certum configuration
+        id: certum
+        env:
+          CERTUM_ACCOUNT_EMAIL: ${{ secrets.CERTUM_ACCOUNT_EMAIL }}
+          CERTUM_TOTP_SEED: ${{ secrets.CERTUM_TOTP_SEED }}
+          CERTUM_CERT_FINGERPRINT: ${{ secrets.CERTUM_CERT_FINGERPRINT }}
+        run: |
+          state=$(packaging/windows/sign.sh check)
+          case "$EXE_SIGNING:$state" in
+            verified:configured|missing:missing) ;;
+            *) echo '::error::Certum configuration changed between signing jobs.'; exit 1 ;;
+          esac
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+      - name: Install pinned MSI signing build dependencies
+        if: steps.certum.outputs.state == 'configured'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends pkg-config libssl-dev libcurl4-openssl-dev zlib1g-dev
+      - name: Prepare pinned MSI signing tools
+        if: steps.certum.outputs.state == 'configured'
+        run: packaging/windows/sign.sh prepare msi "$RUNNER_TEMP/windows-sign-tools"
+      - name: Sign and verify final MSIs
+        id: sign-msi
+        env:
+          CERTUM_ACCOUNT_EMAIL: ${{ secrets.CERTUM_ACCOUNT_EMAIL }}
+          CERTUM_TOTP_SEED: ${{ secrets.CERTUM_TOTP_SEED }}
+          CERTUM_CERT_FINGERPRINT: ${{ secrets.CERTUM_CERT_FINGERPRINT }}
+        run: |
+          state=$(packaging/windows/sign.sh check)
+          signing=missing
+          if [[ "$state" == configured ]]; then
+            assets=()
+            for slug in windows-x86_64 windows-arm64 windows-i686; do
+              assets+=("candidate/$slug/msi/assets/AirScout-RS-$TAG-$slug.msi")
+            done
+            packaging/windows/sign.sh msi "$RUNNER_TEMP/windows-sign-tools" "${assets[@]}"
+            signing=verified
+          fi
+          echo "signing=$signing" >> "$GITHUB_OUTPUT"
+      - name: Remove signing tools
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/windows-sign-tools"
+      - name: Write package result sidecars
+        id: package-result
+        env:
+          MSI_SIGNING: ${{ steps.sign-msi.outputs.signing }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          tag = os.environ["TAG"]
+          exe_signing = os.environ["EXE_SIGNING"]
+          msi_signing = os.environ["MSI_SIGNING"]
+          if exe_signing != msi_signing or exe_signing not in {"missing", "verified"}:
+              raise SystemExit("Incomplete Windows signing results.")
+          for slug in ("windows-x86_64", "windows-arm64", "windows-i686"):
+              for fmt, signing in (("zip", exe_signing), ("msi", msi_signing)):
+                  package = Path("candidate") / slug / fmt
+                  asset = f"AirScout-RS-{tag}-{slug}.{fmt}"
+                  if not (package / "assets" / asset).is_file():
+                      raise SystemExit(f"Missing Windows package: {asset}")
+                  result = {"format": fmt, "slug": slug, "assets": [asset], "signing": signing}
+                  (package / "result.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-msi-windows-x86_64
+          path: candidate/windows-x86_64/msi/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-msi-windows-arm64
+          path: candidate/windows-arm64/msi/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-msi-windows-i686
+          path: candidate/windows-i686/msi/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-zip-windows-x86_64
+          path: candidate/windows-x86_64/zip/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-zip-windows-arm64
+          path: candidate/windows-arm64/zip/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-zip-windows-i686
+          path: candidate/windows-i686/zip/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+
+  verify:
+    name: Verify MSI and ZIP (${{ matrix.slug }})
+    needs: [finalize, sign-exes]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - slug: windows-x86_64
+            os: windows-2022
+          - slug: windows-arm64
+            os: windows-11-arm
+          - slug: windows-i686
+            os: windows-2022
+    env:
+      SLUG: ${{ matrix.slug }}
+      WINDOWS_SIGNING: ${{ needs.sign-exes.outputs.signing }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: package-msi-${{ matrix.slug }}
+          path: msi
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: package-zip-${{ matrix.slug }}
+          path: zip
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: ${{ !startsWith(inputs.tag, 'alpha-') }}
+        with:
+          name: windows-upgrade-fixtures
+          path: upgrade-fixtures
+      - name: Verify ZIP extraction and MSI installer semantics
+        shell: pwsh
+        run: |
+          $tag = $env:TAG
+          if ($tag -cnotmatch '^(?:(?:beta|alpha)-)?v(?<version>[0-9]+\.[0-9]+\.[0-9]+)(?:-[A-Za-z0-9.]+)?$') {
+              throw 'Unexpected release tag'
+          }
+          $version = $Matches.version
+          $name = "AirScout-RS-$tag-$env:SLUG"
+          & packaging/tests/hosted/verify-windows.ps1 -Asset "zip/assets/$name.zip" -Version $version
+          $msi = @{ Asset = "msi/assets/$name.msi"; Version = $version }
+          if (!$tag.StartsWith('alpha-')) {
+              $fixtureTag = if ($tag.StartsWith('beta-')) { "v$version" } else { "beta-v$version-smoke" }
+              $msi.UpgradeFixture = "upgrade-fixtures/$env:SLUG/AirScout-RS-$fixtureTag-$env:SLUG.msi"
+          }
+          & packaging/tests/hosted/verify-windows.ps1 @msi

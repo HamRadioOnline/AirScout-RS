@@ -1,0 +1,114 @@
+[
+  {
+    "Hex": "780AB9",
+    "Call": "CPA343",
+    "Reg": "B-LRN",
+    "TypeCode": "A359",
+    "LastUpdated": "2019-03-16T05:24:42Z"
+  },
+  {
+    "Hex": "478098",
+    "Call": "WIF53X",
+    "Reg": "LN-WIP",
+    "TypeCode": "DH8A",
+    "LastUpdated": "2019-03-15T19:25:08Z"
+  },
+  {
+    "Hex": "04004B",
+    "Call": "ETH509",
+    "Reg": "ET-AOU",
+    "TypeCode": "B788",
+    "LastUpdated": "2019-03-16T09:23:54Z"
+  },
+  {
+    "Hex": "3C6444",
+    "Call": "DLH2LC",
+    "Reg": "D-AIBD",
+    "TypeCode": "A319",
+    "LastUpdated": "2019-03-16T09:01:50Z"
+  },
+  {
+    "Hex": "3C65A7",
+    "Call": "DLH459",
+    "Reg": "D-AIMG",
+    "TypeCode": "A388",
+    "LastUpdated": "2019-03-10T14:33:32Z"
+  },
+  {
+    "Hex": "3C670A",
+    "Call": "DLH521",
+    "Reg": "D-AIXJ",
+    "TypeCode": "A359",
+    "LastUpdated": "2019-03-16T03:58:41Z"
+  },
+  {
+    "Hex": "3C6516",
+    "Call": "DLH726",
+    "Reg": "D-AIHV",
+    "TypeCode": "A346",
+    "LastUpdated": "2019-03-16T07:56:13Z"
+  },
+  {
+    "Hex": "3C674D",
+    "Call": "DLH2277",
+    "Reg": "D-AIZM",
+    "TypeCode": "A320",
+    "LastUpdated": "2019-03-16T08:06:56Z"
+  },
+  {
+    "Hex": "3C648E",
+    "Call": "DLH695",
+    "Reg": "D-AIDN",
+    "TypeCode": "A321",
+    "LastUpdated": "2019-03-16T09:23:44Z"
+  },
+  {
+    "Hex": "3C65C2",
+    "Call": "DLH5H",
+    "Reg": "D-AINB",
+    "TypeCode": "A20N",
+    "LastUpdated": "2019-03-16T09:23:25Z"
+  },
+  {
+    "Hex": "3C660D",
+    "Call": "DLH2PJ",
+    "Reg": "D-AIPM",
+    "TypeCode": "A320",
+    "LastUpdated": "2019-03-16T08:17:43Z"
+  },
+  {
+    "Hex": "3C65C6",
+    "Call": "DLH1JT",
+    "Reg": "D-AINF",
+    "TypeCode": "A20N",
+    "LastUpdated": "2019-03-16T09:23:25Z"
+  },
+  {
+    "Hex": "3C6592",
+    "Call": "DLH8HU",
+    "Reg": "D-AILR",
+    "TypeCode": "A319",
+    "LastUpdated": "2019-03-16T08:17:25Z"
+  },
+  {
+    "Hex": "3C6502",
+    "Call": "DLH543",
+    "Reg": "D-AIHB",
+    "TypeCode": "A346",
+    "LastUpdated": "2019-03-16T09:23:41Z"
+  },
+  {
+    "Hex": "AAAAAA",
+    "Call": "",
+    "Reg": "",
+    "TypeCode": "",
+    "LastUpdated": "2019-03-01T00:00:00Z"
+  },
+  {
+    "Hex": "3C0001",
+    "Call": "DLH459",
+    "Reg": "D-AXXX",
+    "TypeCode": "A320",
+    "LastUpdated": "2010-01-01T00:00:00Z"
+  }
+]

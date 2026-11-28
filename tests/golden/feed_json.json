@@ -1,0 +1,39 @@
+{
+  "upstream_commit": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "cases": [
+    {
+      "fn": "readsb_deserialize",
+      "args": {
+        "fixture": "readsb_aircraft.json"
+      },
+      "result": {
+        "error": "JsonReaderException"
+      }
+    },
+    {
+      "fn": "readsb_deserialize",
+      "args": {
+        "fixture": "readsb_aircraft.json",
+        "without_ground": true
+      },
+      "result": 6
+    },
+    {
+      "fn": "dump1090_deserialize",
+      "args": {
+        "fixture": "dump1090_aircraft.json"
+      },
+      "result": {
+        "error": "JsonReaderException"
+      }
+    },
+    {
+      "fn": "dump1090_deserialize",
+      "args": {
+        "fixture": "dump1090_aircraft.json",
+        "without_ground": true
+      },
+      "result": 6
+    }
+  ]
+}

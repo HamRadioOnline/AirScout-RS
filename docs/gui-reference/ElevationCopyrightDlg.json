@@ -1,0 +1,36 @@
+{
+  "window": "ElevationCopyrightDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "\nMaidenhead locator system elvation tiles calculated by DL2ALF based on elevation data of the GLOBE project:\n\nGLOBE Task Team and others (Hastings, David A., Paula K. Dunbar, Gerald M. Elphingstone, Mark Bootz, Hiroshi Murakami, Hiroshi Maruyama, \nHiroshi Masaharu, Peter Holland, John Payne, Nevin A. Bryant, Thomas L. Logan, J.-P. Muller, Gunter Schreier, and John S. MacDonald), eds., 1999. \n\nThe Global Land One-kilometer Base Elevation (GLOBE) Digital Elevation Model, \nVersion 1.0. National Oceanic and Atmospheric Administration, National Geophysical Data Center, 325 Broadway, Boulder, Colorado 80305-3328, U.S.A. \n\nDigital data base on the World Wide Web (URL: http://www.ngdc.noaa.gov/mgg/topo/globe.html) and CD-ROMs. ",
+  "client_size": [
+    1077,
+    253
+  ],
+  "controls": [
+    {
+      "name": "rtb_Copyright",
+      "kind": "RichTextBox",
+      "parent": "$this",
+      "index": 0,
+      "text": "",
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        1077,
+        253
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

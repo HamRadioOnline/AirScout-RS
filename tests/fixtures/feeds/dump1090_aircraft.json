@@ -1,0 +1,12 @@
+{ "now" : 1795435200.7,
+  "messages" : 98765432,
+  "aircraft" : [
+    {"hex":"3c6589","squawk":"1000","flight":"DLH4AB  ","lat":50.612345,"lon":10.987654,"nucp":7,"seen_pos":1.2,"altitude":37000,"vert_rate":0,"track":245,"speed":482,"category":"A5","mlat":[],"tisb":[],"messages":812,"seen":0.4,"rssi":-21.3},
+    {"hex":"4ca7b2","squawk":"2257","flight":"RYR12KA ","lat":50.301,"lon":11.402,"nucp":7,"seen_pos":0.0,"altitude":35975,"vert_rate":64,"track":123,"speed":451,"category":"A3","mlat":[],"tisb":[],"messages":300,"seen":0.0,"rssi":-18.0},
+    {"hex":"3c4dd4","flight":"EWG7MB  ","lat":50.8,"lon":10.55,"nucp":7,"seen_pos":3.7,"altitude":17025,"vert_rate":-1024,"track":301,"speed":270,"category":"A2","mlat":[],"tisb":[],"messages":95,"seen":1.0,"rssi":-25.1},
+    {"hex":"3e1c40","flight":"DIEXY   ","lat":50.45,"lon":11.12,"nucp":6,"seen_pos":12.5,"altitude":3500,"vert_rate":0,"track":15,"speed":102,"category":"A1","mlat":[],"tisb":[],"messages":40,"seen":2.0,"rssi":-30.2},
+    {"hex":"3d0a11","flight":"GAF681  ","lat":50.7,"lon":10.2,"nucp":7,"seen_pos":0.25,"altitude":28000,"vert_rate":0,"track":200,"speed":410,"category":"A4","mlat":[],"tisb":[],"messages":512,"seen":0.1,"rssi":-19.5},
+    {"hex":"3c66b3","flight":"DLH9XY  ","lat":50.03,"lon":8.56,"nucp":7,"seen_pos":0.5,"altitude":"ground","speed":12,"track":90,"category":"A3","mlat":[],"tisb":[],"messages":20,"seen":0.5,"rssi":-10.0},
+    {"hex":"4b1a2c","altitude":39000,"speed":495,"category":"A5","mlat":[],"tisb":[],"messages":7,"seen":4.2,"rssi":-28.0}
+  ]
+}

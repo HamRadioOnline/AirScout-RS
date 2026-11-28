@@ -1,0 +1,40 @@
+[package]
+name = "airscout-planeserver"
+description = "AirScout-RS PlaneServer: collects plane feeds and serves /planes.json"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "airscout_planeserver"
+path = "src/lib.rs"
+
+[[bin]]
+name = "airscout-planeserver"
+path = "src/main.rs"
+
+[dependencies]
+as-settings.workspace = true
+as-web.workspace = true
+as-feeds.workspace = true
+as-aircraft.workspace = true
+chrono.workspace = true
+clap.workspace = true
+ctrlc.workspace = true
+serde.workspace = true
+toml.workspace = true
+directories.workspace = true
+thiserror.workspace = true
+eframe.workspace = true
+tray-icon.workspace = true
+
+[dev-dependencies]
+reqwest.workspace = true
+tempfile.workspace = true
+assert_cmd.workspace = true
+egui_kittest.workspace = true
+
+# The tray runs its own GTK main loop on Linux (the tray-icon README pattern); the same
+# gtk version as tray-icon 0.26.
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"

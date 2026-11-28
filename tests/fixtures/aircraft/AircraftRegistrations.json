@@ -1,0 +1,74 @@
+[
+  {
+    "Prefix": "2",
+    "Country": "Guernsey",
+    "Remarks": "2-AAAA to 2-ZZZZ",
+    "LastUpdated": "2015-03-12T07:08:12Z"
+  },
+  {
+    "Prefix": "3A",
+    "Country": "Monaco",
+    "Remarks": "3A-AAA to 3A-ZZZ, 3A-HAA to 3A-HZZ (Helicopters)",
+    "LastUpdated": "2015-03-12T07:08:12Z"
+  },
+  {
+    "Prefix": "C",
+    "Country": "Canada",
+    "Remarks": "C-FAAA to C-FZZZ (Vintage aircraft may be registered CF- instead of C-F), C-GAAA to C-GZZZ, C-IAAA to C-IZZZ (ultralight aeroplanes only)",
+    "LastUpdated": "2015-03-12T07:08:12Z"
+  },
+  {
+    "Prefix": "D",
+    "Country": "Germany",
+    "Remarks": "D-AAAA to D-AZZZ for aircraft with more than 20t MTOW, D-BAAA to D-BZZZ for aircraft with 14t-20t MTOW, D-CAAA to D-CZZZ for aircraft with 5",
+    "LastUpdated": "2015-03-12T07:08:12Z"
+  },
+  {
+    "Prefix": "EI",
+    "Country": "Ireland",
+    "Remarks": "EI-AAA to EI-ZZZ",
+    "LastUpdated": "2015-03-12T07:08:12Z"
+  },
+  {
+    "Prefix": "F",
+    "Country": "France",
+    "Remarks": "F-AAAA to F-ZZZZ, F-AYAA to F-AZZZ (Historic aircraft), F-CAAA to F-CZZZ (Gliders), F-OAAA to F-OZZZ (Overseas Territories and aircraft on long-term lease to foreign operators), F-PAAA to F-PZZZ (Homebuilt), F-WAAA to F-WZZZ (Test and Delivery), F-ZAAA to F-ZZZZ (State owned)",
+    "LastUpdated": "2015-03-12T07:08:12Z"
+  },
+  {
+    "Prefix": "G",
+    "Country": "United Kingdom",
+    "Remarks": "G-AAAA to G-ZZZZ, G-1-1 to G-99-99(Test and delivery)",
+    "LastUpdated": "2015-03-12T07:08:12Z"
+  },
+  {
+    "Prefix": "HB",
+    "Country": "Liechtenstein",
+    "Remarks": "HB-AAA to HB-ZZZ (shares allocation with Switzerland)",
+    "LastUpdated": "2015-03-12T07:08:12Z"
+  },
+  {
+    "Prefix": "N",
+    "Country": "United States of America",
+    "Remarks": "N1 to N99999, N1A to N9999Z, N1AA to N999ZZ",
+    "LastUpdated": "2015-03-12T07:08:12Z"
+  },
+  {
+    "Prefix": "OE",
+    "Country": "Austria",
+    "Remarks": "OE-AAA to OE-KZZ, OE-BAA to OE-BZZ (official use), OE-LAA to OE-LZZ (airlines operating scheduled flights), OE-VAA to OE-VZZ (test registrations), OE-WAA to OE-WZZ (amphibian and sea planes), OE-XAA to OE-XZZ (helicopters), OE-0001 to OE-5999 (gliders), OE-9000 to OE-9999 (motor gliders)",
+    "LastUpdated": "2015-03-12T07:08:11Z"
+  },
+  {
+    "Prefix": "PH",
+    "Country": "Netherlands",
+    "Remarks": "PH-AAA to PH-ZZZ, PH-1AA to PH-1ZZ (Drones), PH-1A1 to PH-9Z9 (Microlights), PH-100 to PH-9999 (Gliders)",
+    "LastUpdated": "2015-03-12T07:08:12Z"
+  },
+  {
+    "Prefix": "VH",
+    "Country": "Australia",
+    "Remarks": "VH-AAA to VH-ZZZ",
+    "LastUpdated": "2015-03-12T07:08:11Z"
+  }
+]

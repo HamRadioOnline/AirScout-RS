@@ -1,0 +1,21 @@
+[package]
+name = "as-settings"
+description = "AirScout-RS settings (TOML) and band settings"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+as-geo.workspace = true
+as-maps.workspace = true
+as-elevation.workspace = true
+as-aircraft.workspace = true
+as-stations.workspace = true
+chrono.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+directories.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

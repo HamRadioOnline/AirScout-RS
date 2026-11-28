@@ -1,0 +1,39 @@
+AirScout-RS — Flatpak third-party component notices
+====================================================
+
+The AirScout-RS Flatpak bundles the following libraries because the
+Freedesktop 25.08 runtime does not provide them. Each is redistributed under
+its own license; the corresponding source (and full license text) is available
+at the URL listed, verified against the SHA-256 shown. The license text files
+are also installed under /app/share/licenses/<component>/.
+
+1. ayatana-ido 0.9.3
+   License: GPL-3.0-only OR LGPL-3.0-only
+   URL:     https://github.com/AyatanaIndicators/ayatana-ido/archive/refs/tags/0.9.3.tar.gz
+   SHA-256: 4df0a21dde4f6e41d2738c7944d1169836d844e5b65364d1897e93766fa93d58
+   Changes: built with
+            packaging/flatpak/patches/ayatana-ido-0.9.3-optional-introspection.patch
+            from the AirScout-RS repository, which adds an ENABLE_INTROSPECTION
+            build switch (the Flatpak turns it off).
+
+2. libdbusmenu 16.04.0
+   License: GPL-3.0-only OR LGPL-3.0-only
+   URL:     https://launchpad.net/dbusmenu/16.04/16.04.0/+download/libdbusmenu-16.04.0.tar.gz
+   SHA-256: b9cc4a2acd74509435892823607d966d424bd9ad5d0b00938f27240a1bfa878a
+
+3. libayatana-indicator 0.9.4
+   License: GPL-3.0-only
+   URL:     https://github.com/AyatanaIndicators/libayatana-indicator/archive/refs/tags/0.9.4.tar.gz
+   SHA-256: a18d3c682e29afd77db24366f8475b26bda22b0e16ff569a2ec71cd6eb4eac95
+
+4. libayatana-appindicator 0.5.93
+   License: GPL-3.0-only OR LGPL-3.0-only
+   URL:     https://github.com/AyatanaIndicators/libayatana-appindicator/archive/refs/tags/0.5.93.tar.gz
+   SHA-256: cbefed7a918a227bf71286246e237fcd3a9c8499b3eaac4897811a869409edf0
+
+5. xdotool v3.20160805.1
+   License: BSD-3-Clause
+   URL:     https://github.com/jordansissel/xdotool/archive/refs/tags/v3.20160805.1.tar.gz
+   SHA-256: ddafca1239075c203769c17a5a184587731e56fbe0438c09d08f8af1704e117a
+
+AirScout-RS itself is GPL-3.0-only, a port of AirScout by DL2ALF.

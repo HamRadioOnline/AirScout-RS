@@ -1,0 +1,37 @@
+# Maintainer: HamRadioOnline
+pkgname=airscout-rs-git
+pkgver=0.1.0.r66.g9407a43
+pkgrel=1
+pkgdesc="Aircraft tracking and aircraft scatter prediction for amateur radio (git)"
+arch=('x86_64' 'aarch64' 'armv7h' 'i686')
+url="https://github.com/HamRadioOnline/AirScout-RS"
+license=('GPL-3.0-only')
+depends=('glibc' 'libgcc' 'gtk3' 'alsa-lib' 'libayatana-appindicator' 'xdotool' 'libx11' 'libxkbcommon' 'libxkbcommon-x11' 'wayland' 'libglvnd' 'mesa' 'vulkan-icd-loader' 'vulkan-swrast' 'adwaita-icon-theme' 'hicolor-icon-theme' 'systemd')
+makedepends=('git' 'cargo' 'gcc' 'pkgconf' 'gtk3' 'alsa-lib' 'libayatana-appindicator' 'xdotool')
+provides=('airscout-rs')
+conflicts=('airscout-rs' 'airscout-rs-bin')
+backup=('etc/airscout-planeserver/planeserver.toml')
+install=arch-install
+source=("airscout-rs::git+https://github.com/HamRadioOnline/AirScout-RS.git")
+sha256sums=('SKIP')
+
+pkgver() {
+    cd "${srcdir}/airscout-rs"
+    BASE=$(awk -F'"' '/^version = "/ {print $2; exit}' Cargo.toml)
+    printf '%s.r%s.g%s' "${BASE}" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+    cd "${srcdir}/airscout-rs"
+    cargo build --workspace --bins --release --locked
+}
+
+package() {
+    cd "${srcdir}/airscout-rs"
+    mkdir -p stage/bin
+    for program in airscout airscout-planeserver airscout-cli catcheck elevation-tile-gen maptile-gen; do
+        cp "target/release/${program}" "stage/bin/${program}"
+    done
+    cp README.md LICENSE NOTICE stage/
+    packaging/linux/install-root.sh stage "${pkgdir}"
+}

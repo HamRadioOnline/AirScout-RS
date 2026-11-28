@@ -1,0 +1,15 @@
+[Unit]
+Description=AirScout PlaneServer
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/airscout-planeserver --headless --config /etc/airscout-planeserver/planeserver.toml --data /var/lib/airscout-planeserver
+User=airscout-planeserver
+StateDirectory=airscout-planeserver
+NoNewPrivileges=true
+ProtectSystem=strict
+PrivateTmp=true
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

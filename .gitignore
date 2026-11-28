@@ -1,0 +1,4 @@
+/target
+/.superpowers
+tools/golden-harness/bin/
+tools/golden-harness/obj/

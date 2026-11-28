@@ -1,0 +1,288 @@
+{
+  "window": "CrossingHistoryDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "CrossingHistoryDlg",
+  "client_size": [
+    893,
+    538
+  ],
+  "controls": [
+    {
+      "name": "ss_Main",
+      "kind": "StatusStrip",
+      "parent": "$this",
+      "index": 2,
+      "text": "statusStrip1",
+      "location": [
+        0,
+        516
+      ],
+      "size": [
+        893,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Main",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 0,
+      "text": "Press Calculate to start...",
+      "location": null,
+      "size": [
+        135,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "panel1",
+      "kind": "Panel",
+      "parent": "$this",
+      "index": 1,
+      "text": null,
+      "location": [
+        0,
+        416
+      ],
+      "size": [
+        893,
+        100
+      ],
+      "dock": "Bottom",
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label2",
+      "kind": "Label",
+      "parent": "panel1",
+      "index": 0,
+      "text": "secs.",
+      "location": [
+        393,
+        51
+      ],
+      "size": [
+        32,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 6,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "panel1",
+      "index": 1,
+      "text": "Timespan within two crossings considered as ambiguous:",
+      "location": [
+        9,
+        51
+      ],
+      "size": [
+        276,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ud_Analysis_AmbiguousGap",
+      "kind": "NumericUpDown",
+      "parent": "panel1",
+      "index": 2,
+      "text": null,
+      "location": [
+        318,
+        49
+      ],
+      "size": [
+        60,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "cb_Analysis_CrossingHistory_WithSignlaLevel",
+      "kind": "CheckBox",
+      "parent": "panel1",
+      "index": 3,
+      "text": "Consider crossings with recorded signal level only",
+      "location": [
+        12,
+        21
+      ],
+      "size": [
+        258,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_History_Export",
+      "kind": "Button",
+      "parent": "panel1",
+      "index": 4,
+      "text": "Export to CSV",
+      "location": [
+        697,
+        41
+      ],
+      "size": [
+        92,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_History_Export_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_History_Cancel",
+      "kind": "Button",
+      "parent": "panel1",
+      "index": 5,
+      "text": "Back",
+      "location": [
+        795,
+        41
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_History_Cancel_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_History_Calculate",
+      "kind": "Button",
+      "parent": "panel1",
+      "index": 6,
+      "text": "Calculate",
+      "location": [
+        616,
+        41
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_History_Calculate_Click"
+        }
+      ]
+    },
+    {
+      "name": "ch_Crossing_History",
+      "kind": "Chart",
+      "parent": "$this",
+      "index": 0,
+      "text": "History",
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        893,
+        416
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 5,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

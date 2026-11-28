@@ -1,0 +1,113 @@
+name: airscout-rs
+arch: ${PKG_ARCH}
+platform: linux
+version: ${PKG_VERSION}
+version_schema: none
+release: ${PKG_RELEASE}
+maintainer: HamRadioOnline
+vendor: HamRadioOnline
+description: Aircraft tracking and aircraft scatter prediction for amateur radio.
+homepage: https://github.com/HamRadioOnline/AirScout-RS
+license: GPL-3.0-only
+section: hamradio
+priority: optional
+
+contents:
+  - src: ./root/usr/bin
+    dst: /usr/bin
+    type: tree
+  - src: ./root/usr/share
+    dst: /usr/share
+    type: tree
+  - src: ./root/usr/lib/systemd/system/airscout-planeserver.service
+    dst: ${PKG_UNIT_DIR}/airscout-planeserver.service
+    expand: true
+  - src: ./root/usr/lib/systemd/system-preset/00-airscout-planeserver.preset
+    dst: /usr/lib/systemd/system-preset/00-airscout-planeserver.preset
+  - src: ./root/usr/lib/sysusers.d/airscout-planeserver.conf
+    dst: /usr/lib/sysusers.d/airscout-planeserver.conf
+  # nFPM emits a Debian conffile, an RPM %config(noreplace), or an Arch backup.
+  - src: ./root/etc/airscout-planeserver/planeserver.toml
+    dst: /etc/airscout-planeserver/planeserver.toml
+    type: config|noreplace
+
+# eframe's wgpu renderer can use Vulkan or EGL. Keep the loaders and Mesa
+# drivers available even on minimal installations.
+overrides:
+  deb:
+    depends:
+      - libc6 (>= ${PKG_GLIBC_FLOOR})
+      - libgcc-s1
+      - libgtk-3-0t64 | libgtk-3-0
+      - libasound2t64 | libasound2
+      - libayatana-appindicator3-1
+      - libxdo3
+      - libx11-6
+      - libxkbcommon0
+      - libxkbcommon-x11-0
+      - libwayland-client0
+      - libgl1
+      - libegl1
+      - libgl1-mesa-dri
+      - libegl-mesa0
+      - libglx-mesa0
+      - libvulkan1
+      - mesa-vulkan-drivers
+      - adwaita-icon-theme
+      - hicolor-icon-theme
+      - systemd
+    scripts:
+      postinstall: ./scripts/deb-postinstall
+      preremove: ./scripts/deb-preremove
+  rpm:
+    depends:
+      - glibc >= ${PKG_GLIBC_FLOOR}
+      - libgcc
+      - gtk3
+      - alsa-lib
+      - libayatana-appindicator-gtk3
+      - libxdo
+      - libX11
+      - libxkbcommon
+      - libxkbcommon-x11
+      - libwayland-client
+      - libglvnd-glx
+      - libglvnd-egl
+      - mesa-dri-drivers
+      - mesa-libEGL
+      - mesa-libGL
+      - vulkan-loader
+      - mesa-vulkan-drivers
+      - adwaita-icon-theme
+      - hicolor-icon-theme
+      - systemd
+    scripts:
+      postinstall: ./scripts/rpm-postinstall
+      preremove: ./scripts/rpm-preremove
+  archlinux:
+    depends:
+      - glibc>=${PKG_GLIBC_FLOOR}
+      - libgcc
+      - gtk3
+      - alsa-lib
+      - libayatana-appindicator
+      - xdotool
+      - libx11
+      - libxkbcommon
+      - libxkbcommon-x11
+      - wayland
+      - libglvnd
+      - mesa
+      - vulkan-icd-loader
+      - vulkan-swrast
+      - adwaita-icon-theme
+      - hicolor-icon-theme
+      - systemd
+    scripts:
+      postinstall: ./scripts/arch-post-install
+      preremove: ./scripts/arch-pre-remove
+
+archlinux:
+  packager: HamRadioOnline
+  scripts:
+    postupgrade: ./scripts/arch-post-upgrade

@@ -1,0 +1,178 @@
+name: Release channels
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      macos_signed:
+        required: false
+        type: string
+      windows_signed:
+        required: false
+        type: string
+    secrets:
+      HOMEBREW_TAP_TOKEN:
+        required: false
+      WINGET_TOKEN:
+        required: false
+    outputs:
+      homebrew_published:
+        description: The selected cask matches the verified release
+        value: ${{ jobs.homebrew.outputs.published || 'false' }}
+      winget_published:
+        description: A WinGet PR exists for the verified stable MSI manifests
+        value: ${{ jobs.winget.outputs.published || 'false' }}
+
+permissions:
+  contents: read
+
+jobs:
+  homebrew:
+    if: ${{ inputs.macos_signed != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
+    outputs:
+      published: ${{ steps.publish.outputs.published || 'false' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-assets-verified
+          path: release-assets
+      - name: Verify DMG hashes and update the selected cask
+        id: publish
+        env:
+          TAG: ${{ inputs.tag }}
+          MACOS_SIGNED: ${{ inputs.macos_signed }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: python3 packaging/homebrew/render.py publish "$TAG" release-assets
+
+  winget:
+    if: ${{ inputs.windows_signed != '' }}
+    runs-on: windows-2025
+    timeout-minutes: 20
+    environment: release
+    outputs:
+      published: ${{ steps.publish.outputs.published || 'false' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Check WinGet publication eligibility
+        id: gate
+        env:
+          TAG: ${{ inputs.tag }}
+          WINDOWS_SIGNED: ${{ inputs.windows_signed }}
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: python packaging/winget/render.py gate $env:TAG
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: steps.gate.outputs.eligible == 'true'
+        with:
+          name: release-assets-verified
+          path: release-assets
+      - name: Render verified MSI manifests
+        if: steps.gate.outputs.eligible == 'true'
+        env:
+          TAG: ${{ inputs.tag }}
+        run: python packaging/winget/render.py $env:TAG release-assets/SHA256SUMS winget
+      - name: Validate manifests with pinned WinGet
+        if: steps.gate.outputs.eligible == 'true'
+        shell: powershell
+        run: |
+          $pin = (Get-Content packaging/tools.lock.json -Raw | ConvertFrom-Json).'winget-cli'.'windows-x86_64'
+          $bundle = Join-Path $env:RUNNER_TEMP 'winget.msixbundle'
+          $archive = Join-Path $env:RUNNER_TEMP 'winget-dependencies.zip'
+          $dependencies = Join-Path $env:RUNNER_TEMP 'winget-dependencies'
+          python packaging/release/fetch-tool.py winget-cli windows-x86_64 $bundle
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet bundle verification failed' }
+          python packaging/release/fetch-tool.py winget-cli windows-x86_64-dependencies $archive
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet dependencies verification failed' }
+          Expand-Archive -LiteralPath $archive -DestinationPath $dependencies
+          $packages = @(Get-ChildItem -LiteralPath (Join-Path $dependencies 'x64') -File |
+            Where-Object { $_.Extension -in '.appx', '.msix' } |
+            Select-Object -ExpandProperty FullName)
+          if (!$packages.Count) { throw 'Pinned WinGet archive has no x64 dependencies' }
+          Add-AppxPackage -Path $bundle -DependencyPath $packages -ForceUpdateFromAnyVersion
+          $winget = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\winget.exe'
+          if (-not (Test-Path -LiteralPath $winget)) { throw 'WinGet App Execution Alias is missing' }
+          $version = ((@(& $winget --version) -join "`n").Trim())
+          if ($LASTEXITCODE -ne 0 -or $version -cne "v$($pin.version)") {
+            throw 'The installed WinGet version differs from the pin'
+          }
+          $inventory = Get-Content release-assets/inventory.json -Raw | ConvertFrom-Json
+          $manifests = (Resolve-Path -LiteralPath "winget/manifests/h/HamRadioOnline/AirScout-RS/$($inventory.version)").ProviderPath
+          & $winget validate --manifest $manifests --disable-interactivity
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet manifest validation failed' }
+      - name: Open or reuse the stable PR
+        id: publish
+        if: steps.gate.outputs.eligible == 'true'
+        env:
+          WINDOWS_SIGNED: ${{ inputs.windows_signed }}
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $version = (Get-Content release-assets/inventory.json -Raw | ConvertFrom-Json).version
+          packaging/winget/publish.ps1 -ManifestDir "winget/manifests/h/HamRadioOnline/AirScout-RS/$version" -Version $version
+      - name: Verify the published WinGet PR state
+        if: steps.publish.outputs.published == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = (Get-Content release-assets/inventory.json -Raw | ConvertFrom-Json).version
+          $head = "HamRadioOnline:airscout-rs-v$version"
+          $response = gh api --method GET repos/microsoft/winget-pkgs/pulls -f "head=$head" -f state=all
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet PR listing failed' }
+          $prs = @($response | ConvertFrom-Json)
+          if ($prs.Count -ne 1) { throw 'Expected exactly one WinGet PR' }
+          $response = gh api "repos/microsoft/winget-pkgs/pulls/$($prs[0].number)"
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet PR lookup failed' }
+          $pr = $response | ConvertFrom-Json
+          if ($pr.head.label -ne $head -or ($pr.state -ne 'open' -and !$pr.merged)) {
+              throw 'The published WinGet PR must be open or merged and point to the release branch'
+          }
+          Write-Host "Verified WinGet PR $($pr.html_url)"
+
+  homebrew-verify:
+    name: Install published Homebrew cask (${{ matrix.os }})
+    needs: homebrew
+    if: needs.homebrew.outputs.published == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, macos-15-intel]
+    env:
+      TAG: ${{ inputs.tag }}
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-assets-verified
+          path: release-assets
+      - name: Check cask hashes, install and exercise its CLI links
+        run: |
+          set -euo pipefail
+          python3 packaging/homebrew/render.py "$TAG" release-assets/SHA256SUMS expected
+          cask=airscout-rs
+          [[ "$TAG" != beta-* ]] || cask=airscout-rs@beta
+          tap=HamRadioOnline/tap
+          brew tap "$tap"
+          cmp "expected/Casks/$cask.rb" "$(brew --repository "$tap")/Casks/$cask.rb"
+          brew install --cask "$tap/$cask"
+          trap 'brew uninstall --cask "$tap/$cask"' EXIT
+          bin="$(brew --prefix)/bin"
+          for tool in airscout airscout-planeserver airscout-cli catcheck elevation-tile-gen maptile-gen; do
+            [[ -L "$bin/$tool" && -x "$bin/$tool" ]]
+            [[ "$(readlink "$bin/$tool")" == */AirScout-RS.app/Contents/MacOS/"$tool" ]]
+          done
+          version=$(python3 -c 'import json; print(json.load(open("release-assets/inventory.json"))["version"])')
+          python3 packaging/tests/hosted/smoke-stage.py "$bin" "$version"

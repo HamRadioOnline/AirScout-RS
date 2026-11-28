@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+
+[ "${1:-}" = configure ] || exit 0
+systemd-sysusers airscout-planeserver.conf
+
+if [ -z "${2:-}" ]; then
+    systemctl preset airscout-planeserver.service || true
+fi
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload || true
+    if [ -n "${2:-}" ]; then
+        systemctl try-restart airscout-planeserver.service || true
+    fi
+fi

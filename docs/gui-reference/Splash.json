@@ -1,0 +1,45 @@
+{
+  "window": "Splash",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "AirScout",
+  "client_size": [
+    522,
+    394
+  ],
+  "controls": [
+    {
+      "name": "pb_Main",
+      "kind": "PictureBox",
+      "parent": "$this",
+      "index": 0,
+      "text": null,
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        522,
+        394
+      ],
+      "dock": "Fill",
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "pb_Main_Click"
+        },
+        {
+          "event": "Paint",
+          "handler": "pb_Main_Paint"
+        }
+      ]
+    }
+  ],
+  "unparsed": []
+}

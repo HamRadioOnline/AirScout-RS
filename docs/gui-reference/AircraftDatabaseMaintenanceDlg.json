@@ -1,0 +1,201 @@
+{
+  "window": "AircraftDatabaseMaintenanceDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "Aircraft Database Maintenance",
+  "client_size": [
+    543,
+    343
+  ],
+  "controls": [
+    {
+      "name": "ss_Main",
+      "kind": "StatusStrip",
+      "parent": "$this",
+      "index": 2,
+      "text": "statusStrip1",
+      "location": [
+        0,
+        321
+      ],
+      "size": [
+        543,
+        22
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tsl_Status",
+      "kind": "ToolStripStatusLabel",
+      "parent": "ss_Main",
+      "index": 0,
+      "text": "Status",
+      "location": null,
+      "size": [
+        39,
+        17
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "groupBox1",
+      "kind": "GroupBox",
+      "parent": "$this",
+      "index": 1,
+      "text": "Tables",
+      "location": [
+        0,
+        12
+      ],
+      "size": [
+        527,
+        148
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "lv_Tables",
+      "kind": "ListView",
+      "parent": "groupBox1",
+      "index": 0,
+      "text": null,
+      "location": [
+        6,
+        19
+      ],
+      "size": [
+        508,
+        114
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ch_TableName",
+      "kind": "ColumnHeader",
+      "parent": "lv_Tables",
+      "index": 0,
+      "text": "TableName",
+      "location": null,
+      "size": null,
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ch_Description",
+      "kind": "ColumnHeader",
+      "parent": "lv_Tables",
+      "index": 1,
+      "text": "Description",
+      "location": null,
+      "size": null,
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ch_Entries",
+      "kind": "ColumnHeader",
+      "parent": "lv_Tables",
+      "index": 2,
+      "text": "Entries",
+      "location": null,
+      "size": null,
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ch_Action",
+      "kind": "ColumnHeader",
+      "parent": "lv_Tables",
+      "index": 3,
+      "text": "Action",
+      "location": null,
+      "size": null,
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "lbl_Info",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 0,
+      "text": "The Scoutbase database is containing location and QRV infos. Each information has a unique key: callsign and 6-digit Maidenhead locator square. \nThe database is periodically updated from a global web database. The operator can modify/add entries. ",
+      "location": [
+        12,
+        163
+      ],
+      "size": [
+        502,
+        144
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

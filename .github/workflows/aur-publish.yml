@@ -1,0 +1,106 @@
+name: AUR publish
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+    secrets:
+      AUR_SSH_PRIVATE_KEY:
+        required: false
+    outputs:
+      published:
+        description: The AUR recipes match the verified stable release
+        value: ${{ jobs.aur.outputs.published || 'false' }}
+
+permissions:
+  contents: read
+
+jobs:
+  aur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: release
+    outputs:
+      published: ${{ steps.publish.outputs.published || 'false' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-assets-verified
+          path: release-assets
+      - name: Render PKGBUILDs from the verified release
+        env:
+          TAG: ${{ inputs.tag }}
+        run: python3 packaging/aur/render.py stable "$TAG" release-assets aur
+      - name: Regenerate .SRCINFO in the digest-pinned Arch builder
+        run: |
+          set -euo pipefail
+          builder=$(python3 - <<'PY'
+          import json
+          pin = json.load(open("packaging/tools.lock.json"))["aur-builder"]["linux-x86_64"]
+          print(pin["url"] + "@" + pin["digest"])
+          PY
+          )
+          docker run --rm -v "$PWD:/src" -w /src "$builder" bash -c '
+            set -euo pipefail
+            useradd -m builder
+            for pkg in airscout-rs-bin airscout-rs; do
+              cp -r "/src/aur/$pkg" "/tmp/$pkg"
+              chown -R builder:builder "/tmp/$pkg"
+              su builder -c "cd /tmp/$pkg && makepkg --printsrcinfo > .SRCINFO"
+              cp "/tmp/$pkg/.SRCINFO" "/src/aur/$pkg/.SRCINFO"
+            done
+          '
+      - name: Publish the recipes to the AUR
+        id: publish
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          for pkg in airscout-rs-bin airscout-rs; do
+            packaging/aur/publish.sh "aur/$pkg" "$pkg"
+          done
+      - name: Build the published AUR recipes and verify their metadata and payloads
+        run: |
+          set -euo pipefail
+          builder=$(python3 - <<'PY'
+          import json
+          pin = json.load(open("packaging/tools.lock.json"))["aur-builder"]["linux-x86_64"]
+          print(pin["url"] + "@" + pin["digest"])
+          PY
+          )
+          docker run --rm -v "$PWD/aur:/expected:ro" "$builder" bash -euc '
+            pacman -Syu --noconfirm --needed git sudo
+            useradd -m builder
+            printf "builder ALL=(root) NOPASSWD: /usr/bin/pacman\n" > /etc/sudoers.d/airscout-builder
+            chmod 440 /etc/sudoers.d/airscout-builder
+            for pkg in airscout-rs-bin airscout-rs; do
+              runuser -u builder -- git clone --depth=1 "https://aur.archlinux.org/$pkg.git" "/tmp/$pkg"
+              cd "/tmp/$pkg"
+              for file in PKGBUILD .SRCINFO arch-install; do
+                cmp "$file" "/expected/$pkg/$file"
+              done
+              runuser -u builder -- makepkg --printsrcinfo | diff - .SRCINFO
+              runuser -u builder -- env CARGO_INCREMENTAL=0 makepkg -s --noconfirm
+              packagelist=$(runuser -u builder -- makepkg --packagelist)
+              assets=()
+              while IFS= read -r package; do
+                if [[ -n "$package" && ${package##*/} != "$pkg-debug-"* ]]; then
+                  assets+=("$package")
+                fi
+              done <<< "$packagelist"
+              if [[ ${#assets[@]} != 1 || ! -s "${assets[0]}" ]]; then
+                echo "Expected exactly one nonempty primary package for $pkg" >&2
+                exit 1
+              fi
+              bsdtar -tf "${assets[0]}" > members
+              for tool in airscout airscout-planeserver airscout-cli catcheck elevation-tile-gen maptile-gen; do
+                grep -Fx "usr/bin/$tool" members
+              done
+              grep -Fx "usr/lib/systemd/system/airscout-planeserver.service" members
+            done
+          '

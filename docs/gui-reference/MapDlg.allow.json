@@ -1,0 +1,98 @@
+[
+  {
+    "name": "gm_Cache",
+    "what": "missing",
+    "reason": "Rust caches tiles without a hidden map control.",
+    "deviation": "D-003"
+  },
+  {
+    "name": "tp_Planes",
+    "what": "extra",
+    "reason": "Rust-only 'Planes' tab after Analysis with the plane list.",
+    "deviation": "D-006"
+  },
+  {
+    "name": "tsl_SettingsError",
+    "what": "extra",
+    "reason": "Rust-only status field after tsl_CAT with the settings-load error.",
+    "deviation": "D-010"
+  },
+  {
+    "name": "tsl_Planes",
+    "what": "extra",
+    "reason": "Rust-only status field after tsl_CAT with the plane counts.",
+    "deviation": "D-010"
+  },
+  {
+    "name": "tsl_Feed",
+    "what": "extra",
+    "reason": "Rust-only status field after tsl_CAT with the feed status.",
+    "deviation": "D-010"
+  },
+  {
+    "name": "tsl_Database_LED_SRTM1",
+    "what": "text",
+    "reason": "The LED tooltip says 'SRTM1'; the upstream text says 'SRTM3' (a copy-paste slip).",
+    "deviation": "D-011"
+  },
+  {
+    "name": "btn_Map_PlayPause",
+    "what": "text",
+    "reason": "Play and Pause are text labels in place of the upstream bitmap.",
+    "deviation": "D-007"
+  },
+  {
+    "name": "tsl_Status",
+    "what": "text",
+    "reason": "Runtime text can replace the Designer placeholder 'No Messages.'.",
+    "deviation": "D-012"
+  },
+  {
+    "name": "tsl_Calculations",
+    "what": "text",
+    "reason": "Runtime text can replace the Designer placeholder 'Calculations.'.",
+    "deviation": "D-012"
+  },
+  {
+    "name": "tsl_Database",
+    "what": "text",
+    "reason": "Runtime text can replace the Designer placeholder 'Database status.'.",
+    "deviation": "D-012"
+  },
+  {
+    "name": "lbl_Nearest_Call",
+    "what": "text",
+    "reason": "Runtime text can replace the Designer placeholder '0'.",
+    "deviation": "D-012"
+  },
+  {
+    "name": "lbl_Nearest_Type",
+    "what": "text",
+    "reason": "Runtime text can replace the Designer placeholder '0'.",
+    "deviation": "D-012"
+  },
+  {
+    "name": "lbl_Nearest_Cat",
+    "what": "text",
+    "reason": "Runtime text can replace the Designer placeholder '0'.",
+    "deviation": "D-012"
+  },
+  {
+    "name": "lbl_Nearest_Alt",
+    "what": "text",
+    "reason": "Runtime text can replace the Designer placeholder '0'.",
+    "deviation": "D-012"
+  },
+  {
+    "name": "lbl_Nearest_Angle",
+    "what": "text",
+    "reason": "Runtime text can replace the Designer placeholder '0'.",
+    "deviation": "D-012"
+  },
+  {
+    "name": "lbl_Nearest_Dist",
+    "what": "text",
+    "reason": "Runtime text can replace the Designer placeholder '0'.",
+    "deviation": "D-012"
+  }
+]

@@ -1,0 +1,116 @@
+[
+  {
+    "name": "btn_Options_MyUpdate",
+    "what": "missing",
+    "reason": "Station uploads are out of scope.",
+    "deviation": "D-015"
+  },
+  {
+    "name": "btn_Options_DXUpdate",
+    "what": "missing",
+    "reason": "Station uploads are out of scope.",
+    "deviation": "D-015"
+  },
+  {
+    "name": "label52",
+    "what": "text",
+    "reason": "Station information ends after the local database update sentence.",
+    "deviation": "D-015"
+  },
+  {
+    "name": "lbl_MyAntennaHeight",
+    "what": "extra",
+    "reason": "Existing My antenna-height label follows original station controls.",
+    "deviation": "D-016"
+  },
+  {
+    "name": "opt_MyAntennaHeight",
+    "what": "extra",
+    "reason": "Existing My antenna-height field follows original station controls.",
+    "deviation": "D-016"
+  },
+  {
+    "name": "lbl_DXAntennaHeight",
+    "what": "extra",
+    "reason": "Existing DX antenna-height label follows original station controls.",
+    "deviation": "D-016"
+  },
+  {
+    "name": "opt_DXAntennaHeight",
+    "what": "extra",
+    "reason": "Existing DX antenna-height field follows original station controls.",
+    "deviation": "D-016"
+  },
+  {
+    "name": "tsl_Options_Status",
+    "what": "text",
+    "reason": "Runtime messages can replace the Designer placeholder.",
+    "deviation": "D-017"
+  },
+  {
+    "name": "lbl_Options_LocalObstructions",
+    "what": "text",
+    "reason": "Shows whether an obstruction is stored for the draft position and model.",
+    "deviation": "D-017"
+  },
+  {
+    "name": "tb_Options_Band",
+    "what": "text",
+    "reason": "The read-only field displays the active band.",
+    "deviation": "D-018"
+  },
+  {
+    "name": "lbl_Options_MyLastUpdated",
+    "what": "text",
+    "reason": "Displays the stored QRV timestamp or an empty label.",
+    "deviation": "D-018"
+  },
+  {
+    "name": "lbl_Options_DXLastUpdated",
+    "what": "text",
+    "reason": "Displays the stored QRV timestamp or an empty label.",
+    "deviation": "D-018"
+  },
+  {
+    "name": "groupBox39",
+    "what": "missing",
+    "reason": "Empty placeholder group without controls.",
+    "deviation": "D-021"
+  },
+  {
+    "name": "btn_Options_SelectFont",
+    "what": "missing",
+    "reason": "egui draws one font, so there is no font to select.",
+    "deviation": "D-024"
+  },
+  {
+    "name": "cb_Options_InfoWin_Speed",
+    "what": "moved",
+    "reason": "The Designer location lies outside groupBox7; the row moves into the detailed-mode column groupBox33.",
+    "deviation": "D-025"
+  },
+  {
+    "name": "lbl_Options_Map_PreloadEstimate",
+    "what": "extra",
+    "reason": "Rust-only preloader tile estimate after the Map tab's Designer groups.",
+    "deviation": "D-026"
+  },
+  {
+    "name": "lbl_Options_Map_ThunderforestKey",
+    "what": "extra",
+    "reason": "Rust-only Thunderforest API key caption after the Map tab's Designer groups.",
+    "deviation": "D-026"
+  },
+  {
+    "name": "tb_Options_Map_ThunderforestKey",
+    "what": "extra",
+    "reason": "Rust-only Thunderforest API key field after the Map tab's Designer groups.",
+    "deviation": "D-026"
+  },
+  {
+    "name": "cb_Options_Map_ThunderforestKey_Show",
+    "what": "extra",
+    "reason": "Rust-only toggle that shows the Thunderforest API key.",
+    "deviation": "D-026"
+  }
+]

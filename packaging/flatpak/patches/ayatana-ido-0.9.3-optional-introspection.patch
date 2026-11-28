@@ -1,0 +1,36 @@
+Make GObject introspection optional in ayatana-ido 0.9.3.
+
+ayatana-ido 0.9.3 requires GObject introspection and Vala unconditionally, but
+the Freedesktop 25.08 SDK ships no valac. AirScout-RS only links the C library
+(through libayatana-indicator and libayatana-appindicator), so the Flatpak
+manifest builds it with -DENABLE_INTROSPECTION=OFF. The default stays ON, which
+keeps upstream behaviour for every other build. Adapted from the equivalent
+Flathub shared-modules patch for ayatana-ido 0.10.4.
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -12,6 +12,7 @@
+ option(ENABLE_TESTS "Enable all tests and checks" ON)
+ option(ENABLE_COVERAGE "Enable coverage reports (includes enabling all tests and checks)" OFF)
+ option(ENABLE_WERROR "Treat all build warnings as errors" OFF)
++option(ENABLE_INTROSPECTION "Build GObject introspection data and Vala bindings" ON)
+ 
+ if(ENABLE_COVERAGE)
+     set(ENABLE_TESTS ON)
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -108,6 +108,8 @@
+ 
+ # AyatanaIdo3-0.4.gir
+ 
++if (ENABLE_INTROSPECTION)
++
+ find_package(GObjectIntrospection REQUIRED QUIET)
+ 
+ if (INTROSPECTION_FOUND)
+@@ -183,3 +185,5 @@
+     endif ()
+ 
+ endif ()
++
++endif ()

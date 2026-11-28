@@ -1,0 +1,191 @@
+{
+  "window": "LocalObstructionsDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "LocalObstructions at",
+  "client_size": [
+    325,
+    621
+  ],
+  "controls": [
+    {
+      "name": "dgv_Main",
+      "kind": "DataGridView",
+      "parent": "$this",
+      "index": 4,
+      "text": null,
+      "location": [
+        0,
+        0
+      ],
+      "size": [
+        325,
+        468
+      ],
+      "dock": "Top",
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_Cancel",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 3,
+      "text": "Cancel",
+      "location": [
+        151,
+        576
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_OK",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 2,
+      "text": "OK",
+      "location": [
+        232,
+        576
+      ],
+      "size": [
+        75,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_ClearAll",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 1,
+      "text": "Clear All",
+      "location": [
+        12,
+        576
+      ],
+      "size": [
+        111,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "btn_ClearAll_Click"
+        }
+      ]
+    },
+    {
+      "name": "dc_Bearing",
+      "kind": "DataGridViewTextBoxColumn",
+      "parent": "dgv_Main",
+      "index": 0,
+      "text": null,
+      "location": null,
+      "size": null,
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "dc_Distance",
+      "kind": "DataGridViewTextBoxColumn",
+      "parent": "dgv_Main",
+      "index": 1,
+      "text": null,
+      "location": null,
+      "size": null,
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "dc_Height",
+      "kind": "DataGridViewTextBoxColumn",
+      "parent": "dgv_Main",
+      "index": 2,
+      "text": null,
+      "location": null,
+      "size": null,
+      "dock": null,
+      "anchor": null,
+      "tab_index": null,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 0,
+      "text": "Fill in your local obstructions here. You can set obe obstruction per degree azimuth. Please enter the distance to obstruction and the obstructions' height above ground.",
+      "location": [
+        12,
+        484
+      ],
+      "size": [
+        295,
+        75
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 4,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

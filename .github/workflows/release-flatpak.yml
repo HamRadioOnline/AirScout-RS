@@ -1,0 +1,558 @@
+name: Flatpak
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      # Publish mode consumes the already prepared candidate from this run.
+      publish:
+        required: false
+        type: boolean
+        default: false
+      base:
+        required: false
+        type: string
+      candidate:
+        required: false
+        type: string
+    outputs:
+      base:
+        description: OSTree branch head used to prepare the candidate
+        value: ${{ jobs.locate-base.outputs.base }}
+      candidate:
+        description: Artifact ID of the prepared repository
+        value: ${{ jobs.prepare.outputs.candidate }}
+    secrets:
+      FLATPAK_GPG_PRIVATE_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ inputs.tag }}
+
+jobs:
+  # Builds the Flatpak for each architecture from the prebuilt Linux stage
+  # binaries. No signing secret reaches this job: it only wraps binaries, so it
+  # doubles as the unsigned fallback (and the alpha smoke test).
+  build:
+    name: Build (${{ matrix.slug }})
+    if: ${{ !inputs.publish }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - slug: linux-x86_64
+            arch: x86_64
+            os: ubuntu-24.04
+          - slug: linux-arm64
+            arch: aarch64
+            os: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: stage-${{ matrix.slug }}
+          path: transport
+      - name: Extract stage
+        env:
+          SLUG: ${{ matrix.slug }}
+        run: |
+          mkdir stage
+          tar -xzf transport/stage.tar.gz -C stage
+          python3 -c 'import json, os; assert json.load(open("stage/stage.json"))["slug"] == os.environ["SLUG"]'
+      - name: Read Flatpak pins
+        id: pins
+        run: |
+          python3 - "${{ matrix.arch }}" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+
+          arch = sys.argv[1]
+          lock = json.load(open("packaging/tools.lock.json", encoding="utf-8"))
+          rt = lock["flatpak-runtime"]["all"]
+          tool = lock["flatpak-tooling"][arch]
+          commits = rt["commits"][arch]
+          pairs = {
+              "flatpak-version": tool["flatpak"]["version"],
+              "flatpak-url": tool["flatpak"]["url"],
+              "flatpak-sha256": tool["flatpak"]["sha256"],
+              "flatpak-builder-version": tool["flatpak-builder"]["version"],
+              "flatpak-builder-url": tool["flatpak-builder"]["url"],
+              "flatpak-builder-sha256": tool["flatpak-builder"]["sha256"],
+              "runtime": rt["runtime"],
+              "sdk": rt["sdk"],
+              "platform-commit": commits["platform"],
+              "sdk-commit": commits["sdk"],
+              "flathub-sha256": lock["flathub-flatpakrepo"]["all"]["sha256"],
+          }
+          for key, value in pairs.items():
+              print(f"{key}={value}")
+          PY
+      - name: Install pinned Flatpak tooling
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          curl -fsSL "${{ steps.pins.outputs.flatpak-url }}" -o flatpak.deb
+          curl -fsSL "${{ steps.pins.outputs.flatpak-builder-url }}" -o flatpak-builder.deb
+          echo "${{ steps.pins.outputs.flatpak-sha256 }}  flatpak.deb" | sha256sum -c -
+          echo "${{ steps.pins.outputs.flatpak-builder-sha256 }}  flatpak-builder.deb" | sha256sum -c -
+          sudo apt-get install -y --no-install-recommends ./flatpak.deb ./flatpak-builder.deb elfutils
+      - name: Isolate the candidate Flatpak installation
+        run: printf 'FLATPAK_USER_DIR=%s/airscout-flatpak-candidate\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Add Flathub and install pinned runtime/SDK
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://flathub.org/repo/flathub.flatpakrepo" -o flathub.flatpakrepo
+          echo "${{ steps.pins.outputs.flathub-sha256 }}  flathub.flatpakrepo" | sha256sum -c -
+          flatpak remote-add --user --if-not-exists flathub flathub.flatpakrepo
+          # `flatpak install` has no --commit option: pin the runtime/SDK by
+          # installing the ref normally (deployed), then updating to the exact
+          # OSTree commit, then asserting the deployed commit matches the pin.
+          # `install --no-deploy` leaves the ref undeployed, so a following
+          # `update --commit` fails with "not installed"; `info` must pass
+          # --user to inspect the per-user installation.
+          flatpak --user install -y flathub "org.freedesktop.Platform/${{ matrix.arch }}/25.08"
+          flatpak --user install -y flathub "org.freedesktop.Sdk/${{ matrix.arch }}/25.08"
+          flatpak --user update -y --commit="${{ steps.pins.outputs.platform-commit }}" "org.freedesktop.Platform/${{ matrix.arch }}/25.08"
+          flatpak --user update -y --commit="${{ steps.pins.outputs.sdk-commit }}" "org.freedesktop.Sdk/${{ matrix.arch }}/25.08"
+          flatpak --user info --show-commit "org.freedesktop.Platform/${{ matrix.arch }}/25.08" > platform.commit
+          flatpak --user info --show-commit "org.freedesktop.Sdk/${{ matrix.arch }}/25.08" > sdk.commit
+          grep -qx "${{ steps.pins.outputs.platform-commit }}" platform.commit
+          grep -qx "${{ steps.pins.outputs.sdk-commit }}" sdk.commit
+      - name: Determine channel
+        id: channel
+        run: |
+          case "$TAG" in
+            alpha-v*) echo "channel=alpha" >> "$GITHUB_OUTPUT" ;;
+            beta-v*)  echo "channel=beta" >> "$GITHUB_OUTPUT" ;;
+            v*)       echo "channel=stable" >> "$GITHUB_OUTPUT" ;;
+            *)        echo "::error::Unrecognized tag grammar: $TAG" >&2; exit 1 ;;
+          esac
+      - name: Build Flatpak
+        run: packaging/flatpak/stage.sh stage "${{ steps.channel.outputs.channel }}" package
+      - name: Install the candidate ref and smoke its sandboxed commands
+        env:
+          ARCH: ${{ matrix.arch }}
+          CHANNEL: ${{ steps.channel.outputs.channel }}
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("stage/stage.json"))["version"])')
+          packaging/tests/hosted/verify-flatpak.sh candidate package "$ARCH" "$CHANNEL" "$version"
+      - name: Archive the Flatpak build with its executable modes
+        run: tar -czf package/build.tar.gz -C package build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-flatpak-${{ matrix.arch }}
+          path: |
+            package/build.tar.gz
+            package/result.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+
+  locate-base:
+    name: Locate Flatpak repository base
+    if: ${{ !startsWith(inputs.tag, 'alpha-') }}
+    runs-on: ubuntu-24.04
+    outputs:
+      base: ${{ steps.base.outputs.base }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: true
+      - name: Locate flatpak-repo base
+        id: base
+        run: |
+          set -euo pipefail
+          # `git ls-remote` exits 0 (with empty output) when the branch simply
+          # does not exist yet (first publish); a real fetch/network error exits
+          # non-zero and must fail the job, never fall back to an empty repo.
+          if out=$(git ls-remote --heads origin flatpak-repo); then
+            base=$(printf '%s\n' "$out" | cut -f1)
+            if [ -z "$base" ]; then
+              base="0000000000000000000000000000000000000000"
+            fi
+          else
+            echo "::error::git ls-remote flatpak-repo failed; refusing to guess the base" >&2
+            exit 1
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "::notice::flatpak-repo base=$base"
+  # Merges both architecture builds into a copy of the existing repository and,
+  # when the key is present, signs it and emits the channel descriptors. A
+  # missing key leaves the repo merged unsigned and closes the channel. Alpha
+  # tags never reach this job (they only smoke-test the unsigned local build).
+  prepare:
+    name: Prepare repository
+    needs: [build, locate-base]
+    # Publish mode refreshes the candidate only if another release changed the base.
+    if: >-
+      ${{ !cancelled() && needs.locate-base.result == 'success' &&
+          ((!inputs.publish && needs.build.result == 'success') ||
+           (inputs.publish && needs.locate-base.outputs.base != inputs.base)) }}
+    runs-on: ubuntu-24.04
+    environment: release
+    timeout-minutes: 30
+    outputs:
+      candidate: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Authenticate so `git ls-remote`/`git fetch` of the flatpak-repo
+          # branch work through the credential helper for public and private
+          # repositories alike (the token never reaches a process list).
+          persist-credentials: true
+      - name: Read Flatpak pins
+        id: pins
+        run: |
+          python3 - x86_64 >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+
+          arch = sys.argv[1]
+          lock = json.load(open("packaging/tools.lock.json", encoding="utf-8"))
+          tool = lock["flatpak-tooling"][arch]
+          pairs = {
+              "flatpak-version": tool["flatpak"]["version"],
+              "flatpak-url": tool["flatpak"]["url"],
+              "flatpak-sha256": tool["flatpak"]["sha256"],
+          }
+          for key, value in pairs.items():
+              print(f"{key}={value}")
+          PY
+      - name: Install pinned Flatpak tooling
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          curl -fsSL "${{ steps.pins.outputs.flatpak-url }}" -o flatpak.deb
+          echo "${{ steps.pins.outputs.flatpak-sha256 }}  flatpak.deb" | sha256sum -c -
+          sudo apt-get install -y --no-install-recommends ./flatpak.deb
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: package-flatpak-x86_64
+          path: candidate/x86_64
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: package-flatpak-aarch64
+          path: candidate/aarch64
+      - name: Fetch existing Flatpak repository
+        env:
+          BASE: ${{ needs.locate-base.outputs.base }}
+        run: |
+          set -euo pipefail
+          mkdir base-repo
+          if [ "$BASE" != "0000000000000000000000000000000000000000" ]; then
+            git fetch --quiet --depth 1 origin "$BASE"
+            git archive FETCH_HEAD | tar -x -C base-repo
+          fi
+      - name: Determine channel
+        id: channel
+        run: |
+          case "$TAG" in
+            beta-v*) echo "channel=beta" >> "$GITHUB_OUTPUT" ;;
+            v*)       echo "channel=stable" >> "$GITHUB_OUTPUT" ;;
+            *)        echo "::error::Unrecognized tag grammar: $TAG" >&2; exit 1 ;;
+          esac
+      - name: Prepare repository
+        env:
+          FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+        run: packaging/flatpak/prepare-repo.sh base-repo candidate "${{ steps.channel.outputs.channel }}" repo
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        id: upload
+        with:
+          name: ${{ inputs.publish && 'flatpak-refreshed-repo' || 'package-flatpak-repo' }}
+          path: |
+            repo/
+            repo.result.json
+          if-no-files-found: error
+          overwrite: true
+          # upload-artifact drops hidden files by default; .nojekyll is hidden,
+          # so opt in or the deployed Pages tree loses it.
+          include-hidden-files: true
+          retention-days: 14
+
+  verify-candidate:
+    name: Verify signed Flatpak candidate (${{ matrix.arch }})
+    needs: [locate-base, prepare]
+    if: >-
+      ${{ !cancelled() && inputs.publish && needs.locate-base.result == 'success' &&
+          (needs.prepare.result == 'success' ||
+           (needs.prepare.result == 'skipped' && needs.locate-base.outputs.base == inputs.base)) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            os: ubuntu-24.04
+          - arch: aarch64
+            os: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Require a prepared artifact ID
+        env:
+          ARTIFACT_ID: ${{ needs.prepare.outputs.candidate || inputs.candidate }}
+        run: '[[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.candidate || inputs.candidate }}
+          merge-multiple: true
+          path: prepared
+      - name: Install and run the signed candidate from its local repository
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          GITHUB_OUTPUT="$PWD/tag-info" packaging/release/check-tag.sh "$TAG"
+          version=$(sed -n 's/^version=//p' tag-info)
+          channel=$(sed -n 's/^channel=//p' tag-info)
+          packaging/tests/hosted/verify-flatpak.sh signed-candidate prepared/repo "$ARCH" "$channel" "$version"
+
+  publish:
+    name: Publish repository
+    needs: [locate-base, prepare, verify-candidate]
+    if: ${{ !cancelled() && needs.verify-candidate.result == 'success' }}
+    runs-on: ubuntu-24.04
+    environment: release
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    outputs:
+      # publish-repo.sh reports published=true/false in its sidecar; the Pages
+      # upload and deploy steps/jobs run only on an actual publication so an
+      # unsigned candidate (no FLATPAK_GPG_PRIVATE_KEY) never deploys.
+      published: ${{ steps.publish.outputs.published }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Persist the token so `git ls-remote`/`git push origin` authenticate
+          # through the credential helper without the token reaching a process
+          # list (publish-repo.sh never embeds it in a URL).
+          persist-credentials: true
+      - name: Read Flatpak pins
+        id: pins
+        run: |
+          python3 - x86_64 >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+
+          arch = sys.argv[1]
+          lock = json.load(open("packaging/tools.lock.json", encoding="utf-8"))
+          tool = lock["flatpak-tooling"][arch]
+          pairs = {
+              "flatpak-version": tool["flatpak"]["version"],
+              "flatpak-url": tool["flatpak"]["url"],
+              "flatpak-sha256": tool["flatpak"]["sha256"],
+          }
+          for key, value in pairs.items():
+              print(f"{key}={value}")
+          PY
+      - name: Install pinned Flatpak tooling
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          curl -fsSL "${{ steps.pins.outputs.flatpak-url }}" -o flatpak.deb
+          echo "${{ steps.pins.outputs.flatpak-sha256 }}  flatpak.deb" | sha256sum -c -
+          sudo apt-get install -y --no-install-recommends ./flatpak.deb
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.candidate || inputs.candidate }}
+          merge-multiple: true
+          path: prepared
+      - name: Save the recorded base for Pages update verification
+        env:
+          BASE: ${{ needs.locate-base.outputs.base }}
+        run: |
+          set -euo pipefail
+          mkdir previous
+          [[ "$BASE" =~ ^[a-f0-9]{40}$ ]]
+          if [[ "$BASE" != 0000000000000000000000000000000000000000 ]]; then
+            git fetch --quiet --depth 1 origin refs/heads/flatpak-repo
+            [[ "$(git rev-parse FETCH_HEAD)" == "$BASE" ]]
+            git archive FETCH_HEAD | tar -x -C previous
+          fi
+          tar -czf previous.tar.gz -C previous .
+      - name: Publish the verified repository
+        id: publish
+        env:
+          FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+          EXPECTED_BASE: ${{ needs.locate-base.outputs.base }}
+        run: |
+          set -euo pipefail
+          # BEGIN publish-result helpers (executed by packaging/tests/test_flatpak.py)
+          # Every exit path records published=true|false exactly once: the EXIT trap
+          # writes the final value, which stays false unless publish-repo.sh exited 0
+          # and its sidecar says it actually pushed a signed tree.
+          published=false
+          published_written=false
+          write_published() {
+            if [ "$published_written" = false ]; then
+              echo "published=$1" >> "$GITHUB_OUTPUT"
+              published_written=true
+            fi
+          }
+          trap 'write_published "$published"' EXIT
+
+          # Replace every secret value (and each line of a multiline one) with
+          # [redacted], longest first, as publish-repo.sh does for its tool logs.
+          redact() {
+            python3 -c '
+          import os, sys
+
+          needles = []
+          for name in sys.argv[1:]:
+              value = os.environ.get(name, "")
+              if value and value not in needles:
+                  needles.append(value)
+              for line in value.splitlines():
+                  if line and line not in needles:
+                      needles.append(line)
+          needles.sort(key=len, reverse=True)
+
+          text = sys.stdin.read()
+          for needle in needles:
+              text = text.replace(needle, "[redacted]")
+          sys.stdout.write(text)
+          ' FLATPAK_GPG_PRIVATE_KEY GITHUB_TOKEN
+          }
+
+          show_publish_logs() {
+            echo "--- publish-repo.sh stdout (redacted) ---" >&2
+            if [ -f publish.out ]; then redact < publish.out >&2; fi
+            echo "--- publish-repo.sh stderr (redacted) ---" >&2
+            if [ -f publish.err ]; then redact < publish.err >&2; fi
+          }
+
+          # Read the JSON boolean "published" from publish-repo.sh's sidecar and print
+          # it as lowercase true/false; a missing sidecar or any other value fails.
+          read_published() {
+            python3 -c '
+          import json, sys
+
+          path = sys.argv[1]
+          try:
+              with open(path, encoding="utf-8") as handle:
+                  value = json.load(handle).get("published")
+          except (OSError, ValueError, AttributeError) as error:
+              sys.exit(f"::error::cannot read {path}: {error}")
+          if value is True:
+              print("true")
+          elif value is False:
+              print("false")
+          else:
+              sys.exit(f"::error::{path} has no boolean published value: {value!r}")
+          ' "$1"
+          }
+
+          # Called only after publish-repo.sh exited 0: sets published from its sidecar
+          # (true = signed tree pushed, false = unsigned candidate, nothing pushed).
+          record_publish_result() {
+            local flag
+            flag=$(read_published "$1") || return 1
+            published=$flag
+            write_published "$published"
+          }
+          # END publish-result helpers
+
+          if packaging/flatpak/publish-repo.sh prepared/repo "$EXPECTED_BASE" >publish.out 2>publish.err; then
+            record_publish_result prepared/repo.result.json
+          else
+            rc=$?
+            show_publish_logs
+            exit "$rc"
+          fi
+      - name: Check out the preverified published commit for Pages
+        if: ${{ steps.publish.outputs.published == 'true' }}
+        run: |
+          set -euo pipefail
+          sha=$(python3 -c 'import json; print(json.load(open("prepared/repo.result.json"))["base_sha"])')
+          [[ "$sha" =~ ^[a-f0-9]{40}$ ]]
+          git fetch --quiet --depth=1 origin "$sha"
+          mkdir pages-tree
+          git archive "$sha" | tar -x -C pages-tree
+          # Git archives omit OSTree's empty working directories.
+          changes=$(rsync -rlicmn --delete prepared/repo/ pages-tree/)
+          [[ -z "$changes" ]] || { printf '%s\n' "$changes" >&2; exit 1; }
+          packaging/tests/hosted/verify-flatpak.sh summary pages-tree
+          echo "Deploying exact Flatpak repository commit $sha"
+      - name: Upload Pages artifact (published tree)
+        if: ${{ steps.publish.outputs.published == 'true' }}
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: pages-tree/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ steps.publish.outputs.published == 'true' }}
+        with:
+          name: flatpak-published
+          path: |
+            pages-tree/
+            previous.tar.gz
+          if-no-files-found: error
+          overwrite: true
+          include-hidden-files: true
+          retention-days: 14
+
+  # Serves the exact published flatpak-repo tree via Actions Pages, using the
+  # OIDC token (id-token: write) and the Pages write permission. Gated on an
+  # actual publication (published=true) so an unsigned candidate never deploys,
+  # and serialized so overlapping releases deploy in order.
+  deploy:
+    name: Deploy Pages
+    needs: publish
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    if: ${{ needs.publish.outputs.published == 'true' }}
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: flatpak-repo-pages-deploy
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+
+  verify-pages:
+    name: Verify published Flatpak refs (${{ matrix.arch }})
+    needs: [publish, deploy]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            os: ubuntu-24.04
+          - arch: aarch64
+            os: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: flatpak-published
+          path: published
+      - name: Verify Pages signature, user install and channel update
+        env:
+          ARCH: ${{ matrix.arch }}
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          mkdir previous
+          tar -xzf published/previous.tar.gz -C previous
+          GITHUB_OUTPUT="$PWD/tag-info" packaging/release/check-tag.sh "$TAG"
+          version=$(sed -n 's/^version=//p' tag-info)
+          channel=$(sed -n 's/^channel=//p' tag-info)
+          packaging/tests/hosted/verify-flatpak.sh published published/pages-tree previous "$PAGE_URL" "$ARCH" "$channel" "$version"

@@ -1,0 +1,310 @@
+name: Tagged Release
+
+# A tag builds and verifies packages before publishing a GitHub release. Tags:
+#   vX.Y.Z                 a release
+#   alpha-vX.Y.Z-<suffix>  an alpha, published as a pre-release
+#   beta-vX.Y.Z-<suffix>   a beta, published as a pre-release
+# X.Y.Z must equal the workspace version in Cargo.toml.
+# GitHub-hosted runners only.
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "alpha-v*"
+      - "beta-v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  # Without debug info the test build fits the hosted runners: with it, ld ran out of memory
+  # on ubuntu-22.04 (signal 7). Release builds carry no debug info anyway.
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+
+jobs:
+  # A tag whose X.Y.Z differs from Cargo.toml would ship binaries that report another
+  # version than their file names. Fail before an hour of building.
+  check-tag:
+    name: Check tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
+      channel: ${{ steps.tag.outputs.channel }}
+      prerelease: ${{ steps.tag.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - id: tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: packaging/release/check-tag.sh "$TAG"
+
+  # The same gate as ci.yml, on hosted runners: no artefact from a failing commit.
+  test:
+    name: Test (${{ matrix.os }})
+    needs: check-tag
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-22.04, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install stable Rust
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+          rustup default stable
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends pkg-config libasound2-dev libgtk-3-dev libayatana-appindicator3-dev libxdo-dev gnupg
+      - name: Test packaging contracts
+        if: runner.os == 'Linux'
+        run: python3 -m unittest discover -s packaging/tests -v </dev/null
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - if: runner.os == 'Linux'
+        run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+
+  build:
+    name: Build (${{ matrix.name }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 22.04 keeps the glibc requirement low enough for older distributions.
+          - name: linux-x86_64
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - name: linux-arm64
+            os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+          - name: linux-armhf
+            os: ubuntu-22.04
+            target: armv7-unknown-linux-gnueabihf
+            cross: true
+          - name: linux-i686
+            os: ubuntu-22.04
+            target: i686-unknown-linux-gnu
+            cross: true
+          - name: windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - name: windows-i686
+            os: windows-latest
+            target: i686-pc-windows-msvc
+          - name: windows-arm64
+            os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+          - name: macos-arm64
+            os: macos-latest
+            target: aarch64-apple-darwin
+          - name: macos-x86_64
+            os: macos-15-intel
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      TARGET: ${{ matrix.target }}
+      SLUG: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install stable Rust
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Install Rust target
+        shell: bash
+        run: rustup target add "$TARGET"
+      - name: Native Linux build dependencies
+        if: runner.os == 'Linux' && !matrix.cross
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends binutils pkg-config libasound2-dev libgtk-3-dev libayatana-appindicator3-dev libxdo-dev
+      - name: Install pinned Cross
+        if: matrix.cross
+        run: |
+          python3 packaging/release/fetch-tool.py cross linux-x86_64 "$RUNNER_TEMP/cross.tar.gz"
+          mkdir -p "$RUNNER_TEMP/cross-bin"
+          tar -xzf "$RUNNER_TEMP/cross.tar.gz" -C "$RUNNER_TEMP/cross-bin"
+          printf '%s\n' "$RUNNER_TEMP/cross-bin" >> "$GITHUB_PATH"
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: release-${{ matrix.target }}
+      - name: Build release binaries
+        if: ${{ !matrix.cross }}
+        shell: bash
+        run: cargo build --workspace --bins --release --locked --target "$TARGET"
+      - name: Register armhf emulation
+        if: matrix.name == 'linux-armhf'
+        run: packaging/cross/register-arm-emulation.sh arm
+      - name: Cross-build release binaries
+        if: matrix.cross
+        run: cross build --workspace --bins --release --locked --target "$TARGET"
+      - name: Stage release binaries
+        shell: bash
+        run: packaging/release/stage.sh "$TARGET" "$SLUG" stage
+      - name: Create Unix stage
+        if: runner.os != 'Windows'
+        run: tar -czf stage.tar.gz -C stage bin README.md LICENSE NOTICE stage.json
+      - name: Create Windows stage
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path stage/* -DestinationPath stage.zip
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: stage-${{ matrix.name }}
+          path: |
+            stage.tar.gz
+            stage.zip
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+
+  linux:
+    needs: [check-tag, build]
+    uses: ./.github/workflows/release-linux.yml
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+
+  appimage:
+    needs: [check-tag, build]
+    uses: ./.github/workflows/release-appimage.yml
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+
+  windows:
+    needs: [check-tag, build]
+    uses: ./.github/workflows/release-windows.yml
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+    secrets:
+      CERTUM_ACCOUNT_EMAIL: ${{ secrets.CERTUM_ACCOUNT_EMAIL }}
+      CERTUM_TOTP_SEED: ${{ secrets.CERTUM_TOTP_SEED }}
+      CERTUM_CERT_FINGERPRINT: ${{ secrets.CERTUM_CERT_FINGERPRINT }}
+
+  macos:
+    needs: [check-tag, build]
+    uses: ./.github/workflows/release-macos.yml
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+    secrets:
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+      MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+      MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+      MACOS_NOTARY_ISSUER: ${{ secrets.MACOS_NOTARY_ISSUER }}
+
+  flatpak:
+    needs: [check-tag, build]
+    uses: ./.github/workflows/release-flatpak.yml
+    # A caller must grant the union of every nested job's permissions, even
+    # for jobs skipped in candidate mode; each nested job keeps its own
+    # narrower `permissions` (default contents: read).
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+    secrets:
+      FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+
+  container:
+    needs: [check-tag, build]
+    uses: ./.github/workflows/release-container.yml
+    # A caller must grant the union of every nested job's permissions, even
+    # for jobs skipped in candidate mode; each nested job keeps its own
+    # narrower `permissions` (default contents: read).
+    permissions:
+      contents: read
+      packages: write
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+
+  # Each candidate call includes its hosted smoke checks. The default success
+  # condition requires those checks to pass before this job can publish.
+  release:
+    needs: [check-tag, linux, appimage, windows, macos, flatpak, container]
+    uses: ./.github/workflows/release-assets.yml
+    permissions:
+      contents: write
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+    secrets:
+      RELEASE_GPG_PRIVATE_KEY: ${{ secrets.RELEASE_GPG_PRIVATE_KEY }}
+      RELEASE_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+      AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+
+  publish-homebrew:
+    needs: [check-tag, release]
+    if: ${{ success() && needs.release.outputs.homebrew_eligible == 'true' }}
+    uses: ./.github/workflows/release-channels.yml
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+      macos_signed: ${{ needs.release.outputs.macos_signed }}
+    secrets:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+  publish-winget:
+    needs: [check-tag, release]
+    if: ${{ success() && needs.release.outputs.winget_eligible == 'true' }}
+    uses: ./.github/workflows/release-channels.yml
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+      windows_signed: ${{ needs.release.outputs.windows_signed }}
+    secrets:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+
+  publish-flatpak:
+    needs: [check-tag, flatpak, release]
+    if: ${{ success() && needs.release.outputs.flatpak_eligible == 'true' }}
+    concurrency:
+      group: flatpak-release-publication
+      cancel-in-progress: false
+    uses: ./.github/workflows/release-flatpak.yml
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+      publish: true
+      base: ${{ needs.flatpak.outputs.base }}
+      candidate: ${{ needs.flatpak.outputs.candidate }}
+    secrets:
+      FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+
+  publish-container:
+    needs: [check-tag, release]
+    if: ${{ success() && needs.release.outputs.container_eligible == 'true' }}
+    uses: ./.github/workflows/release-container.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+      publish: true
+
+  publish-aur:
+    needs: [check-tag, release]
+    if: ${{ success() && needs.release.outputs.aur_eligible == 'true' }}
+    uses: ./.github/workflows/aur-publish.yml
+    with:
+      tag: ${{ needs.check-tag.outputs.tag }}
+    secrets:
+      AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}

@@ -1,0 +1,150 @@
+name: Native Linux Packages
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: ${{ matrix.format }} (${{ matrix.slug }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - format: deb
+            slug: linux-x86_64
+          - format: deb
+            slug: linux-arm64
+          - format: deb
+            slug: linux-armhf
+          - format: deb
+            slug: linux-i686
+          - format: rpm
+            slug: linux-x86_64
+          - format: rpm
+            slug: linux-arm64
+          - format: archlinux
+            slug: linux-x86_64
+          - format: archlinux
+            slug: linux-arm64
+          - format: archlinux
+            slug: linux-armhf
+          - format: archlinux
+            slug: linux-i686
+    env:
+      TAG: ${{ inputs.tag }}
+      FORMAT: ${{ matrix.format }}
+      SLUG: ${{ matrix.slug }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: stage-${{ matrix.slug }}
+          path: transport
+      - name: Extract stage
+        run: |
+          mkdir stage
+          tar -xzf transport/stage.tar.gz -C stage
+          python3 -c 'import json, os; assert json.load(open("stage/stage.json"))["slug"] == os.environ["SLUG"]'
+      - name: Extract pinned nFPM
+        run: |
+          python3 packaging/release/fetch-tool.py nfpm linux-x86_64 "$RUNNER_TEMP/nfpm.tar.gz"
+          mkdir "$RUNNER_TEMP/nfpm-bin"
+          tar -xzf "$RUNNER_TEMP/nfpm.tar.gz" -C "$RUNNER_TEMP/nfpm-bin" nfpm
+          printf '%s\n' "$RUNNER_TEMP/nfpm-bin" >> "$GITHUB_PATH"
+      - name: Package staged binaries
+        run: packaging/linux/package.sh stage "$TAG" "$FORMAT" package
+      - name: Verify version with the native package manager
+        run: |
+          set -euo pipefail
+          base_version=$(python3 -c 'import json; print(json.load(open("stage/stage.json"))["version"])')
+          asset="AirScout-RS-$TAG-$SLUG"
+          stable=false
+          [[ "$TAG" != "v$base_version" ]] || stable=true
+
+          pinned_image() {
+            python3 - "$1" <<'PY'
+          import json
+          import sys
+
+          with open("packaging/tools.lock.json", encoding="utf-8") as f:
+              pin = json.load(f)[sys.argv[1]]["linux-x86_64"]
+          print(f'{pin["url"]}@{pin["digest"]}')
+          PY
+          }
+
+          case "$FORMAT" in
+            deb)
+              version=$(dpkg-deb -f "package/assets/$asset.deb" Version)
+              if "$stable"; then
+                dpkg --compare-versions "$version" eq "$base_version"
+              else
+                dpkg --compare-versions "$version" lt "$base_version"
+              fi
+              ;;
+            rpm)
+              docker run --rm --network none -v "$PWD/package/assets:/assets:ro" \
+                "$(pinned_image rpm-version-check)" bash -euc '
+                  IFS=" " read -r version release < <(rpm -qp --qf "%{VERSION} %{RELEASE}\n" "$1")
+                  [[ "$version" == "$2" ]]
+                  if "$3"; then
+                      [[ "$release" == 1 ]]
+                  else
+                      [[ "$release" =~ ^0\.(alpha|beta)\.[A-Za-z0-9.]+$ ]]
+                      [[ $(rpm --eval "%{lua:print(rpm.vercmp(\"$release\", \"1\"))}") == -1 ]]
+                  fi
+                ' verify "/assets/$asset.rpm" "$base_version" "$stable"
+              ;;
+            archlinux)
+              docker run --rm --network none -v "$PWD/package/assets:/assets:ro" \
+                "$(pinned_image arch-version-check)" bash -euc '
+                  IFS=" " read -r name version < <(pacman -Qp "$1")
+                  [[ "$name" == airscout-rs ]]
+                  if "$3"; then
+                      [[ "$version" == "$2-1" ]]
+                  else
+                      [[ $(vercmp "$version" "$2-1") == -1 ]]
+                  fi
+                ' verify "/assets/$asset.pkg.tar.zst" "$base_version" "$stable"
+              ;;
+          esac
+      - name: Install and smoke the package in the target userspace
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("stage/stage.json"))["version"])')
+          assets=(package/assets/*)
+          [[ ${#assets[@]} == 1 ]]
+          packaging/tests/hosted/verify-package.sh "$FORMAT" "${assets[0]}" "$version"
+      - name: Verify install and upgrade on booted systemd
+        if: matrix.format == 'deb' && matrix.slug == 'linux-x86_64'
+        run: |
+          set -euo pipefail
+          version=$(python3 -c 'import json; print(json.load(open("stage/stage.json"))["version"])')
+          candidate="$PWD/package/assets/AirScout-RS-$TAG-$SLUG.deb"
+          final_tag="v$version"
+          if [[ "$TAG" == "$final_tag" ]]; then
+            old_tag="beta-v$version-smoke"
+            packaging/linux/package.sh stage "$old_tag" deb upgrade-fixture
+            initial="$PWD/upgrade-fixture/assets/AirScout-RS-$old_tag-$SLUG.deb"
+            upgraded="$candidate"
+          else
+            packaging/linux/package.sh stage "$final_tag" deb upgrade-fixture
+            initial="$candidate"
+            upgraded="$PWD/upgrade-fixture/assets/AirScout-RS-$final_tag-$SLUG.deb"
+          fi
+          VERIFY_MODE=systemd UPGRADE_DEB="$upgraded" \
+            packaging/tests/hosted/verify-package.sh deb "$initial" "$version"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-${{ matrix.format }}-${{ matrix.slug }}
+          path: package/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14

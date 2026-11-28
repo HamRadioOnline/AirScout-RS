@@ -1,0 +1,7 @@
+[target.armv7-unknown-linux-gnueabihf.dockerfile]
+file = "packaging/cross/armhf.Dockerfile"
+context = "packaging/cross"
+
+[target.i686-unknown-linux-gnu.dockerfile]
+file = "packaging/cross/i686.Dockerfile"
+context = "packaging/cross"

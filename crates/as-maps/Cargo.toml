@@ -1,0 +1,18 @@
+[package]
+name = "as-maps"
+description = "AirScout-RS map tiles: GMap .gmdb tile store, provider DbIds, preloader tile list"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+as-geo.workspace = true
+rusqlite.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+# `limits` lets the unit tests set SQLITE_LIMIT_LENGTH (no extra crate).
+rusqlite = { workspace = true, features = ["limits"] }
+tempfile.workspace = true
+serde_json.workspace = true

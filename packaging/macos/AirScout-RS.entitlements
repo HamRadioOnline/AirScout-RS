@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- AirScout-RS is a native Rust app, not a JVM: no JIT, no unsigned
+	     executable memory, no library-validation override. The only hardened
+	     runtime entitlement is the network client (ADS-B feeds, CAT/rotator,
+	     maps and the web API are all outgoing). -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+</dict>
+</plist>

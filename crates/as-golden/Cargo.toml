@@ -1,0 +1,10 @@
+[package]
+name = "as-golden"
+description = "Test helper: loads golden fixtures generated from the original C# code"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+serde_json.workspace = true

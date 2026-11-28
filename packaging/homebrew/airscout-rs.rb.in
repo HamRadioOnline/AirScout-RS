@@ -1,0 +1,22 @@
+cask "airscout-rs" do
+  arch arm: "macos-arm64", intel: "macos-x86_64"
+
+  version "$version"
+  sha256 arm:   "$arm",
+         intel: "$intel"
+
+  url "https://github.com/HamRadioOnline/AirScout-RS/releases/download/$tag/AirScout-RS-$tag-#{arch}.dmg"
+  name "AirScout-RS"
+  desc "Aircraft scatter for amateur radio"
+  homepage "https://github.com/HamRadioOnline/AirScout-RS"
+
+  conflicts_with cask: "airscout-rs@beta"
+
+  app "AirScout-RS.app"
+  binary "#{appdir}/AirScout-RS.app/Contents/MacOS/airscout"
+  binary "#{appdir}/AirScout-RS.app/Contents/MacOS/airscout-planeserver"
+  binary "#{appdir}/AirScout-RS.app/Contents/MacOS/airscout-cli"
+  binary "#{appdir}/AirScout-RS.app/Contents/MacOS/catcheck"
+  binary "#{appdir}/AirScout-RS.app/Contents/MacOS/elevation-tile-gen"
+  binary "#{appdir}/AirScout-RS.app/Contents/MacOS/maptile-gen"
+end

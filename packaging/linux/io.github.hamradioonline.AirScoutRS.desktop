@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=AirScout-RS
+Comment=Track aircraft and predict aircraft scatter opportunities
+Exec=airscout
+Icon=io.github.hamradioonline.AirScoutRS
+Terminal=false
+Categories=HamRadio;Network;

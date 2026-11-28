@@ -1,0 +1,15 @@
+[package]
+name = "as-signals"
+description = "AirScout-RS signal level database and Spectrum Lab FFT parsing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+as-db.workspace = true
+rusqlite.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

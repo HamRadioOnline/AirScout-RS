@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="AirScout-RS" Manufacturer="HamRadioOnline" Scope="perMachine"
+           Version="$(var.ProductVersion)" ProductCode="$(var.ProductCode)"
+           UpgradeCode="{5CEC7FA4-CCAD-467A-91D1-759E51F78ADD}">
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of AirScout-RS is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="AirScout-RS">
+        <!-- WiX derives component GUIDs from their key file's install path. -->
+        <Component Id="AirScout" Guid="*">
+          <File Id="AirScoutExe" Source="$(var.StageDir)\bin\airscout.exe" KeyPath="yes">
+            <Shortcut Id="AirScoutStartMenu" Directory="ProgramMenuFolder" Name="AirScout-RS"
+                      Advertise="yes" WorkingDirectory="INSTALLFOLDER" />
+          </File>
+          <Environment Id="AirScoutPath" Name="PATH" Value="[INSTALLFOLDER]"
+                       Action="set" Part="last" System="yes" />
+        </Component>
+        <Component Id="PlaneServer" Guid="*">
+          <File Source="$(var.StageDir)\bin\airscout-planeserver.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="AirScoutCli" Guid="*">
+          <File Source="$(var.StageDir)\bin\airscout-cli.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="CatCheck" Guid="*">
+          <File Source="$(var.StageDir)\bin\catcheck.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="ElevationTileGen" Guid="*">
+          <File Source="$(var.StageDir)\bin\elevation-tile-gen.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="MapTileGen" Guid="*">
+          <File Source="$(var.StageDir)\bin\maptile-gen.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="Readme" Guid="*">
+          <File Source="$(var.StageDir)\README.md" KeyPath="yes" />
+        </Component>
+        <Component Id="License" Guid="*">
+          <File Source="$(var.StageDir)\LICENSE" KeyPath="yes" />
+        </Component>
+        <Component Id="Notice" Guid="*">
+          <File Source="$(var.StageDir)\NOTICE" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="AirScoutRS">
+      <ComponentRef Id="AirScout" />
+      <ComponentRef Id="PlaneServer" />
+      <ComponentRef Id="AirScoutCli" />
+      <ComponentRef Id="CatCheck" />
+      <ComponentRef Id="ElevationTileGen" />
+      <ComponentRef Id="MapTileGen" />
+      <ComponentRef Id="Readme" />
+      <ComponentRef Id="License" />
+      <ComponentRef Id="Notice" />
+    </Feature>
+  </Package>
+</Wix>

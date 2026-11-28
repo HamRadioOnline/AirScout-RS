@@ -1,0 +1,329 @@
+{
+  "window": "HistoryFromURLDlg",
+  "upstream_sha": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "title": "Get Planes History From URL",
+  "client_size": [
+    577,
+    280
+  ],
+  "controls": [
+    {
+      "name": "label1",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 12,
+      "text": "Download from:",
+      "location": [
+        28,
+        128
+      ],
+      "size": [
+        81,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 0,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label2",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 9,
+      "text": "Date:",
+      "location": [
+        28,
+        183
+      ],
+      "size": [
+        33,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 3,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "btn_History_Start",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 8,
+      "text": "Start",
+      "location": [
+        183,
+        245
+      ],
+      "size": [
+        106,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 7,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label3",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 7,
+      "text": "Use this dialog to download one day of plane positions history and convert it to AirScout's database  import file format.",
+      "location": [
+        12,
+        9
+      ],
+      "size": [
+        523,
+        52
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 8,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label4",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 6,
+      "text": "CAUTION: This will download a large file (abt. 8GB) and will use abt. 50GB of temporary disk space!",
+      "location": [
+        12,
+        61
+      ],
+      "size": [
+        523,
+        52
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 9,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label5",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 5,
+      "text": "Directory:",
+      "location": [
+        28,
+        154
+      ],
+      "size": [
+        52,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 10,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_History_Select",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 3,
+      "text": "Select",
+      "location": [
+        429,
+        149
+      ],
+      "size": [
+        106,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 12,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": [
+        {
+          "event": "Click",
+          "handler": "tb_History_Select_Click"
+        }
+      ]
+    },
+    {
+      "name": "btn_History_Cancel",
+      "kind": "Button",
+      "parent": "$this",
+      "index": 2,
+      "text": "Cancel",
+      "location": [
+        317,
+        245
+      ],
+      "size": [
+        106,
+        23
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 13,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "label6",
+      "kind": "Label",
+      "parent": "$this",
+      "index": 1,
+      "text": "Date:",
+      "location": [
+        28,
+        207
+      ],
+      "size": [
+        33,
+        13
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 14,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "ud_History_Stepwidth",
+      "kind": "NumericUpDown",
+      "parent": "$this",
+      "index": 0,
+      "text": null,
+      "location": [
+        115,
+        207
+      ],
+      "size": [
+        100,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 15,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_History_Directory",
+      "kind": "TextBox",
+      "parent": "$this",
+      "index": 4,
+      "text": null,
+      "location": [
+        115,
+        151
+      ],
+      "size": [
+        308,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 11,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "dtp_History_Date",
+      "kind": "DateTimePicker",
+      "parent": "$this",
+      "index": 10,
+      "text": null,
+      "location": [
+        115,
+        177
+      ],
+      "size": [
+        100,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 2,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    },
+    {
+      "name": "tb_History_URL",
+      "kind": "TextBox",
+      "parent": "$this",
+      "index": 11,
+      "text": null,
+      "location": [
+        115,
+        125
+      ],
+      "size": [
+        420,
+        20
+      ],
+      "dock": null,
+      "anchor": null,
+      "tab_index": 1,
+      "visible": true,
+      "enabled": true,
+      "splitter_distance": null,
+      "orientation": null,
+      "items": [],
+      "events": []
+    }
+  ],
+  "unparsed": []
+}

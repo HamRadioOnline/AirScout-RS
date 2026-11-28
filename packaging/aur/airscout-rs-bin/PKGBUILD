@@ -1,0 +1,26 @@
+# Maintainer: HamRadioOnline
+pkgname=airscout-rs-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Aircraft tracking and aircraft scatter prediction for amateur radio (pre-built)"
+arch=('x86_64' 'aarch64' 'armv7h' 'i686')
+url="https://github.com/HamRadioOnline/AirScout-RS"
+license=('GPL-3.0-only')
+depends=('glibc' 'libgcc' 'gtk3' 'alsa-lib' 'libayatana-appindicator' 'xdotool' 'libx11' 'libxkbcommon' 'libxkbcommon-x11' 'wayland' 'libglvnd' 'mesa' 'vulkan-icd-loader' 'vulkan-swrast' 'adwaita-icon-theme' 'hicolor-icon-theme' 'systemd')
+provides=('airscout-rs')
+conflicts=('airscout-rs' 'airscout-rs-git')
+backup=('etc/airscout-planeserver/planeserver.toml')
+install=arch-install
+source_x86_64=("AirScout-RS-v${pkgver}-linux-x86_64.pkg.tar.zst::https://github.com/HamRadioOnline/AirScout-RS/releases/download/v${pkgver}/AirScout-RS-v${pkgver}-linux-x86_64.pkg.tar.zst")
+sha256sums_x86_64=('SKIP')
+source_aarch64=("AirScout-RS-v${pkgver}-linux-arm64.pkg.tar.zst::https://github.com/HamRadioOnline/AirScout-RS/releases/download/v${pkgver}/AirScout-RS-v${pkgver}-linux-arm64.pkg.tar.zst")
+sha256sums_aarch64=('SKIP')
+source_armv7h=("AirScout-RS-v${pkgver}-linux-armhf.pkg.tar.zst::https://github.com/HamRadioOnline/AirScout-RS/releases/download/v${pkgver}/AirScout-RS-v${pkgver}-linux-armhf.pkg.tar.zst")
+sha256sums_armv7h=('SKIP')
+source_i686=("AirScout-RS-v${pkgver}-linux-i686.pkg.tar.zst::https://github.com/HamRadioOnline/AirScout-RS/releases/download/v${pkgver}/AirScout-RS-v${pkgver}-linux-i686.pkg.tar.zst")
+sha256sums_i686=('SKIP')
+
+package() {
+    cp -a "${srcdir}/usr" "${pkgdir}/"
+    cp -a "${srcdir}/etc" "${pkgdir}/"
+}

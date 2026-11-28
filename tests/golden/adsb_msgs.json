@@ -1,0 +1,2894 @@
+{
+  "upstream_commit": "91b02cb7f4210f3cf1e2cb7c3666ce29b65e69c5",
+  "cases": [
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D4840D6202CC371C32CE0576098"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735190,
+        "payload": "4840D6202CC371C32CE0",
+        "parity": 5726360,
+        "recalc_parity": 5726360,
+        "parity_ok": true,
+        "zero_parity": false,
+        "kind": "identification",
+        "tc": 4,
+        "emitter_category": 0,
+        "call": "KLM1023 "
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8d4840d6202cc371c32ce0576098"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735190,
+        "payload": "4840D6202CC371C32CE0",
+        "parity": 5726360,
+        "recalc_parity": 5726360,
+        "parity_ok": true,
+        "zero_parity": false,
+        "kind": "identification",
+        "tc": 4,
+        "emitter_category": 0,
+        "call": "KLM1023 "
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D4840D623FFFFFFFFFFFF000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735190,
+        "payload": "4840D623FFFFFFFFFFFF",
+        "parity": 0,
+        "recalc_parity": 15883132,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "identification",
+        "tc": 4,
+        "emitter_category": 3,
+        "call": "        "
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D4840D6082CC371C32CE0000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735190,
+        "payload": "4840D6082CC371C32CE0",
+        "parity": 0,
+        "recalc_parity": 12891467,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "identification",
+        "tc": 1,
+        "emitter_category": 0,
+        "call": "KLM1023 "
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D4840D6182CC371C32CE0000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735190,
+        "payload": "4840D6182CC371C32CE0",
+        "parity": 0,
+        "recalc_parity": 16557672,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "identification",
+        "tc": 3,
+        "emitter_category": 0,
+        "call": "KLM1023 "
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D58C382D690C8AC2863A7"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D58C382D690C8AC",
+        "parity": 2646951,
+        "recalc_parity": 2646951,
+        "parity_ok": true,
+        "zero_parity": false,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": false,
+        "cpr_lat": 93000,
+        "cpr_lon": 51372,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 38000,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D58C386435CC412692AD6"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D58C386435CC412",
+        "parity": 6892246,
+        "recalc_parity": 6892246,
+        "parity_ok": true,
+        "zero_parity": false,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": true,
+        "cpr_lat": 74158,
+        "cpr_lon": 50194,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 38000,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D5814F2D690C8AC000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D5814F2D690C8AC",
+        "parity": 0,
+        "recalc_parity": 16504014,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": false,
+        "cpr_lat": 93000,
+        "cpr_lon": 51372,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 71700,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D582A62D690C8AC000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D582A62D690C8AC",
+        "parity": 0,
+        "recalc_parity": 13661269,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": false,
+        "cpr_lat": 93000,
+        "cpr_lon": 51372,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 123600,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D588032D690C8AC000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D588032D690C8AC",
+        "parity": 0,
+        "recalc_parity": 5538314,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": false,
+        "cpr_lat": 93000,
+        "cpr_lon": 51372,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 62200,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D580C52D690C8AC000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D580C52D690C8AC",
+        "parity": 0,
+        "recalc_parity": 1785819,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": false,
+        "cpr_lat": 93000,
+        "cpr_lon": 51372,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 70700,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D58FEF2D690C8AC000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D58FEF2D690C8AC",
+        "parity": 0,
+        "recalc_parity": 3810378,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": false,
+        "cpr_lat": 93000,
+        "cpr_lon": 51372,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 84200,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D580002D690C8AC000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D580002D690C8AC",
+        "parity": 0,
+        "recalc_parity": 9744469,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": false,
+        "cpr_lat": 93000,
+        "cpr_lon": 51372,
+        "has_position": true,
+        "has_altitude": false,
+        "altitude": -1299,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621DA0C382D690C8AC000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621DA0C382D690C8AC",
+        "parity": 0,
+        "recalc_parity": 6063306,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 20,
+        "odd": false,
+        "cpr_lat": 93000,
+        "cpr_lon": 51372,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 0,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D58C38600000000000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D58C38600000000",
+        "parity": 0,
+        "recalc_parity": 5834799,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": true,
+        "cpr_lat": 65536,
+        "cpr_lon": 0,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 38000,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D58C3864A2B1C3D000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D58C3864A2B1C3D",
+        "parity": 0,
+        "recalc_parity": 3828086,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": true,
+        "cpr_lat": 75029,
+        "cpr_lon": 72765,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 38000,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D58C387FFFFFFFF000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D58C387FFFFFFFF",
+        "parity": 0,
+        "recalc_parity": 10812251,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": true,
+        "cpr_lat": 131071,
+        "cpr_lon": 131071,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 38000,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D58C38612345678000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D58C38612345678",
+        "parity": 0,
+        "recalc_parity": 10812905,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": true,
+        "cpr_lat": 67866,
+        "cpr_lon": 22136,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 38000,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D58C38200000000000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D58C38200000000",
+        "parity": 0,
+        "recalc_parity": 5579543,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": false,
+        "cpr_lat": 65536,
+        "cpr_lon": 0,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 38000,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D90C382D690C8AC000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D90C382D690C8AC",
+        "parity": 0,
+        "recalc_parity": 1356207,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 18,
+        "odd": false,
+        "cpr_lat": 93000,
+        "cpr_lon": 51372,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 38000,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D58C38621A00000000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D58C38621A00000",
+        "parity": 0,
+        "recalc_parity": 6155175,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airborne_position",
+        "tc": 11,
+        "odd": true,
+        "cpr_lat": 69840,
+        "cpr_lon": 0,
+        "has_position": true,
+        "has_altitude": true,
+        "altitude": 38000,
+        "surveillance_status": 0,
+        "nic_suppl_b": false,
+        "utc": false
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8C4841753AAB238733C8CD4020B1"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735349,
+        "payload": "4841753AAB238733C8CD",
+        "parity": 4202673,
+        "recalc_parity": 4202673,
+        "parity_ok": true,
+        "zero_parity": false,
+        "kind": "surface_position",
+        "tc": 7,
+        "odd": false,
+        "cpr_lat": 115609,
+        "cpr_lon": 116941,
+        "has_position": true,
+        "has_ground_speed": true,
+        "ground_speed": 9.259992,
+        "has_heading": true,
+        "heading": 140.625
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8C4841753A8A35323FAEBDAC702D"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735349,
+        "payload": "4841753A8A35323FAEBD",
+        "parity": 11300909,
+        "recalc_parity": 11300909,
+        "parity_ok": true,
+        "zero_parity": false,
+        "kind": "surface_position",
+        "tc": 7,
+        "odd": true,
+        "cpr_lat": 39199,
+        "cpr_lon": 110269,
+        "has_position": true,
+        "has_ground_speed": true,
+        "ground_speed": 8.231104,
+        "has_heading": true,
+        "heading": 98.4375
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8C4841753A9A153237AEF0F275BE"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735349,
+        "payload": "4841753A9A153237AEF0",
+        "parity": 15889854,
+        "recalc_parity": 15889854,
+        "parity_ok": true,
+        "zero_parity": false,
+        "kind": "surface_position",
+        "tc": 7,
+        "odd": true,
+        "cpr_lat": 39195,
+        "cpr_lon": 110320,
+        "has_position": true,
+        "has_ground_speed": true,
+        "ground_speed": 8.745548,
+        "has_heading": true,
+        "heading": 92.8125
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8C484175380A153237AEF0000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735349,
+        "payload": "484175380A153237AEF0",
+        "parity": 0,
+        "recalc_parity": 9007694,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "surface_position",
+        "tc": 7,
+        "odd": true,
+        "cpr_lat": 39195,
+        "cpr_lon": 110320,
+        "has_position": true,
+        "has_ground_speed": false,
+        "ground_speed": "MissingInformationException",
+        "has_heading": true,
+        "heading": 92.8125
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8C484175381A153237AEF0000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735349,
+        "payload": "484175381A153237AEF0",
+        "parity": 0,
+        "recalc_parity": 2405158,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "surface_position",
+        "tc": 7,
+        "odd": true,
+        "cpr_lat": 39195,
+        "cpr_lon": 110320,
+        "has_position": true,
+        "has_ground_speed": true,
+        "ground_speed": 0.0,
+        "has_heading": true,
+        "heading": 92.8125
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8C4841753FCA153237AEF0000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735349,
+        "payload": "4841753FCA153237AEF0",
+        "parity": 0,
+        "recalc_parity": 12244052,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "surface_position",
+        "tc": 7,
+        "odd": true,
+        "cpr_lat": 39195,
+        "cpr_lon": 110320,
+        "has_position": true,
+        "has_ground_speed": true,
+        "ground_speed": 90.0277,
+        "has_heading": true,
+        "heading": 92.8125
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8C4841753FDA153237AEF0000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735349,
+        "payload": "4841753FDA153237AEF0",
+        "parity": 0,
+        "recalc_parity": 1512764,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "surface_position",
+        "tc": 7,
+        "odd": true,
+        "cpr_lat": 39195,
+        "cpr_lon": 110320,
+        "has_position": true,
+        "has_ground_speed": false,
+        "ground_speed": "MissingInformationException",
+        "has_heading": true,
+        "heading": 92.8125
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8C484175281A153237AEF0000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4735349,
+        "payload": "484175281A153237AEF0",
+        "parity": 0,
+        "recalc_parity": 1875973,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "surface_position",
+        "tc": 5,
+        "odd": true,
+        "cpr_lat": 39195,
+        "cpr_lon": 110320,
+        "has_position": true,
+        "has_ground_speed": true,
+        "ground_speed": 0.0,
+        "has_heading": true,
+        "heading": 92.8125
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D485020994409940838175B284F"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4739104,
+        "payload": "48502099440994083817",
+        "parity": 5974095,
+        "recalc_parity": 5974095,
+        "parity_ok": true,
+        "zero_parity": false,
+        "kind": "velocity_over_ground",
+        "tc": 19,
+        "supersonic": false,
+        "has_velocity": true,
+        "velocity": 159,
+        "ew": 8,
+        "ns": 159,
+        "heading": 183,
+        "has_vrate": true,
+        "vrate": -4,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": 550
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D48502099400914083817000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4739104,
+        "payload": "48502099400914083817",
+        "parity": 0,
+        "recalc_parity": 7462258,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "velocity_over_ground",
+        "tc": 19,
+        "supersonic": false,
+        "has_velocity": true,
+        "velocity": 159,
+        "ew": -7,
+        "ns": -158,
+        "heading": 2,
+        "has_vrate": true,
+        "vrate": -4,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": 550
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D4850209A440994083817000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4739104,
+        "payload": "4850209A440994083817",
+        "parity": 0,
+        "recalc_parity": 12604255,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "velocity_over_ground",
+        "tc": 19,
+        "supersonic": true,
+        "has_velocity": true,
+        "velocity": 636,
+        "ew": 32,
+        "ns": 636,
+        "heading": 183,
+        "has_vrate": true,
+        "vrate": -4,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": 550
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D48502098440994083817000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4739104,
+        "payload": "48502098440994083817",
+        "parity": 0,
+        "recalc_parity": 8868536,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "extended_squitter",
+        "tc": 19
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D48502099440094083817000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4739104,
+        "payload": "48502099440094083817",
+        "parity": 0,
+        "recalc_parity": 4224241,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "velocity_over_ground",
+        "tc": 19,
+        "supersonic": false,
+        "has_velocity": false,
+        "velocity": 159,
+        "ew": 0,
+        "ns": 159,
+        "heading": 180,
+        "has_vrate": true,
+        "vrate": -4,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": 550
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D48502099440994080017000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4739104,
+        "payload": "48502099440994080017",
+        "parity": 0,
+        "recalc_parity": 16111686,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "velocity_over_ground",
+        "tc": 19,
+        "supersonic": false,
+        "has_velocity": true,
+        "velocity": 159,
+        "ew": 8,
+        "ns": 159,
+        "heading": 183,
+        "has_vrate": true,
+        "vrate": 0,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": 550
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D48502099440994083800000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4739104,
+        "payload": "48502099440994083800",
+        "parity": 0,
+        "recalc_parity": 10754227,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "velocity_over_ground",
+        "tc": 19,
+        "supersonic": false,
+        "has_velocity": true,
+        "velocity": 159,
+        "ew": 8,
+        "ns": 159,
+        "heading": 183,
+        "has_vrate": true,
+        "vrate": -4,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": -25
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D48502099440994083880000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4739104,
+        "payload": "48502099440994083880",
+        "parity": 0,
+        "recalc_parity": 10690163,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "velocity_over_ground",
+        "tc": 19,
+        "supersonic": false,
+        "has_velocity": true,
+        "velocity": 159,
+        "ew": 8,
+        "ns": 159,
+        "heading": 183,
+        "has_vrate": true,
+        "vrate": -4,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": 25
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D48502099470A94083817000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4739104,
+        "payload": "48502099470A94083817",
+        "parity": 0,
+        "recalc_parity": 12495138,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "velocity_over_ground",
+        "tc": 19,
+        "supersonic": false,
+        "has_velocity": true,
+        "velocity": 793,
+        "ew": 777,
+        "ns": 159,
+        "heading": 259,
+        "has_vrate": true,
+        "vrate": -4,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": 550
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8DA05F219B06B6AF189400CBC33F"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 10510113,
+        "payload": "A05F219B06B6AF189400",
+        "parity": 13353791,
+        "recalc_parity": 13353791,
+        "parity_ok": true,
+        "zero_parity": false,
+        "kind": "airspeed_heading",
+        "tc": 19,
+        "supersonic": false,
+        "has_airspeed": false,
+        "airspeed": 375,
+        "true_airspeed": true,
+        "has_heading": true,
+        "heading": 243,
+        "has_vrate": true,
+        "vrate": 2304,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": -25
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8DA05F219C06B6AF189400000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 10510113,
+        "payload": "A05F219C06B6AF189400",
+        "parity": 0,
+        "recalc_parity": 14597089,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airspeed_heading",
+        "tc": 19,
+        "supersonic": true,
+        "has_airspeed": false,
+        "airspeed": 375,
+        "true_airspeed": true,
+        "has_heading": true,
+        "heading": 243,
+        "has_vrate": true,
+        "vrate": 2304,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": -25
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8DA05F219B06B680189400000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 10510113,
+        "payload": "A05F219B06B680189400",
+        "parity": 0,
+        "recalc_parity": 3688776,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airspeed_heading",
+        "tc": 19,
+        "supersonic": false,
+        "has_airspeed": false,
+        "airspeed": -1,
+        "true_airspeed": true,
+        "has_heading": true,
+        "heading": 243,
+        "has_vrate": true,
+        "vrate": 2304,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": -25
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8DA05F219B02B6AF189400000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 10510113,
+        "payload": "A05F219B02B6AF189400",
+        "parity": 0,
+        "recalc_parity": 14725989,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "airspeed_heading",
+        "tc": 19,
+        "supersonic": false,
+        "has_airspeed": false,
+        "airspeed": 375,
+        "true_airspeed": true,
+        "has_heading": false,
+        "heading": 243,
+        "has_vrate": true,
+        "vrate": 2304,
+        "has_geo_minus_baro": true,
+        "geo_minus_baro": -25
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621DE0C382D690C8AC000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621DE0C382D690C8AC",
+        "parity": 0,
+        "recalc_parity": 12372038,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "extended_squitter",
+        "tc": 28
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D00C382D690C8AC000000"
+      },
+      "result": {
+        "df": 17,
+        "ca": 0,
+        "icao24": 4219421,
+        "payload": "40621D00C382D690C8AC",
+        "parity": 0,
+        "recalc_parity": 1298333,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "extended_squitter",
+        "tc": 0
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "5D484FDEA248F5"
+      },
+      "result": {
+        "df": 11,
+        "ca": 5,
+        "icao24": 4739038,
+        "payload": "484FDE",
+        "parity": 10635509,
+        "recalc_parity": 10635491,
+        "parity_ok": false,
+        "zero_parity": false,
+        "kind": "mode_s"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "5D484FDEA248F6"
+      },
+      "result": {
+        "df": 11,
+        "ca": 5,
+        "icao24": 4739038,
+        "payload": "484FDE",
+        "parity": 10635510,
+        "recalc_parity": 10635491,
+        "parity_ok": false,
+        "zero_parity": false,
+        "kind": "mode_s"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "20000F1F684A6C"
+      },
+      "result": {
+        "df": 4,
+        "ca": 0,
+        "icao24": 6834796,
+        "payload": "000F1F",
+        "parity": 0,
+        "recalc_parity": 2452047,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "mode_s"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "A0001838CA3E51F0A8000047A36A"
+      },
+      "result": {
+        "df": 20,
+        "ca": 0,
+        "icao24": 4694890,
+        "payload": "001838CA3E51F0A80000",
+        "parity": 0,
+        "recalc_parity": 11059751,
+        "parity_ok": false,
+        "zero_parity": true,
+        "kind": "mode_s"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D4840D6202CC371C32CE0576099"
+      },
+      "result": {
+        "df": 17,
+        "ca": 5,
+        "icao24": 4735190,
+        "payload": "4840D6202CC371C32CE0",
+        "parity": 5726361,
+        "recalc_parity": 5726360,
+        "parity_ok": false,
+        "zero_parity": false,
+        "kind": "mode_s"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D40621D58C382D690C8AC2863A8"
+      },
+      "result": {
+        "df": 17,
+        "ca": 5,
+        "icao24": 4219421,
+        "payload": "40621D58C382D690C8AC",
+        "parity": 2646952,
+        "recalc_parity": 2646951,
+        "parity_ok": false,
+        "zero_parity": false,
+        "kind": "mode_s"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D485020994409940838175B284E"
+      },
+      "result": {
+        "df": 17,
+        "ca": 5,
+        "icao24": 4739104,
+        "payload": "48502099440994083817",
+        "parity": 5974094,
+        "recalc_parity": 5974095,
+        "parity_ok": false,
+        "zero_parity": false,
+        "kind": "mode_s"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8DA05F219B06B6AF189400CBC330"
+      },
+      "result": {
+        "df": 17,
+        "ca": 5,
+        "icao24": 10510113,
+        "payload": "A05F219B06B6AF189400",
+        "parity": 13353776,
+        "recalc_parity": 13353791,
+        "parity_ok": false,
+        "zero_parity": false,
+        "kind": "mode_s"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D4840D6202CC"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D4840D6202CC3"
+      },
+      "result": {
+        "df": 17,
+        "ca": 5,
+        "icao24": 4735190,
+        "payload": "4840D6",
+        "parity": 2108611,
+        "recalc_parity": 12124404,
+        "parity_ok": false,
+        "zero_parity": false,
+        "kind": "mode_s"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D4840D6202CZ371C32CE0576098"
+      },
+      "result": {
+        "df": 17,
+        "ca": 5,
+        "icao24": 4735190,
+        "payload": "4840D6202C0071C32CE0",
+        "parity": 5726360,
+        "recalc_parity": 15359811,
+        "parity_ok": false,
+        "zero_parity": false,
+        "kind": "mode_s"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "ZZ4840D6202CC371C32CE0576098"
+      },
+      "result": {
+        "error": "FormatException"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": "8D4840D6202CC371C32CE05760ZZ"
+      },
+      "result": {
+        "error": "FormatException"
+      }
+    },
+    {
+      "fn": "decode",
+      "args": {
+        "hex": ""
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 0.0
+      },
+      "result": 59.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 10.0
+      },
+      "result": 59.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 10.4704713
+      },
+      "result": 58.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 10.4704713
+      },
+      "result": 58.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 45.0
+      },
+      "result": 42.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 52.2572
+      },
+      "result": 36.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": -52.2572
+      },
+      "result": 36.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 59.95
+      },
+      "result": 30.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 86.99
+      },
+      "result": 2.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 87.0
+      },
+      "result": 2.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 87.01
+      },
+      "result": 1.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": -87.0
+      },
+      "result": 2.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 89.9
+      },
+      "result": 1.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": 90.0
+      },
+      "result": 1.0
+    },
+    {
+      "fn": "nl",
+      "args": {
+        "lat": -90.0
+      },
+      "result": 1.0
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C382D690C8AC2863A7",
+        "other": "8D40621D58C386435CC412692AD6"
+      },
+      "result": {
+        "lat": 52.2572021484375,
+        "lon": 3.91937255859375
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C382D690C8AC2863A7",
+        "other": "8D40621D58C38600000000000000"
+      },
+      "result": {
+        "lat": 76.2572021484375,
+        "lon": 138.64981515066964
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C382D690C8AC2863A7",
+        "other": "8D40621D58C3864A2B1C3D000000"
+      },
+      "result": {
+        "lat": 52.2572021484375,
+        "lon": -56.08062744140625
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C382D690C8AC2863A7",
+        "other": "8D40621D58C387FFFFFFFF000000"
+      },
+      "result": {
+        "lat": 256.2572021484375,
+        "lon": 141.097412109375
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C382D690C8AC2863A7",
+        "other": "8D40621D58C38612345678000000"
+      },
+      "result": {
+        "lat": 70.2572021484375,
+        "lon": 79.05487060546875
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C382D690C8AC2863A7",
+        "other": "8D40621D58C38200000000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C382D690C8AC2863A7",
+        "other": "8D40621D58C38621A00000000000"
+      },
+      "result": {
+        "error": "PositionStraddleException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C386435CC412692AD6",
+        "other": "8D40621D58C382D690C8AC2863A7"
+      },
+      "result": {
+        "lat": 52.26578017412606,
+        "lon": 3.938912527901786
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C386435CC412692AD6",
+        "other": "8D40621D58C38600000000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C386435CC412692AD6",
+        "other": "8D40621D58C3864A2B1C3D000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C386435CC412692AD6",
+        "other": "8D40621D58C387FFFFFFFF000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C386435CC412692AD6",
+        "other": "8D40621D58C38612345678000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C386435CC412692AD6",
+        "other": "8D40621D58C38200000000000000"
+      },
+      "result": {
+        "lat": -20.954558808924787,
+        "lon": -134.94796475497157
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C386435CC412692AD6",
+        "other": "8D40621D58C38621A00000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38600000000000000",
+        "other": "8D40621D58C382D690C8AC2863A7"
+      },
+      "result": {
+        "lat": 76.27118644067797,
+        "lon": 138.46153846153845
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38600000000000000",
+        "other": "8D40621D58C386435CC412692AD6"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38600000000000000",
+        "other": "8D40621D58C3864A2B1C3D000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38600000000000000",
+        "other": "8D40621D58C387FFFFFFFF000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38600000000000000",
+        "other": "8D40621D58C38612345678000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38600000000000000",
+        "other": "8D40621D58C38200000000000000"
+      },
+      "result": {
+        "lat": 3.0508474576271185,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38600000000000000",
+        "other": "8D40621D58C38621A00000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C3864A2B1C3D000000",
+        "other": "8D40621D58C382D690C8AC2863A7"
+      },
+      "result": {
+        "lat": 52.30632717326536,
+        "lon": -56.004141671316916
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C3864A2B1C3D000000",
+        "other": "8D40621D58C386435CC412692AD6"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C3864A2B1C3D000000",
+        "other": "8D40621D58C38600000000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C3864A2B1C3D000000",
+        "other": "8D40621D58C387FFFFFFFF000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C3864A2B1C3D000000",
+        "other": "8D40621D58C38612345678000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C3864A2B1C3D000000",
+        "other": "8D40621D58C38200000000000000"
+      },
+      "result": {
+        "lat": -27.015706725039763,
+        "lon": 163.07413541353665
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C3864A2B1C3D000000",
+        "other": "8D40621D58C38621A00000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C387FFFFFFFF000000",
+        "other": "8D40621D58C382D690C8AC2863A7"
+      },
+      "result": {
+        "lat": 256.27113988844013,
+        "lon": -0.00274658203125
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C387FFFFFFFF000000",
+        "other": "8D40621D58C386435CC412692AD6"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C387FFFFFFFF000000",
+        "other": "8D40621D58C38600000000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C387FFFFFFFF000000",
+        "other": "8D40621D58C3864A2B1C3D000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C387FFFFFFFF000000",
+        "other": "8D40621D58C38612345678000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C387FFFFFFFF000000",
+        "other": "8D40621D58C38200000000000000"
+      },
+      "result": {
+        "lat": 183.05080090538928,
+        "lon": -0.00274658203125
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C387FFFFFFFF000000",
+        "other": "8D40621D58C38621A00000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38612345678000000",
+        "other": "8D40621D58C382D690C8AC2863A7"
+      },
+      "result": {
+        "lat": 70.27795823953919,
+        "lon": 78.98938630756578
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38612345678000000",
+        "other": "8D40621D58C386435CC412692AD6"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38612345678000000",
+        "other": "8D40621D58C38600000000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38612345678000000",
+        "other": "8D40621D58C3864A2B1C3D000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38612345678000000",
+        "other": "8D40621D58C387FFFFFFFF000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38612345678000000",
+        "other": "8D40621D58C38200000000000000"
+      },
+      "result": {
+        "lat": -9.044075658765905,
+        "lon": -61.020718278556046
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38612345678000000",
+        "other": "8D40621D58C38621A00000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38200000000000000",
+        "other": "8D40621D58C382D690C8AC2863A7"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38200000000000000",
+        "other": "8D40621D58C386435CC412692AD6"
+      },
+      "result": {
+        "lat": -21.0,
+        "lon": -135.0
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38200000000000000",
+        "other": "8D40621D58C38600000000000000"
+      },
+      "result": {
+        "lat": 3.0,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38200000000000000",
+        "other": "8D40621D58C3864A2B1C3D000000"
+      },
+      "result": {
+        "lat": -27.0,
+        "lon": 163.0188679245283
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38200000000000000",
+        "other": "8D40621D58C387FFFFFFFF000000"
+      },
+      "result": {
+        "lat": 183.0,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38200000000000000",
+        "other": "8D40621D58C38612345678000000"
+      },
+      "result": {
+        "lat": -9.0,
+        "lon": -61.016949152542395
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38200000000000000",
+        "other": "8D40621D58C38621A00000000000"
+      },
+      "result": {
+        "lat": -9.0,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38621A00000000000",
+        "other": "8D40621D58C382D690C8AC2863A7"
+      },
+      "result": {
+        "error": "PositionStraddleException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38621A00000000000",
+        "other": "8D40621D58C386435CC412692AD6"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38621A00000000000",
+        "other": "8D40621D58C38600000000000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38621A00000000000",
+        "other": "8D40621D58C3864A2B1C3D000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38621A00000000000",
+        "other": "8D40621D58C387FFFFFFFF000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38621A00000000000",
+        "other": "8D40621D58C38612345678000000"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C38621A00000000000",
+        "other": "8D40621D58C38200000000000000"
+      },
+      "result": {
+        "lat": -8.952181541313564,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "global_airborne",
+      "args": {
+        "newer": "8D40621D58C382D690C8AC2863A7",
+        "other": "8D40621E58C386435CC412000000"
+      },
+      "result": {
+        "error": "IllegalArgumentException"
+      }
+    },
+    {
+      "fn": "global_surface",
+      "args": {
+        "newer": "8C4841753AAB238733C8CD4020B1",
+        "other": "8C4841753A8A35323FAEBDAC702D"
+      },
+      "result": {
+        "lat": 52.32304000854492,
+        "lon": 4.730472564697266
+      }
+    },
+    {
+      "fn": "global_surface",
+      "args": {
+        "newer": "8C4841753AAB238733C8CD4020B1",
+        "other": "8C4841753A9A153237AEF0F275BE"
+      },
+      "result": {
+        "lat": 52.32304000854492,
+        "lon": 4.730472564697266
+      }
+    },
+    {
+      "fn": "global_surface",
+      "args": {
+        "newer": "8C4841753A8A35323FAEBDAC702D",
+        "other": "8C4841753AAB238733C8CD4020B1"
+      },
+      "result": {
+        "lat": 52.320607072215964,
+        "lon": 4.734734671456474
+      }
+    },
+    {
+      "fn": "global_surface",
+      "args": {
+        "newer": "8C4841753A8A35323FAEBDAC702D",
+        "other": "8C4841753A9A153237AEF0F275BE"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "global_surface",
+      "args": {
+        "newer": "8C4841753A9A153237AEF0F275BE",
+        "other": "8C4841753AAB238733C8CD4020B1"
+      },
+      "result": {
+        "lat": 52.32056051997815,
+        "lon": 4.735735212053572
+      }
+    },
+    {
+      "fn": "global_surface",
+      "args": {
+        "newer": "8C4841753A9A153237AEF0F275BE",
+        "other": "8C4841753A8A35323FAEBDAC702D"
+      },
+      "result": {
+        "error": "BadFormatException"
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C382D690C8AC2863A7",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 52.2572021484375,
+        "lon": 3.91937255859375
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C382D690C8AC2863A7",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 52.2572021484375,
+        "lon": 3.91937255859375
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C382D690C8AC2863A7",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": -1.7427978515625,
+        "lon": 2.3914815611758473
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C382D690C8AC2863A7",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -31.7427978515625,
+        "lon": 16.884262982536764
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C382D690C8AC2863A7",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 58.2572021484375,
+        "lon": -146.41621251260082
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C382D690C8AC2863A7",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 52.2572021484375,
+        "lon": 3.91937255859375
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C386435CC412692AD6",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 52.26578017412606,
+        "lon": 3.938912527901786
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C386435CC412692AD6",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 52.26578017412606,
+        "lon": 3.938912527901786
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C386435CC412692AD6",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": -2.649474063162076,
+        "lon": 2.3769299737338363
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C386435CC412692AD6",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -33.157948639433265,
+        "lon": 17.507386499521683
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C386435CC412692AD6",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 58.36747508938029,
+        "lon": -151.40460205078125
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C386435CC412692AD6",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 52.26578017412606,
+        "lon": 3.938912527901786
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38600000000000000",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 51.86440677966102,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38600000000000000",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 51.86440677966102,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38600000000000000",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": 3.0508474576271185,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38600000000000000",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -33.559322033898304,
+        "lon": 15.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38600000000000000",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 57.96610169491525,
+        "lon": -144.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38600000000000000",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 51.86440677966102,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C3864A2B1C3D000000",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 52.30632717326536,
+        "lon": 5.71014404296875
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C3864A2B1C3D000000",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 52.30632717326536,
+        "lon": 5.71014404296875
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C3864A2B1C3D000000",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": -2.6089270640227755,
+        "lon": -2.761119974070582
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C3864A2B1C3D000000",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -33.11740164029396,
+        "lon": 18.77255186742666
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C3864A2B1C3D000000",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 58.408022088519594,
+        "lon": -149.33816528320312
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C3864A2B1C3D000000",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 52.30632717326536,
+        "lon": 5.71014404296875
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C387FFFFFFFF000000",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 54.91520768505031,
+        "lon": -8.322975852272727E-05
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C387FFFFFFFF000000",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 54.91520768505031,
+        "lon": -8.322975852272727E-05
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C387FFFFFFFF000000",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": -4.655223781779661E-05,
+        "lon": -4.735486260775862E-05
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C387FFFFFFFF000000",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -36.61021604376324,
+        "lon": 15.319090498254655
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C387FFFFFFFF000000",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 61.016902600304554,
+        "lon": -154.2858123779297
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C387FFFFFFFF000000",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 54.91520768505031,
+        "lon": -8.322975852272727E-05
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38612345678000000",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 51.97287349377648,
+        "lon": 1.737095424107143
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38612345678000000",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 51.97287349377648,
+        "lon": 1.737095424107143
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38612345678000000",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": -2.9423807435116522,
+        "lon": 1.0482472386853448
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38612345678000000",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -33.45085531978284,
+        "lon": 15.934659996811225
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38612345678000000",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 58.07456840903072,
+        "lon": -153.973388671875
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38612345678000000",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 51.97287349377648,
+        "lon": 1.737095424107143
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38200000000000000",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 51.0,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38200000000000000",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 51.0,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38200000000000000",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": 3.0,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38200000000000000",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -33.0,
+        "lon": 21.6
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38200000000000000",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 63.0,
+        "lon": -146.66666666666669
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38200000000000000",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 51.0,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38621A00000000000",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 52.06476761122881,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38621A00000000000",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 52.06476761122881,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38621A00000000000",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": -2.850486626059322,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38621A00000000000",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -33.358961202330505,
+        "lon": 22.040816326530614
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38621A00000000000",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 58.166462526483045,
+        "lon": -144.0
+      }
+    },
+    {
+      "fn": "local_airborne",
+      "args": {
+        "hex": "8D40621D58C38621A00000000000",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 52.06476761122881,
+        "lon": 0.0
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753AAB238733C8CD4020B1",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 52.32304000854492,
+        "lon": 4.730472564697266
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753AAB238733C8CD4020B1",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 52.32304000854492,
+        "lon": 4.730472564697266
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753AAB238733C8CD4020B1",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": -0.17695999145507812,
+        "lon": -0.16445741815082096
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753AAB238733C8CD4020B1",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -33.17695999145508,
+        "lon": 17.805940246582033
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753AAB238733C8CD4020B1",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 59.82304000854492,
+        "lon": -150.32343292236328
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753AAB238733C8CD4020B1",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 52.32304000854492,
+        "lon": 4.730472564697266
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A8A35323FAEBDAC702D",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 52.320607072215964,
+        "lon": 4.734734671456474
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A8A35323FAEBDAC702D",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 52.320607072215964,
+        "lon": 4.734734671456474
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A8A35323FAEBDAC702D",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": 0.4562002925549523,
+        "lon": -0.24628080170730066
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A8A35323FAEBDAC702D",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -34.62854547015691,
+        "lon": 18.45241069793701
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A8A35323FAEBDAC702D",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 59.94772571628376,
+        "lon": -149.4580788447939
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A8A35323FAEBDAC702D",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 52.320607072215964,
+        "lon": 4.734734671456474
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A9A153237AEF0F275BE",
+        "ref_lat": 52.258,
+        "ref_lon": 3.918
+      },
+      "result": {
+        "lat": 52.32056051997815,
+        "lon": 4.735735212053572
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A9A153237AEF0F275BE",
+        "ref_lat": 51.99,
+        "ref_lon": 4.375
+      },
+      "result": {
+        "lat": 52.32056051997815,
+        "lon": 4.735735212053572
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A9A153237AEF0F275BE",
+        "ref_lat": 0.0,
+        "ref_lon": 0.0
+      },
+      "result": {
+        "lat": 0.4561537403171345,
+        "lon": -0.2456770272090517
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A9A153237AEF0F275BE",
+        "ref_lat": -33.9,
+        "ref_lon": 18.4
+      },
+      "result": {
+        "lat": -34.62859202239473,
+        "lon": 18.453140258789062
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A9A153237AEF0F275BE",
+        "ref_lat": 60.0,
+        "ref_lon": -150.0
+      },
+      "result": {
+        "lat": 59.947679164045944,
+        "lon": -149.4568712957974
+      }
+    },
+    {
+      "fn": "local_surface",
+      "args": {
+        "hex": "8C4841753A9A153237AEF0F275BE",
+        "ref_lat": 52.2572,
+        "ref_lon": 3.9194
+      },
+      "result": {
+        "lat": 52.32056051997815,
+        "lon": 4.735735212053572
+      }
+    }
+  ]
+}

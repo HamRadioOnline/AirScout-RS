@@ -1,0 +1,49 @@
+#!/bin/sh
+set -eu
+
+tool=airscout
+if [ "${1:-}" = --tool ]; then
+    case "${2:-}" in
+        airscout|airscout-planeserver|airscout-cli|catcheck|elevation-tile-gen|maptile-gen)
+            tool=$2
+            shift 2
+            ;;
+        *)
+            printf 'AppRun: unknown or missing tool: %s\n' "${2:-}" >&2
+            exit 2
+            ;;
+    esac
+fi
+
+# Resolve the launcher itself so symlinks into an extracted AppDir also work.
+launcher=$(readlink -f -- "$0")
+appdir=${launcher%/*}
+lib="$appdir/usr/lib"
+lib_path="$lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export XDG_DATA_DIRS="$appdir/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+
+if [ "$tool" = airscout-planeserver ]; then
+    export GIO_MODULE_DIR="$lib/gio/modules"
+    export GTK_EXE_PREFIX="$appdir/usr"
+    export GTK_PATH="$lib/gtk-3.0"
+    unset GIO_EXTRA_MODULES
+
+    if [ -d "$appdir/usr/libexec" ]; then
+        # GTK caches require absolute paths. Generate them after mounting or
+        # extraction and keep them readable through inherited file descriptors.
+        cache=$(mktemp -d "${TMPDIR:-/tmp}/airscout-gtk.XXXXXXXX")
+        trap 'rm -rf -- "$cache"' EXIT
+        LD_LIBRARY_PATH="$lib_path" "$appdir/usr/libexec/gtk-query-immodules-3.0" \
+            "$lib"/gtk-3.0/3.0.0/immodules/*.so > "$cache/immodules"
+        LD_LIBRARY_PATH="$lib_path" "$appdir/usr/libexec/gdk-pixbuf-query-loaders" \
+            "$lib"/gdk-pixbuf-2.0/2.10.0/loaders/*.so > "$cache/pixbuf"
+        exec 3< "$cache/immodules" 4< "$cache/pixbuf"
+        export GTK_IM_MODULE_FILE=/proc/self/fd/3
+        export GDK_PIXBUF_MODULE_FILE=/proc/self/fd/4
+        rm -rf -- "$cache"
+        trap - EXIT
+    fi
+fi
+
+export LD_LIBRARY_PATH="$lib_path"
+exec "$appdir/usr/bin/$tool" "$@"

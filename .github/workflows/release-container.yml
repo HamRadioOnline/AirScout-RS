@@ -1,0 +1,179 @@
+name: Container
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      # Build candidates by default. Publish mode consumes the already
+      # verified artifact from this run after the release is public.
+      publish:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ inputs.tag }}
+
+jobs:
+  # Assembles the three PlaneServer container platforms from the prebuilt Linux
+  # stage binaries. No signing secret reaches this job: it only wraps binaries,
+  # so it doubles as the unsigned smoke test for alpha tags.
+  build:
+    name: Build container candidates
+    if: ${{ !inputs.publish }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Read container tool pins
+        id: pins
+        run: |
+          python3 - <<'PY'
+          import json, os
+
+          with open("packaging/tools.lock.json", encoding="utf-8") as lock:
+              pins = json.load(lock)["container-tools"]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              for name in ("binfmt", "buildkit"):
+                  pin = pins[name]
+                  print(f'{name}={pin["url"]}@{pin["digest"]}', file=output)
+          PY
+      # source: https://github.com/docker/setup-qemu-action/releases/tag/v3.6.0
+      - uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+        with:
+          image: ${{ steps.pins.outputs.binfmt }}
+      # source: https://github.com/docker/setup-buildx-action/releases/tag/v3.11.1
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        with:
+          driver: docker-container
+          driver-opts: image=${{ steps.pins.outputs.buildkit }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: stage-linux-x86_64
+          path: transport/x86_64
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: stage-linux-arm64
+          path: transport/arm64
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: stage-linux-armhf
+          path: transport/armhf
+      - name: Extract stages
+        run: |
+          set -euo pipefail
+          for slug in linux-x86_64 linux-arm64 linux-armhf; do
+            mkdir -p "stage/$slug"
+            tar -xzf "transport/${slug#linux-}/stage.tar.gz" -C "stage/$slug"
+            python3 - "$slug" <<'PY'
+          import json, sys
+          assert json.load(open(f"stage/{sys.argv[1]}/stage.json", encoding="utf-8"))["slug"] == sys.argv[1]
+          PY
+          done
+      - name: Build OCI candidates
+        run: packaging/container/build.sh stage candidate
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-container
+          path: candidate/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+
+  # Uploads the smoke-tested per-platform manifests and promotes the manifest
+  # list to GHCR. Gated on Task 10's release signal and on the tag not being
+  # alpha (the only ineligible container channel); serialized so concurrent
+  # releases cannot race the mutable tag promotion. GITHUB_TOKEN (packages:
+  # write) appears only here.
+  publish:
+    name: Publish to GHCR
+    if: ${{ inputs.publish && !startsWith(inputs.tag, 'alpha-') }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    environment: release
+    outputs:
+      published: ${{ steps.publish.outputs.published }}
+    concurrency:
+      group: container-publish
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: package-container
+          path: candidate
+      - name: Publish container
+        id: publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          published=false
+          trap 'printf "published=%s\n" "$published" >> "$GITHUB_OUTPUT"' EXIT
+
+          case "$TAG" in
+            beta-v*) channel=beta ;;
+            v*)      channel=stable ;;
+            *)       echo "::error::Unrecognized release tag" >&2; exit 1 ;;
+          esac
+
+          # Filter the command output before it reaches the workflow log.
+          redact() {
+            python3 -c '
+          import os, sys
+          value = os.environ.get("GITHUB_TOKEN", "")
+          needles = sorted({value, *value.splitlines()} - {""}, key=len, reverse=True)
+          text = sys.stdin.read()
+          for needle in needles:
+              text = text.replace(needle, "[redacted]")
+          sys.stdout.write(text)
+          '
+          }
+
+          VERSION="$(python3 -c 'import json; print(json.load(open("candidate/result.json", encoding="utf-8"))["version"])')"
+          packaging/container/publish.sh candidate "$channel" "$VERSION" "$TAG" 2>&1 | redact
+          published=true
+
+  verify-published:
+    name: Verify published GHCR digests
+    needs: publish
+    if: ${{ needs.publish.outputs.published == 'true' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: package-container
+          path: candidate
+      - name: Register ARM emulation
+        run: |
+          set -euo pipefail
+          emulator=$(python3 - <<'PY'
+          import json
+          pin = json.load(open("packaging/tools.lock.json"))["container-tools"]["binfmt"]
+          print(pin["url"] + "@" + pin["digest"])
+          PY
+          )
+          docker run --rm --privileged "$emulator" --install arm64,arm
+      - name: Pull and smoke each published platform by digest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: packaging/tests/hosted/verify-container.sh published candidate

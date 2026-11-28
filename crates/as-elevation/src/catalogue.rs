@@ -1,0 +1,270 @@
+//! Port of `ElevationCatalogue.cs`: list of available tiles on the update server.
+
+use crate::{ElevationError, ElevationModel};
+use as_geo::latlon::{wrap_longitude, GRect};
+use as_geo::maidenhead;
+use chrono::{DateTime, NaiveDateTime, Utc};
+use std::collections::{BTreeMap, BTreeSet};
+use std::io::{BufRead, BufReader, Read};
+use std::path::Path;
+
+/// Default update server (`Elevation_*_UpdateURL` settings without the model suffix).
+pub const DEFAULT_BASE_URL: &str = "http://www.airscout.eu/downloads/ScoutBase/1/ElevationData";
+
+pub use as_net::user_agent;
+
+/// Largest `files.cat` text read [bytes]. A downloaded zip is untrusted, so its entry is
+/// never inflated beyond this. The size of the real catalogues has not been measured; the cap
+/// is set far above any plausible one (one line per tile, about 32 bytes a line).
+pub const MAX_CATALOGUE_BYTES: u64 = 1024 * 1024 * 1024;
+
+/// A reader that fails once more than `cap` bytes have come through, instead of truncating.
+pub struct Capped<R> {
+    inner: R,
+    cap: u64,
+    left: u64,
+}
+
+impl<R> Capped<R> {
+    /// Wrap `inner`; a stream of exactly `cap` bytes passes.
+    pub fn new(inner: R, cap: u64) -> Self {
+        Self {
+            inner,
+            cap,
+            left: cap,
+        }
+    }
+}
+
+impl<R: Read> Read for Capped<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        // Ask for one byte more than allowed, so a stream of exactly `cap` bytes passes.
+        let want = buf
+            .len()
+            .min(usize::try_from(self.left + 1).unwrap_or(usize::MAX));
+        let n = self.inner.read(&mut buf[..want])?;
+        if n as u64 > self.left {
+            return Err(std::io::Error::other(format!(
+                "catalogue larger than {} bytes",
+                self.cap
+            )));
+        }
+        self.left -= n as u64;
+        Ok(n)
+    }
+}
+
+/// `GetLocsFromRect`: locators covering a rectangle. `precision` 1..=3 (2 = 4-char squares).
+pub fn get_locs_from_rect(r: GRect, precision: i32) -> Result<Vec<String>, ElevationError> {
+    let divisions_per_field = match precision {
+        1 => 1,
+        2 => 10,
+        3 => 240,
+        p => {
+            return Err(ElevationError::InvalidArgument(format!(
+                "illegal precision value (1..3): {p}"
+            )))
+        }
+    };
+    let mut locs = Vec::new();
+    if r.max_lat < r.min_lat
+        || !maidenhead::check_lat_lon(r.min_lat, r.min_lon)
+        || !maidenhead::check_lat_lon(r.max_lat, r.max_lon)
+    {
+        return Ok(locs);
+    }
+    let cells = 18 * divisions_per_field;
+    let step_lat = 10.0 / f64::from(divisions_per_field);
+    let step_lon = 20.0 / f64::from(divisions_per_field);
+    let first_lat = (((r.min_lat + 90.0) / step_lat).floor() as i32).min(cells - 1);
+    let last_lat = (((r.max_lat + 90.0) / step_lat).floor() as i32).min(cells - 1);
+    let min_lon = wrap_longitude(r.min_lon);
+    let max_lon = if r.min_lon == 180.0 {
+        wrap_longitude(r.max_lon)
+    } else {
+        r.max_lon
+    };
+    let cell = |lon: f64| (((lon + 180.0) / step_lon).floor() as i32).min(cells - 1);
+    let first_lon = cell(min_lon);
+    let last_lon = if max_lon == 180.0 {
+        // Retain the east-side interior and add the closed endpoint, which
+        // lookup assigns to the first cell of the next turn.
+        cells
+    } else if min_lon > max_lon {
+        cell(max_lon) + cells
+    } else {
+        cell(max_lon)
+    };
+    let last_lon = last_lon.min(first_lon + cells - 1);
+    for row in first_lat..=last_lat {
+        for col in first_lon..=last_lon {
+            let lat = (f64::from(row) + 0.5) * step_lat - 90.0;
+            let lon = (f64::from(col % cells) + 0.5) * step_lon - 180.0;
+            locs.extend(maidenhead::loc_from_lat_lon(
+                lat, lon, false, precision, false,
+            )?);
+        }
+    }
+    Ok(locs)
+}
+
+/// Tile catalogue of one elevation model, restricted to a rectangle.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Catalogue {
+    pub base_url: String,
+    /// Tile index (6 chars) -> last update on the server.
+    pub files: BTreeMap<String, DateTime<Utc>>,
+    /// Modification time of the downloaded catalogue file.
+    pub last_modified: Option<DateTime<Utc>>,
+}
+
+impl Catalogue {
+    /// Download `{base}/{MODEL}/files.zip` into `cache_dir` (only if newer than the cached copy)
+    /// and parse the `files.cat` inside, keeping tiles whose 4-char square lies in `rect`.
+    pub fn fetch(
+        client: &reqwest::blocking::Client,
+        base_url: &str,
+        model: ElevationModel,
+        rect: GRect,
+        cache_dir: &Path,
+    ) -> Result<Catalogue, ElevationError> {
+        let base = format!("{}/{}", base_url.trim_end_matches('/'), model.dir_name());
+        let url = format!("{base}/files.zip");
+        std::fs::create_dir_all(cache_dir)?;
+        let zip_path = cache_dir.join(format!("{}-files.zip", model.dir_name().to_lowercase()));
+        as_net::download_if_newer(client, &url, &zip_path, MAX_CATALOGUE_BYTES)?;
+        let squares: BTreeSet<String> = get_locs_from_rect(rect, 2)?.into_iter().collect();
+        // Filter while reading, so the map holds only the area's tiles (the old loop did the
+        // same), and read through the cap: the downloaded zip is untrusted.
+        let files = read_files_zip_where(&zip_path, MAX_CATALOGUE_BYTES, |index| {
+            index.get(..4).is_some_and(|sq| squares.contains(sq))
+        })?;
+        let last_modified = std::fs::metadata(&zip_path)
+            .and_then(|m| m.modified())
+            .ok()
+            .map(DateTime::<Utc>::from);
+        Ok(Catalogue {
+            base_url: base,
+            files,
+            last_modified,
+        })
+    }
+}
+
+/// Read a `files.cat` (`ElevationCatalogue.cs:45`): `<name>.loc;yyyy-MM-dd HH:mm:ssZ` lines.
+/// Key is the name without `.loc`, upper-cased. Empty lines, `/` comment lines, lines without
+/// `;` and lines with a bad date are skipped, as the original swallows them. The first entry
+/// of a name wins.
+pub fn read_files_cat(r: impl BufRead) -> Result<BTreeMap<String, DateTime<Utc>>, ElevationError> {
+    read_files_cat_where(r, |_| true)
+}
+
+/// [`read_files_cat`], keeping only the entries whose key `keep` accepts. The filter runs
+/// while reading, so a dropped entry never enters the map.
+pub fn read_files_cat_where(
+    r: impl BufRead,
+    mut keep: impl FnMut(&str) -> bool,
+) -> Result<BTreeMap<String, DateTime<Utc>>, ElevationError> {
+    let mut files = BTreeMap::new();
+    for line in r.lines() {
+        let line = line?;
+        if line.is_empty() || line.starts_with('/') {
+            continue;
+        }
+        let Some((name, ts)) = line.split_once(';') else {
+            continue;
+        };
+        let Ok(t) = NaiveDateTime::parse_from_str(ts.trim(), "%Y-%m-%d %H:%M:%SZ") else {
+            continue;
+        };
+        let index = name.trim_end_matches(".loc").to_uppercase();
+        if keep(&index) {
+            files.entry(index).or_insert(t.and_utc());
+        }
+    }
+    Ok(files)
+}
+
+/// Read the `files.cat` entry of a catalogue zip (`files.zip`) with [`read_files_cat`],
+/// through a [`Capped`] reader of [`MAX_CATALOGUE_BYTES`].
+pub fn read_files_zip(path: &Path) -> Result<BTreeMap<String, DateTime<Utc>>, ElevationError> {
+    read_files_zip_where(path, MAX_CATALOGUE_BYTES, |_| true)
+}
+
+/// [`read_files_zip`] with a filter ([`read_files_cat_where`]) and a byte cap on the entry.
+/// A read error of the entry, the cap included, is `Corrupt` naming the zip.
+fn read_files_zip_where(
+    path: &Path,
+    cap: u64,
+    keep: impl FnMut(&str) -> bool,
+) -> Result<BTreeMap<String, DateTime<Utc>>, ElevationError> {
+    let corrupt =
+        |e: zip::result::ZipError| ElevationError::Corrupt(format!("{}: {e}", path.display()));
+    let file = std::fs::File::open(path)?;
+    let mut z = zip::ZipArchive::new(file).map_err(corrupt)?;
+    let entry = z.by_name("files.cat").map_err(corrupt)?;
+    read_files_cat_where(BufReader::new(Capped::new(entry, cap)), keep).map_err(|e| match e {
+        ElevationError::Io(e) => ElevationError::Corrupt(format!("{}: {e}", path.display())),
+        e => e,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    const CAT: &str = "// h\nJO50AA.loc;2018-02-27 08:26:32Z\nJN58TD.loc;2018-02-27 08:26:33Z\njo50ab.loc;2018-02-27 08:26:34Z\nJO50AA.loc;2019-01-01 00:00:00Z\n";
+
+    fn cat_zip(dir: &Path, text: &str) -> std::path::PathBuf {
+        let path = dir.join("files.zip");
+        let mut z = zip::ZipWriter::new(std::fs::File::create(&path).unwrap());
+        z.start_file("files.cat", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        z.write_all(text.as_bytes()).unwrap();
+        z.finish().unwrap();
+        path
+    }
+
+    /// I1: entries outside the filter never enter the map; the first kept entry still wins.
+    #[test]
+    fn filter_applies_while_reading() {
+        let mut asked = Vec::new();
+        let map = read_files_cat_where(CAT.as_bytes(), |index| {
+            asked.push(index.to_string());
+            index.starts_with("JO50")
+        })
+        .unwrap();
+        assert_eq!(asked, ["JO50AA", "JN58TD", "JO50AB", "JO50AA"]);
+        let keys: Vec<_> = map.keys().cloned().collect();
+        assert_eq!(keys, ["JO50AA", "JO50AB"]);
+        assert_eq!(map["JO50AA"].to_rfc3339(), "2018-02-27T08:26:32+00:00");
+    }
+
+    /// I1: the zip entry is read through the cap; at the cap passes, one byte under fails.
+    #[test]
+    fn zip_cap_is_inclusive_and_over_is_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = cat_zip(dir.path(), CAT);
+        let n = CAT.len() as u64;
+        let at = read_files_zip_where(&path, n, |_| true).unwrap();
+        assert_eq!(at.len(), 3);
+        let over = read_files_zip_where(&path, n - 1, |_| true).unwrap_err();
+        let msg = over.to_string();
+        assert!(matches!(over, ElevationError::Corrupt(_)), "{over:?}");
+        assert!(msg.contains("files.zip"), "{msg}");
+        assert!(
+            msg.contains(&format!("larger than {} bytes", n - 1)),
+            "{msg}"
+        );
+    }
+
+    /// The cap counts every byte, also the bytes of lines the filter drops.
+    #[test]
+    fn cap_counts_dropped_lines() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = cat_zip(dir.path(), CAT);
+        let r = read_files_zip_where(&path, CAT.len() as u64 - 1, |_| false);
+        assert!(r.is_err(), "{r:?}");
+    }
+}

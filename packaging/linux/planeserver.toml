@@ -1,0 +1,3 @@
+# PlaneServer serves an empty aircraft list until feeds are configured.
+bind = "127.0.0.1"
+port = 9872

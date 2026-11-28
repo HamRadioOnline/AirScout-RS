@@ -1,0 +1,25 @@
+[package]
+name = "as-cat"
+description = "AirScout-RS CAT: rig control backends and Doppler enter/leave"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+# Native hamlib backend (Linux and macOS only); needs libhamlib at link time.
+hamlib = []
+# `from_settings::cat_config`: the worker configuration of the app settings.
+settings = ["dep:as-settings"]
+
+[dependencies]
+as-settings = { workspace = true, optional = true }
+thiserror.workspace = true
+
+# The OmniRig COM backend (`omnirig_com.rs`).
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_System_Ole",
+    "Win32_System_Variant",
+] }

@@ -1,0 +1,44 @@
+AirScout-RS
+===========
+
+AirScout-RS is a Rust port of AirScout, the aircraft scatter prediction
+software by DL2ALF.
+
+  Original:  https://github.com/dl2alf/AirScout
+  Copyright: Copyright (c) 2020 by DL2ALF (http://www.dl2alf.de)
+  License:   GNU General Public License, Version 3.0
+
+The port reimplements the original's logic and behaviour in Rust; it is a
+derived work and is distributed under the same license, the GNU General
+Public License, Version 3 only (GPL-3.0-only). See the file LICENSE.
+
+The license of the original was confirmed by DL2ALF on 2026-11-23.
+
+Third-party libraries bundled with the original (GMap.NET, OxyPlot,
+BouncyCastle, DotNetZip, AeroWizard, NDDE and others, under MIT, CPOL,
+Ms-PL and other licenses) are not part of this port; their functionality
+is provided by Rust crates under their own licenses.
+
+The desktop map's plane icon (crates/airscout/assets/plane_alpha.bin) is
+the alpha channel of the original's AirScout/plane.png.
+
+The AirScout-RS and PlaneServer application icons are original artwork of the
+AirScout-RS project (HamRadioOnline) and are distributed under GPL-3.0-only.
+The SVG sources are in packaging/icons/src. The AirScout-RS icon is also the
+web page's favicon (crates/as-web/assets/dist/assets/favicon/favicon.ico).
+
+The Rust logo artwork is from rust-lang/rust-artwork (CC-BY 4.0).
+https://github.com/rust-lang/rust-artwork/blob/master/logo/rust-logo-single-path.svg
+https://creativecommons.org/licenses/by/4.0/
+Rust and the Rust logo are trademarks of the Rust Foundation; the logo is
+used unmodified to indicate that this program is written in Rust.
+
+The web page that AirScout-RS serves (crates/as-web/assets) is a subset
+of the AirScout web UI (AirScout/wwwroot, GPL-3.0). It bundles jQuery,
+Chart.js, CoreUI (template, core, Chart.js plugin and utils), SimpleBar,
+tablesorter (MIT chosen of MIT or GPL-2.0), Leaflet.RotatedMarker,
+leaflet-tooltip-layout and ReconnectingWebSocket under the MIT license,
+Leaflet under the BSD-2-Clause license, and the CoreUI Icons Free under
+CC BY 4.0. The licence texts and the list of files are in
+crates/as-web/assets/LICENSES/ (THIRD-PARTY.txt); the web server serves
+them under LICENSES/.
